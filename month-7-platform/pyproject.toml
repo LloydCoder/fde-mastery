@@ -20,6 +20,9 @@ quality = ["ruff>=0.6", "mypy>=1.11"]
 security = ["bandit>=1.7", "pip-audit>=2.7"]
 redis = ["redis>=5.0"]
 
+[tool.setuptools]
+py-modules = []
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = [
@@ -33,9 +36,6 @@ include = [
   "golden_datasets*",
   "demo*",
 ]
-
-[tool.setuptools.py-modules]
-# Intentionally empty: platform root modules are imported from the checkout.
 
 [tool.ruff]
 line-length = 110
