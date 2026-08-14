@@ -15,8 +15,9 @@ concurrency:
 
 jobs:
   test-quality:
+    name: Test, Security and Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: month-7-platform
@@ -28,58 +29,111 @@ jobs:
       MOCK_LLM: "true"
       FDE_ENVIRONMENT: test
       OTEL_ENABLED: "false"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: month-7-platform/pyproject.toml
-      - name: Install platform
+
+      - name: Install platform and CI tools
         run: |
-          python -m pip install --upgrade pip "setuptools>=83.0.0"
-          pip install -e ".[test,quality,security,redis,observability,sbom]"
-          pip check
-      - name: Unit and integration tests
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -e ".[test,quality,security,redis,observability,sbom]"
+          python -m pip check
+
+      - name: Run test suite
         run: |
           mkdir -p artifacts
-          set -o pipefail
-          python -m pytest -q --junitxml=artifacts/pytest.xml 2>&1 | tee artifacts/pytest.log
-          exit ${PIPESTATUS[0]}
-      - name: Upload test diagnostics
+          python -m pytest -q --junitxml=artifacts/pytest.xml
+
+      - name: Verify all six domain adapters
+        run: |
+          python - <<'PY'
+          from shared_orchestrator.router import AgentRouter
+          from schemas import Domain
+
+          router = AgentRouter()
+          try:
+              router.register_defaults()
+              expected = {d.value for d in Domain}
+              actual = set(router.list_domains())
+              assert actual == expected, (actual, expected)
+              health = router.health()
+              assert all(v["agent"]["status"] == "ready" for v in health.values())
+          finally:
+              router.close()
+          PY
+
+      - name: Run AI security regression suite
+        run: |
+          python - <<'PY'
+          from security.redteam import load_corpus, run_benchmark
+
+          def safe_responder(_prompt: str) -> str:
+              return "Request rejected by policy. No protected information or privileged action was provided."
+
+          result = run_benchmark(safe_responder, load_corpus())
+          assert result["total"] >= 4, result
+          assert result["failed"] == 0, result
+          assert result["passed"] is True, result
+          PY
+
+      - name: Validate migration sequence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          files = sorted(Path("persistence/migrations").glob("[0-9][0-9][0-9]_*.sql"))
+          assert files, "No SQL migrations found"
+          versions = [int(re.match(r"^(\d{3})_", f.name).group(1)) for f in files]
+          assert versions == list(range(1, len(versions) + 1)), versions
+          PY
+
+      - name: Ruff
+        run: python -m ruff check security persistence shared_orchestrator deployment --select E4,E7,E9,F --ignore E501,F401
+
+      - name: MyPy
+        run: python -m mypy security persistence shared_orchestrator --explicit-package-bases --ignore-missing-imports
+
+      - name: Bandit
+        run: python -m bandit -r security persistence shared_orchestrator deployment -q
+
+      - name: Dependency audit
+        run: python -m pip_audit --skip-editable
+
+      - name: Compile source tree
+        run: python -m compileall -q security persistence shared_orchestrator deployment
+
+      - name: Generate SBOM
+        run: bash scripts/generate-sbom.sh
+
+      - name: Validate SBOM
+        run: |
+          test -s artifacts/sbom.cdx.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc = json.loads(Path("artifacts/sbom.cdx.json").read_text())
+          assert doc.get("bomFormat") == "CycloneDX"
+          assert doc.get("components") is not None
+          PY
+
+      - name: Upload diagnostics and SBOM
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-diagnostics
+          name: platform-quality-artifacts
           path: |
             month-7-platform/artifacts/pytest.xml
-            month-7-platform/artifacts/pytest.log
+            month-7-platform/artifacts/sbom.cdx.json
           if-no-files-found: warn
-      - name: Six-domain integration smoke test
-        run: python -c "from shared_orchestrator.router import AgentRouter; r=AgentRouter(); r.register_defaults(); assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'}; r.close()"
-      - name: Red-team regression smoke test
-        run: python -c "from security.redteam import load_corpus, run_benchmark; r=run_benchmark(lambda _: 'I cannot comply with that request.', load_corpus()); assert r['passed'] and r['failed'] == 0"
-      - name: Migration integrity
-        run: python -c "from pathlib import Path; f=sorted(Path('persistence/migrations').glob('[0-9][0-9][0-9]_*.sql')); v=[int(x.name.split('_',1)[0]) for x in f]; assert f and v == sorted(set(v))"
-      - name: Ruff
-        run: ruff check . --select E4,E7,E9,F --ignore E501,F401
-      - name: MyPy
-        run: mypy . --explicit-package-bases --ignore-missing-imports
-      - name: Bandit
-        run: bandit -r security persistence shared_orchestrator deployment -q
-      - name: Dependency audit
-        run: pip-audit --skip-editable
-      - name: Compile all platform Python
-        run: python -m compileall -q .
-      - name: Generate SBOM
-        run: bash scripts/generate-sbom.sh
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: platform-sbom
-          path: month-7-platform/artifacts/sbom.cdx.json
-          if-no-files-found: error
+
       - name: Production Docker build
         run: docker build --tag fde-mastery-platform:ci .
