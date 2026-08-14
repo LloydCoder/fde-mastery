@@ -3,7 +3,6 @@
 import json
 import sys
 import time
-import uuid
 from pathlib import Path
 from typing import Any, Dict
 
@@ -18,14 +17,13 @@ from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
 from deployment.api_gateway.rate_limit import enforce_request_limits  # noqa: E402
+from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
-from persistence.repository import InMemoryPlatformRepository, PlatformRepository  # noqa: E402
+from persistence.repository import PlatformRepository  # noqa: E402
+from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
 
 app = FastAPI(title="FDE Mastery Platform API", version="7.0.0")
-
-# The gateway depends on an interface rather than a concrete storage format.
-# Swap this for a PostgreSQL implementation without changing endpoint logic.
-REPOSITORY: PlatformRepository = InMemoryPlatformRepository()
+REPOSITORY: PlatformRepository = build_repository()
 _START_TIME = time.time()
 
 
@@ -33,6 +31,7 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     uptime_seconds: float
+    storage_backend: str
 
 
 class ClientRegistration(BaseModel):
@@ -45,12 +44,27 @@ AGENT_ROUTER = AgentRouter()
 AGENT_ROUTER.register_defaults()
 
 
+@app.middleware("http")
+async def request_observability(request: Request, call_next):
+    request_id = new_request_id()
+    request.state.request_id = request_id
+    started = monotonic_ms()
+    response = await call_next(request)
+    duration_ms = monotonic_ms() - started
+    client_id = request.path_params.get("client_id")
+    response.headers["X-Request-ID"] = request_id
+    log_request(request_id, request.method, request.url.path, response.status_code, duration_ms, client_id)
+    return response
+
+
 @app.get("/health", response_model=HealthResponse)
 def health():
+    backend = type(REPOSITORY).__name__.replace("PlatformRepository", "").lower()
     return HealthResponse(
         status="healthy",
         version="7.0.0",
         uptime_seconds=round(time.time() - _START_TIME, 2),
+        storage_backend=backend,
     )
 
 
@@ -65,14 +79,9 @@ def capabilities():
 
 
 @app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
-def triage(
-    client_id: str,
-    domain: Domain,
-    request: Request,
-    payload: Dict[str, Any],
-):
+def triage(client_id: str, domain: Domain, request: Request, payload: Dict[str, Any]):
     start = time.time()
-    request_id = str(uuid.uuid4())[:8]
+    request_id = getattr(request.state, "request_id", new_request_id())[:8]
 
     client = REPOSITORY.get_client(client_id)
     if client is None:
@@ -81,10 +90,7 @@ def triage(
     enforce_request_limits(request, client_id)
 
     if domain.value not in client.domains:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Domain {domain.value} is not enabled for client {client_id}.",
-        )
+        raise HTTPException(status_code=403, detail=f"Domain {domain.value} is not enabled for client {client_id}.")
 
     pref_path = Path("preferences") / client_id / "rubric_overrides.json"
     rubric: Dict[str, Any] = {}
@@ -118,20 +124,10 @@ def triage(
 
 @app.post("/admin/clients/register")
 def register_client(registration: ClientRegistration, _: str = Depends(require_admin_api_key)):
-    REPOSITORY.register_client(
-        ClientRecord.create(
-            client_id=registration.client_id,
-            client_name=registration.client_name,
-            domains=[domain.value for domain in registration.domains],
-        )
-    )
+    REPOSITORY.register_client(ClientRecord.create(registration.client_id, registration.client_name, [d.value for d in registration.domains]))
     return {"status": "registered", "client_id": registration.client_id}
 
 
 @app.get("/admin/clients/{client_id}/usage")
 def client_usage(client_id: str, _: str = Depends(require_admin_api_key)):
-    return {
-        "client_id": client_id,
-        "total_calls": REPOSITORY.get_usage(client_id),
-        "billing_period": "current",
-    }
+    return {"client_id": client_id, "total_calls": REPOSITORY.get_usage(client_id), "billing_period": "current"}
