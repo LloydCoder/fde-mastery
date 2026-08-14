@@ -31,13 +31,7 @@ from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E
 
 app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
 if settings.cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=list(settings.cors_origins),
-        allow_credentials=False,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
-    )
+    app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"])
 
 REPOSITORY: PlatformRepository = build_repository()
 RATE_LIMITER = build_rate_limiter()
@@ -71,17 +65,7 @@ def _limiter_backend() -> str:
 
 
 def _audit_failure(request_id: str, client_id: str, domain: Domain, code: str, status_code: int, duration_ms: float) -> None:
-    REPOSITORY.record_audit_event(AuditEvent.create(
-        event_id=f"AUDIT-{request_id}",
-        request_id=request_id,
-        client_id=client_id,
-        domain=domain.value,
-        action="triage",
-        outcome="failure",
-        status_code=status_code,
-        duration_ms=duration_ms,
-        metadata={"error_code": code},
-    ))
+    REPOSITORY.record_audit_event(AuditEvent.create(event_id=f"AUDIT-{request_id}", request_id=request_id, client_id=client_id, domain=domain.value, action="triage", outcome="failure", status_code=status_code, duration_ms=duration_ms, metadata={"error_code": code}))
 
 
 @app.middleware("http")
@@ -154,7 +138,7 @@ def capabilities():
 @app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
 def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, Any]):
     start = time.time()
-    request_id = getattr(request.state, "request_id", new_request_id())[:8]
+    request_id = getattr(request.state, "request_id", new_request_id())
     client = REPOSITORY.get_client(client_id)
     if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
@@ -183,10 +167,10 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
         elapsed_ms = (time.time() - start) * 1000
         _audit_failure(request_id, client_id, domain, "AGENT_CIRCUIT_OPEN", 503, elapsed_ms)
         return api_error(status_code=503, code="AGENT_CIRCUIT_OPEN", message="The domain agent is temporarily unavailable.", request_id=request_id, retryable=True)
-    except (ValueError, TypeError, KeyError) as exc:
+    except (ValueError, TypeError, KeyError):
         elapsed_ms = (time.time() - start) * 1000
         _audit_failure(request_id, client_id, domain, "INVALID_AGENT_INPUT", 422, elapsed_ms)
-        return api_error(status_code=422, code="INVALID_AGENT_INPUT", message="The request could not be processed by the domain agent.", request_id=request_id, retryable=False, details=str(exc))
+        return api_error(status_code=422, code="INVALID_AGENT_INPUT", message="The request could not be processed by the domain agent.", request_id=request_id, retryable=False)
     except Exception:
         elapsed_ms = (time.time() - start) * 1000
         _audit_failure(request_id, client_id, domain, "AGENT_EXECUTION_FAILED", 500, elapsed_ms)
