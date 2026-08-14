@@ -3,8 +3,10 @@
 from typing import Any, Dict
 
 try:
+    from ..config import settings
     from ..schemas import Domain
 except ImportError:
+    from config import settings
     from schemas import Domain
 
 from .resilience import ResilienceConfig, ResilienceExecutor
@@ -16,7 +18,15 @@ class AgentRouter:
     def __init__(self, resilience_config: ResilienceConfig | None = None):
         self._agents: Dict[Domain, Any] = {}
         self._resilience: Dict[Domain, ResilienceExecutor] = {}
-        self._resilience_config = resilience_config or ResilienceConfig()
+        self._resilience_config = resilience_config or ResilienceConfig(
+            timeout_seconds=settings.agent_timeout_seconds,
+            max_retries=settings.agent_max_retries,
+            backoff_seconds=settings.agent_backoff_seconds,
+            max_backoff_seconds=settings.agent_max_backoff_seconds,
+            circuit_failure_threshold=settings.agent_circuit_failure_threshold,
+            circuit_recovery_seconds=settings.agent_circuit_recovery_seconds,
+            max_concurrency=settings.agent_max_concurrency,
+        )
 
     def register_agent(self, domain: Domain, agent_instance: Any) -> None:
         if not hasattr(agent_instance, "evaluate"):
@@ -51,20 +61,19 @@ class AgentRouter:
     def route(self, domain: Domain, payload: Dict[str, Any]) -> Any:
         if domain not in self._agents:
             raise ValueError(f"No agent registered for domain: {domain.value}")
-        executor = self._resilience[domain]
-        return executor.execute(
+        return self._resilience[domain].execute(
             lambda: self._agents[domain].evaluate(payload),
             retryable=self._retryable,
         )
 
     def health(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
-        for domain, agent in self._agents.items():
-            result[domain.value] = {
+        return {
+            domain.value: {
                 "agent": agent.health() if hasattr(agent, "health") else {"status": "unknown"},
                 "resilience": self._resilience[domain].health(),
             }
-        return result
+            for domain, agent in self._agents.items()
+        }
 
     def capabilities(self) -> Dict[str, Any]:
         return {
