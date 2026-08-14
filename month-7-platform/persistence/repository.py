@@ -1,13 +1,10 @@
-"""Storage interface with an in-memory implementation for the platform demo.
-
-The API no longer owns raw dictionaries. The repository boundary makes the
-storage backend replaceable with PostgreSQL without changing gateway logic.
-"""
+"""Storage interface with in-memory implementations for platform state."""
 
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Optional
 
+from .audit import AuditEvent
 from .models import ClientRecord, UsageRecord
 
 
@@ -24,13 +21,20 @@ class PlatformRepository(ABC):
     @abstractmethod
     def get_usage(self, client_id: str) -> int: ...
 
+    @abstractmethod
+    def record_audit_event(self, event: AuditEvent) -> None: ...
+
+    @abstractmethod
+    def get_audit_event(self, event_id: str) -> Optional[AuditEvent]: ...
+
 
 class InMemoryPlatformRepository(PlatformRepository):
-    """Thread-safe reference backend used for local demos and tests."""
+    """Thread-safe reference backend used for local development and tests."""
 
     def __init__(self) -> None:
         self._clients: dict[str, ClientRecord] = {}
         self._usage: dict[str, UsageRecord] = {}
+        self._audit_events: dict[str, AuditEvent] = {}
         self._lock = Lock()
 
     def register_client(self, record: ClientRecord) -> None:
@@ -51,3 +55,11 @@ class InMemoryPlatformRepository(PlatformRepository):
         with self._lock:
             usage = self._usage.get(client_id)
             return usage.total_calls if usage else 0
+
+    def record_audit_event(self, event: AuditEvent) -> None:
+        with self._lock:
+            self._audit_events[event.event_id] = event
+
+    def get_audit_event(self, event_id: str) -> Optional[AuditEvent]:
+        with self._lock:
+            return self._audit_events.get(event_id)
