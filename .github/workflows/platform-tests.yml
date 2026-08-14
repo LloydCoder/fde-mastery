@@ -47,6 +47,7 @@ jobs:
           FDE_ENVIRONMENT: test
           OTEL_ENABLED: "false"
         run: |
+          mkdir -p artifacts
           set -o pipefail
           python -m pytest -q --junitxml=artifacts/pytest.xml 2>&1 | tee artifacts/pytest.log
           exit ${PIPESTATUS[0]}
