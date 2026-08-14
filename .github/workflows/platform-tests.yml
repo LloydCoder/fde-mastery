@@ -14,6 +14,13 @@ jobs:
     defaults:
       run:
         working-directory: month-7-platform
+    env:
+      PYTHONUNBUFFERED: "1"
+      FDE_API_KEYS: test-api-key
+      FDE_ADMIN_API_KEYS: test-admin-key
+      FDE_STORAGE_BACKEND: memory
+      FDE_RATE_LIMIT_BACKEND: memory
+      MOCK_LLM: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,10 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[test,quality,security]"
       - name: Test
-        env:
-          FDE_API_KEYS: test-api-key
-          FDE_ADMIN_API_KEYS: test-admin-key
-          FDE_STORAGE_BACKEND: memory
         run: python -m pytest -q
       - name: Ruff
         run: ruff check .
