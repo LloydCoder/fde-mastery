@@ -26,6 +26,7 @@ jobs:
       FDE_ADMIN_API_KEYS: test-admin-key
       FDE_STORAGE_BACKEND: memory
       FDE_RATE_LIMIT_BACKEND: memory
+      FDE_MONTH1_PROVIDER: mock
       MOCK_LLM: "true"
       FDE_ENVIRONMENT: test
     steps:
@@ -45,6 +46,12 @@ jobs:
         run: pip check
       - name: Test
         run: python -m pytest -q
+      - name: Six-domain integration smoke test
+        run: >-
+          python -c "from shared_orchestrator.router import AgentRouter;
+          r=AgentRouter(); r.register_defaults();
+          assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'};
+          r.close()"
       - name: Ruff
         run: >-
           ruff check deployment persistence shared_orchestrator schemas.py
