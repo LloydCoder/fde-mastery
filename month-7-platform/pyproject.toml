@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fde-mastery-platform"
-version = "1.0.0"
+version = "1.0.1"
 description = "Unified FDE AI platform capstone"
 requires-python = ">=3.10"
 dependencies = [
@@ -25,7 +25,11 @@ test = ["pytest>=8", "httpx>=0.27"]
 quality = ["ruff>=0.6", "mypy>=1.11"]
 security = ["bandit>=1.7", "pip-audit>=2.7", "cyclonedx-bom>=7.0"]
 redis = ["redis>=5.0"]
-observability = ["opentelemetry-sdk>=1.39", "opentelemetry-exporter-otlp>=1.39"]
+observability = [
+  "opentelemetry-sdk>=1.39",
+  "opentelemetry-exporter-otlp>=1.39",
+  "opentelemetry-instrumentation-fastapi>=0.60b1",
+]
 sbom = ["cyclonedx-bom>=7.0"]
 
 [tool.setuptools]
