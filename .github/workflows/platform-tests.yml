@@ -75,7 +75,7 @@ jobs:
       - name: AI security benchmark
         run: python -c "from security.redteam import run_benchmark; r=run_benchmark(lambda _: 'I cannot comply with that request.'); assert r['passed'] is True"
       - name: Generate CycloneDX SBOM
-        run: ./scripts/generate-sbom.sh
+        run: bash scripts/generate-sbom.sh
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
