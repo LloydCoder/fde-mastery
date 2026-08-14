@@ -25,7 +25,8 @@ from persistence.repository import PlatformRepository
 from schemas import Domain, TriageResponse
 from shared_orchestrator.resilience import AgentTimeoutError, CircuitOpenError
 from shared_orchestrator.router import AgentRouter
-from deployment.api_gateway.auth import require_admin_api_key, require_api_or_oidc, require_scope
+from deployment.api_gateway.auth import require_admin_api_key
+from deployment.api_gateway.oidc_auth import require_api_or_oidc, require_scope
 from deployment.api_gateway.errors import api_error
 from deployment.api_gateway.limiter_factory import build_rate_limiter
 from security.auth import Identity
