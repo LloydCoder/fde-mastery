@@ -3,6 +3,7 @@
 import json
 import sys
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -17,12 +18,13 @@ from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
 from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
+from persistence.audit import AuditEvent  # noqa: E402
 from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
 from persistence.repository import PlatformRepository  # noqa: E402
 from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
 
-app = FastAPI(title="FDE Mastery Platform API", version="0.8.0")
+app = FastAPI(title="FDE Mastery Platform API", version="0.9.0")
 REPOSITORY: PlatformRepository = build_repository()
 RATE_LIMITER = build_rate_limiter()
 _START_TIME = time.time()
@@ -67,13 +69,7 @@ async def request_observability(request: Request, call_next):
 def health():
     backend = type(REPOSITORY).__name__.replace("PlatformRepository", "").lower()
     limiter_backend = "redis" if RATE_LIMITER.__module__.endswith("redis_rate_limit") else "memory"
-    return HealthResponse(
-        status="healthy",
-        version="0.8.0",
-        uptime_seconds=round(time.time() - _START_TIME, 2),
-        storage_backend=backend,
-        rate_limit_backend=limiter_backend,
-    )
+    return HealthResponse(status="healthy", version="0.9.0", uptime_seconds=round(time.time() - _START_TIME, 2), storage_backend=backend, rate_limit_backend=limiter_backend)
 
 
 @app.get("/health/agents", dependencies=[Depends(require_api_key)])
@@ -119,15 +115,27 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
 
     REPOSITORY.increment_usage(client_id)
     elapsed_ms = (time.time() - start) * 1000
-    return TriageResponse(
+    audit_id = f"AUDIT-{request_id}"
+    REPOSITORY.record_audit_event(AuditEvent.create(
+        event_id=audit_id,
         request_id=request_id,
         client_id=client_id,
         domain=domain.value,
-        result=agent_result.result,
-        confidence=agent_result.confidence,
-        processing_time_ms=round(elapsed_ms, 2),
-        audit_log_id=f"AUDIT-{request_id}",
-    )
+        action="triage",
+        outcome="success",
+        status_code=200,
+        duration_ms=elapsed_ms,
+        metadata={"agent": domain.value},
+    ))
+    return TriageResponse(request_id=request_id, client_id=client_id, domain=domain.value, result=agent_result.result, confidence=agent_result.confidence, processing_time_ms=round(elapsed_ms, 2), audit_log_id=audit_id)
+
+
+@app.get("/admin/audit/{event_id}", dependencies=[Depends(require_admin_api_key)])
+def audit_event(event_id: str):
+    event = REPOSITORY.get_audit_event(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Audit event not found.")
+    return event
 
 
 @app.post("/admin/clients/register")
