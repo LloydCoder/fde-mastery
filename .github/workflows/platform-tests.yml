@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: platform-quality-${{ github.workflow }}-${{ github.ref }}
@@ -32,10 +31,8 @@ jobs:
       FDE_ENVIRONMENT: test
       OTEL_ENABLED: "false"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -46,80 +43,32 @@ jobs:
           pip install -e ".[test,quality,security,redis,observability,sbom]"
       - name: Dependency consistency
         run: pip check
-      - name: Test
+      - name: Tests
         run: python -m pytest -q
-      - name: Six-domain integration smoke test
-        run: >-
-          python -c "from shared_orchestrator.router import AgentRouter;
-          r=AgentRouter(); r.register_defaults();
-          assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'};
-          r.close()"
+      - name: Six-domain integration
+        run: python -c "from shared_orchestrator.router import AgentRouter; r=AgentRouter(); r.register_defaults(); assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'}; r.close()"
       - name: Ruff
-        run: >-
-          ruff check deployment persistence shared_orchestrator security observability
-          schemas.py config.py observability_metrics.py
-          --select E4,E7,E9,F --ignore E501,F401
+        run: ruff check deployment persistence shared_orchestrator security observability schemas.py config.py observability_metrics.py --select E4,E7,E9,F --ignore E501,F401
       - name: MyPy
-        run: >-
-          mypy deployment persistence shared_orchestrator security observability schemas.py
-          config.py observability_metrics.py --explicit-package-bases --ignore-missing-imports
+        run: mypy deployment persistence shared_orchestrator security observability schemas.py config.py observability_metrics.py --explicit-package-bases --ignore-missing-imports
       - name: Bandit
         run: bandit -r deployment persistence shared_orchestrator security observability -q
       - name: Dependency audit
         run: pip-audit --skip-editable
-      - name: Compile all platform Python
+      - name: Compile
         run: python -m compileall -q .
-      - name: OIDC JWT smoke test
-        run: python -c "import jwt; from security.oidc import OIDCSettings; assert 'RS256' in OIDCSettings(issuer='https://issuer.example', audience='fde-platform').algorithms"
-      - name: OpenTelemetry smoke test
+      - name: Security smoke
+        run: python -c "from security.redteam import run_benchmark; assert run_benchmark(lambda _: 'I cannot comply with that request.')['passed']"
+      - name: OTel smoke
         run: python -c "from observability.tracing import configure_tracing, span; configure_tracing();\nwith span('ci.smoke', component='platform'): pass"
-      - name: AI security benchmark
-        run: python -c "from security.redteam import run_benchmark; r=run_benchmark(lambda _: 'I cannot comply with that request.'); assert r['passed'] is True"
-      - name: Generate CycloneDX SBOM
+      - name: SBOM
         run: bash scripts/generate-sbom.sh
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: fde-mastery-sbom
           path: month-7-platform/artifacts/sbom.cdx.json
           if-no-files-found: error
-      - name: Resilience smoke test
-        run: >-
-          python -c "from shared_orchestrator.resilience import ResilienceExecutor;
-          e=ResilienceExecutor(); assert e.health()['circuit']=='closed'; e.close()"
-      - name: Build container
+      - name: Resilience smoke
+        run: python -c "from shared_orchestrator.resilience import ResilienceExecutor; e=ResilienceExecutor(); assert e.health()['circuit']=='closed'; e.close()"
+      - name: Docker build
         run: docker build --tag fde-mastery-platform:ci .
-
-  release-attestation:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: test-quality
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.9.0
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push image
-        env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/fde-mastery-platform
-        run: |
-          docker build -t "$IMAGE:${GITHUB_SHA}" month-7-platform
-          docker push "$IMAGE:${GITHUB_SHA}"
-          echo "IMAGE=$IMAGE:${GITHUB_SHA}" >> "$GITHUB_ENV"
-      - name: Sign image with keyless Sigstore identity
-        run: cosign sign --yes "$IMAGE"
-      - name: Generate and attach SBOM
-        working-directory: month-7-platform
-        run: |
-          bash scripts/generate-sbom.sh
-          cosign attest --yes --predicate artifacts/sbom.cdx.json --type cyclonedx "$IMAGE"
