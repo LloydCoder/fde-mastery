@@ -21,7 +21,7 @@ security = ["bandit>=1.7", "pip-audit>=2.7"]
 redis = ["redis>=5.0"]
 
 [tool.setuptools]
-py-modules = []
+py-modules = ["schemas", "observability", "domain_agent"]
 
 [tool.setuptools.packages.find]
 where = ["."]
