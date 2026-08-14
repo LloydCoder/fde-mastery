@@ -1,10 +1,4 @@
-"""Standard contract for all FDE Mastery domain agents.
-
-The domain projects were built independently and therefore expose slightly
- different method names and domain-specific Pydantic models. Month 7 should
- depend on a stable platform contract instead of knowing those implementation
- details.
-"""
+"""Standard contract for all FDE Mastery domain agents."""
 
 from __future__ import annotations
 
@@ -12,7 +6,10 @@ from typing import Any, Dict, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
-from schemas import Domain
+try:
+    from ..schemas import Domain
+except ImportError:
+    from schemas import Domain
 
 
 class DomainAgentResult(BaseModel):
@@ -28,23 +25,15 @@ class DomainAgentResult(BaseModel):
 
 @runtime_checkable
 class DomainAgent(Protocol):
-    """Stable interface consumed by the Month 7 orchestrator.
-
-    Adapters implement this contract around the existing Month 1-6 agents.
-    The platform therefore remains independent of domain-specific schemas and
-    method names while preserving the existing domain implementations.
-    """
+    """Stable interface consumed by the Month 7 orchestrator."""
 
     domain: Domain
 
     def evaluate(self, payload: Dict[str, Any]) -> DomainAgentResult:
-        """Evaluate a platform payload and return a normalized result."""
         ...
 
     def health(self) -> Dict[str, Any]:
-        """Return lightweight agent readiness information."""
         ...
 
     def capabilities(self) -> Dict[str, Any]:
-        """Describe the domain capabilities exposed through the platform."""
         ...
