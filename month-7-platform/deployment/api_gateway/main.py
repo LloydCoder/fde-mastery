@@ -8,23 +8,21 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-# Make the Month 7 platform modules importable when running this file directly.
 _PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
 from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
+from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
 
 app = FastAPI(title="FDE Mastery Platform API", version="7.0.0")
 
-# In-memory store for demo (replace with Redis/DB in production).
 CLIENT_REGISTRY: Dict[str, Dict[str, Any]] = {}
 BILLING_COUNTER: Dict[str, int] = {}
-
 _START_TIME = time.time()
 
 
@@ -34,8 +32,12 @@ class HealthResponse(BaseModel):
     uptime_seconds: float
 
 
-# One router owns all six domain adapters. Domain adapters lazy-load the
-# existing Month 1-6 engines only when a request reaches that domain.
+class ClientRegistration(BaseModel):
+    client_id: str = Field(min_length=3, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")
+    client_name: str = Field(min_length=1, max_length=200)
+    domains: list[Domain] = Field(min_length=1, max_length=6)
+
+
 AGENT_ROUTER = AgentRouter()
 AGENT_ROUTER.register_defaults()
 
@@ -49,28 +51,26 @@ def health():
     )
 
 
-@app.get("/health/agents")
+@app.get("/health/agents", dependencies=[Depends(require_api_key)])
 def agent_health():
-    """Return readiness information for all registered domain adapters."""
     return AGENT_ROUTER.health()
 
 
-@app.get("/capabilities")
+@app.get("/capabilities", dependencies=[Depends(require_api_key)])
 def capabilities():
-    """Return the capabilities exposed by the six domain adapters."""
     return AGENT_ROUTER.capabilities()
 
 
-@app.post("/api/{client_id}/{domain}/triage")
+@app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
 def triage(client_id: str, domain: Domain, payload: Dict[str, Any]):
-    """Route a real request through the selected Month 1-6 domain agent."""
     start = time.time()
     request_id = str(uuid.uuid4())[:8]
 
     if client_id not in CLIENT_REGISTRY:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
 
-    if domain.value not in {str(value) for value in CLIENT_REGISTRY[client_id].get("domains", [])}:
+    enabled_domains = {str(value) for value in CLIENT_REGISTRY[client_id].get("domains", [])}
+    if domain.value not in enabled_domains:
         raise HTTPException(
             status_code=403,
             detail=f"Domain {domain.value} is not enabled for client {client_id}.",
@@ -90,7 +90,6 @@ def triage(client_id: str, domain: Domain, payload: Dict[str, Any]):
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
-        # Do not leak provider/domain implementation details through the API.
         raise HTTPException(status_code=500, detail="Domain agent execution failed.") from exc
 
     BILLING_COUNTER[client_id] = BILLING_COUNTER.get(client_id, 0) + 1
@@ -108,19 +107,17 @@ def triage(client_id: str, domain: Domain, payload: Dict[str, Any]):
 
 
 @app.post("/admin/clients/register")
-def register_client(client_id: str, client_name: str, domains: list):
-    """Register a new client in the platform demo registry."""
-    CLIENT_REGISTRY[client_id] = {
-        "client_name": client_name,
-        "domains": domains,
+def register_client(registration: ClientRegistration, _: str = Depends(require_admin_api_key)):
+    CLIENT_REGISTRY[registration.client_id] = {
+        "client_name": registration.client_name,
+        "domains": [domain.value for domain in registration.domains],
         "registered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    return {"status": "registered", "client_id": client_id}
+    return {"status": "registered", "client_id": registration.client_id}
 
 
 @app.get("/admin/clients/{client_id}/usage")
-def client_usage(client_id: str):
-    """Return API call usage for billing."""
+def client_usage(client_id: str, _: str = Depends(require_admin_api_key)):
     return {
         "client_id": client_id,
         "total_calls": BILLING_COUNTER.get(client_id, 0),
