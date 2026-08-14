@@ -70,6 +70,8 @@ jobs:
         run: pip-audit --skip-editable
       - name: Compile all platform Python
         run: python -m compileall -q .
+      - name: OIDC JWT smoke test
+        run: python -c "import jwt; from security.oidc import OIDCSettings; assert 'RS256' in OIDCSettings(issuer='https://issuer.example', audience='fde-platform').algorithms"
       - name: Resilience smoke test
         run: >-
           python -c "from shared_orchestrator.resilience import ResilienceExecutor;
