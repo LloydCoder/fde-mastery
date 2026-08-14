@@ -1,0 +1,101 @@
+[
+  {
+    "transaction_id": "TXN-2026-F01",
+    "timestamp": "2026-08-14T08:15:00Z",
+    "account_id": "ACC-77491",
+    "counterparty_id": "CP-LOCAL-PAYMENTS-INC",
+    "transaction_type": "CARD_PURCHASE",
+    "amount": 142.50,
+    "currency": "USD",
+    "source_country": "US",
+    "destination_country": "US",
+    "metadata": {
+      "ip_address": "192.0.2.45",
+      "device_hash": "a8f3b0c1e4d2",
+      "merchant_category": "5411_GROCERY_STORES",
+      "account_age_days": "450"
+    },
+    "expected_assessment": {
+      "risk_level": "LOW",
+      "recommended_action": "APPROVE",
+      "expected_rules_triggered": []
+    }
+  },
+  {
+    "transaction_id": "TXN-2026-F02",
+    "timestamp": "2026-08-14T08:30:12Z",
+    "account_id": "ACC-10932",
+    "counterparty_id": "CP-FAST-CRYPTO-EXCHANGE",
+    "transaction_type": "WIRE_TRANSFER",
+    "amount": 9500.00,
+    "currency": "USD",
+    "source_country": "US",
+    "destination_country": "US",
+    "metadata": {
+      "ip_address": "198.51.100.12",
+      "device_hash": "e9a2c3d4f5b6",
+      "transactions_in_last_hour": "14",
+      "total_volume_last_hour_usd": "48500.00",
+      "normal_daily_average_usd": "1200.00"
+    },
+    "expected_assessment": {
+      "risk_level": "HIGH",
+      "recommended_action": "FLAG_FOR_REVIEW",
+      "expected_rules_triggered": [
+        "HYPER_VELOCITY_SPIKE",
+        "VOLUME_DEVIATION_5X"
+      ]
+    }
+  },
+  {
+    "transaction_id": "TXN-2026-F03",
+    "timestamp": "2026-08-14T08:42:05Z",
+    "account_id": "ACC-88102",
+    "counterparty_id": "CP-SHELL-CORP-OFFSHORE",
+    "transaction_type": "WIRE_TRANSFER",
+    "amount": 490000.00,
+    "currency": "USD",
+    "source_country": "US",
+    "destination_country": "KY",
+    "metadata": {
+      "ip_address": "203.0.113.89",
+      "device_hash": "b1c2d3e4f5a6",
+      "jurisdiction_risk_score": "HIGH",
+      "beneficiary_owner_verified": "false"
+    },
+    "expected_assessment": {
+      "risk_level": "HIGH",
+      "recommended_action": "FLAG_FOR_REVIEW",
+      "expected_rules_triggered": [
+        "HIGH_RISK_JURISDICTION",
+        "UNVERIFIED_BENEFICIARY_LARGE_TRANSFER"
+      ]
+    }
+  },
+  {
+    "transaction_id": "TXN-2026-F04",
+    "timestamp": "2026-08-14T08:55:00Z",
+    "account_id": "ACC-33019",
+    "counterparty_id": "CP-UNKNOWN-MIXER-NODE",
+    "transaction_type": "CRYPTO_SWAP",
+    "amount": 250000.00,
+    "currency": "USD",
+    "source_country": "US",
+    "destination_country": "RU",
+    "metadata": {
+      "ip_address": "185.220.101.5",
+      "is_tor_exit_node": "true",
+      "sanctions_list_match": "OFAC_SDN_NEAR_MATCH",
+      "account_compromise_indicator": "PASSWORD_RESET_2MIN_PRIOR"
+    },
+    "expected_assessment": {
+      "risk_level": "CRITICAL",
+      "recommended_action": "AUTO_REJECT",
+      "expected_rules_triggered": [
+        "SANCTIONS_LIST_MATCH",
+        "TOR_EXIT_NODE_DETECTED",
+        "ACCOUNT_TAKEOVER_PATTERN"
+      ]
+    }
+  }
+]
