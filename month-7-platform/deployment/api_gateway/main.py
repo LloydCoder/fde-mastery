@@ -3,28 +3,40 @@
 import json
 import sys
 import time
-import uuid
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.cors import CORSMiddleware
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
-from schemas import Domain, TriageResponse  # noqa: E402
-from shared_orchestrator.router import AgentRouter  # noqa: E402
-from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
-from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
+from config import settings  # noqa: E402
+from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
+from observability.metrics import metrics  # noqa: E402
 from persistence.audit import AuditEvent  # noqa: E402
 from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
 from persistence.repository import PlatformRepository  # noqa: E402
-from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
+from schemas import Domain, TriageResponse  # noqa: E402
+from shared_orchestrator.router import AgentRouter  # noqa: E402
+from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
+from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
 
-app = FastAPI(title="FDE Mastery Platform API", version="0.9.0")
+app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
+    )
+
 REPOSITORY: PlatformRepository = build_repository()
 RATE_LIMITER = build_rate_limiter()
 _START_TIME = time.time()
@@ -48,8 +60,16 @@ AGENT_ROUTER = AgentRouter()
 AGENT_ROUTER.register_defaults()
 
 
+def _storage_backend() -> str:
+    return type(REPOSITORY).__name__.replace("PlatformRepository", "").lower()
+
+
+def _limiter_backend() -> str:
+    return "redis" if RATE_LIMITER.__module__.endswith("redis_rate_limit") else "memory"
+
+
 @app.middleware("http")
-async def request_observability(request: Request, call_next):
+async def security_and_observability(request: Request, call_next):
     request_id = new_request_id()
     request.state.request_id = request_id
     started = monotonic_ms()
@@ -57,19 +77,60 @@ async def request_observability(request: Request, call_next):
         response = await call_next(request)
     except Exception:
         duration_ms = monotonic_ms() - started
+        metrics.observe_request(request.method, request.url.path, 500, duration_ms)
         log_request(request_id, request.method, request.url.path, 500, duration_ms, request.path_params.get("client_id"))
         raise
+
     duration_ms = monotonic_ms() - started
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Cache-Control"] = "no-store" if request.url.path.startswith("/admin") else "no-cache"
+    metrics.observe_request(request.method, request.url.path, response.status_code, duration_ms)
     log_request(request_id, request.method, request.url.path, response.status_code, duration_ms, request.path_params.get("client_id"))
     return response
 
 
 @app.get("/health", response_model=HealthResponse)
 def health():
-    backend = type(REPOSITORY).__name__.replace("PlatformRepository", "").lower()
-    limiter_backend = "redis" if RATE_LIMITER.__module__.endswith("redis_rate_limit") else "memory"
-    return HealthResponse(status="healthy", version="0.9.0", uptime_seconds=round(time.time() - _START_TIME, 2), storage_backend=backend, rate_limit_backend=limiter_backend)
+    return HealthResponse(
+        status="healthy",
+        version=settings.version,
+        uptime_seconds=round(time.time() - _START_TIME, 2),
+        storage_backend=_storage_backend(),
+        rate_limit_backend=_limiter_backend(),
+    )
+
+
+@app.get("/health/ready")
+def readiness():
+    """Return 200 only when required backing services are usable."""
+    checks: dict[str, str] = {"repository": "ok", "rate_limiter": "ok"}
+    if settings.storage_backend == "postgres":
+        try:
+            from persistence.postgres import PostgreSQLPlatformRepository
+            if not isinstance(REPOSITORY, PostgreSQLPlatformRepository):
+                raise RuntimeError("configured PostgreSQL backend is not active")
+            with REPOSITORY.engine.connect() as connection:
+                connection.exec_driver_sql("SELECT 1")
+        except Exception:
+            checks["repository"] = "unavailable"
+    if settings.rate_limit_backend == "redis":
+        try:
+            client = getattr(RATE_LIMITER, "client", None)
+            if client is None:
+                raise RuntimeError("Redis limiter is not initialized")
+            client.ping()
+        except Exception:
+            checks["rate_limiter"] = "unavailable"
+    ready = all(value == "ok" for value in checks.values())
+    return {"status": "ready" if ready else "not_ready", "checks": checks}
+
+
+@app.get("/metrics", response_class=PlainTextResponse, dependencies=[Depends(require_api_key)])
+def metrics_endpoint():
+    return metrics.prometheus()
 
 
 @app.get("/health/agents", dependencies=[Depends(require_api_key)])
@@ -127,7 +188,15 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
         duration_ms=elapsed_ms,
         metadata={"agent": domain.value},
     ))
-    return TriageResponse(request_id=request_id, client_id=client_id, domain=domain.value, result=agent_result.result, confidence=agent_result.confidence, processing_time_ms=round(elapsed_ms, 2), audit_log_id=audit_id)
+    return TriageResponse(
+        request_id=request_id,
+        client_id=client_id,
+        domain=domain.value,
+        result=agent_result.result,
+        confidence=agent_result.confidence,
+        processing_time_ms=round(elapsed_ms, 2),
+        audit_log_id=audit_id,
+    )
 
 
 @app.get("/admin/audit/{event_id}", dependencies=[Depends(require_admin_api_key)])
