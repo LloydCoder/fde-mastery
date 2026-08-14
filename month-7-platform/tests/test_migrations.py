@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine, text
 
-from persistence.migrations import MigrationError, run_migrations
+from persistence.migrations.runner import MigrationError, run_migrations
 
 
 def test_migrations_are_versioned_and_idempotent(tmp_path: Path):
