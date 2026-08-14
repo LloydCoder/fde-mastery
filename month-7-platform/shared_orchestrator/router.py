@@ -25,7 +25,7 @@ class AgentRouter:
 
     def register_defaults(self) -> None:
         """Register all six Month 1-6 domain adapters."""
-        from adapters import (
+        from .adapters import (
             CybersecurityDomainAdapter,
             FinanceDomainAdapter,
             HealthTechDomainAdapter,
