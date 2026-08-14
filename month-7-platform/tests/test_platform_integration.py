@@ -42,11 +42,19 @@ def client():
 
 
 @pytest.fixture(autouse=True)
-def registered_client():
+def isolated_platform_state():
+    """Give every test a fresh repository and rate-limit state.
+
+    The API module is loaded once for the suite, so reusing its global
+    in-memory repository would make earlier tests leak usage counters and
+    client registrations into later tests.
+    """
     from deployment.api_gateway.rate_limit import reset_rate_limits
     from persistence.models import ClientRecord
+    from persistence.repository import InMemoryPlatformRepository
 
     reset_rate_limits()
+    module.REPOSITORY = InMemoryPlatformRepository()
     module.REPOSITORY.register_client(
         ClientRecord.create(
             "test-client",
@@ -56,6 +64,7 @@ def registered_client():
     )
     yield
     reset_rate_limits()
+    module.REPOSITORY = InMemoryPlatformRepository()
 
 
 DOMAIN_CASES = [
