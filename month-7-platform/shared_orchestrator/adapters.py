@@ -1,8 +1,9 @@
-"""Adapters that expose the real Month 1-6 agents through one platform contract."""
+"""Adapters exposing Month 1-6 agents through the Month 7 contract."""
 
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class LegacyAgentLoader:
-    """Load a monthly agent without treating hyphenated folders as Python packages."""
+    """Load a legacy agent without leaving its unqualified schemas module installed."""
 
     def __init__(self, month_dir: str):
         self.month_dir = ROOT / month_dir
@@ -37,38 +38,42 @@ class LegacyAgentLoader:
         package.__path__ = [str(self.month_dir)]  # type: ignore[attr-defined]
         sys.modules.setdefault(package_name, package)
 
-        agent_path = self.month_dir / "agent.py"
-        if not agent_path.exists():
-            raise ImportError(f"Legacy agent not found: {agent_path}")
-        spec = importlib.util.spec_from_file_location(f"{package_name}.agent", agent_path)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Unable to load legacy agent: {agent_path}")
-
         schema_path = self.month_dir / "schemas.py"
-        previous_schema = sys.modules.get("schemas")
         if schema_path.exists():
-            schema_spec = importlib.util.spec_from_file_location(
-                f"{package_name}.schemas", schema_path
-            )
+            schema_name = f"{package_name}.schemas"
+            schema_spec = importlib.util.spec_from_file_location(schema_name, schema_path)
             if schema_spec is None or schema_spec.loader is None:
                 raise ImportError(f"Unable to load legacy schemas: {schema_path}")
             schema_module = importlib.util.module_from_spec(schema_spec)
+            sys.modules[schema_name] = schema_module
             self.schema_module = schema_module
-            sys.modules[f"{package_name}.schemas"] = schema_module
-            sys.modules["schemas"] = schema_module
             schema_spec.loader.exec_module(schema_module)
 
+        agent_path = self.month_dir / "agent.py"
+        if not agent_path.exists():
+            raise ImportError(f"Legacy agent not found: {agent_path}")
+        agent_name = f"{package_name}.agent"
+        spec = importlib.util.spec_from_file_location(agent_name, agent_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Unable to load legacy agent: {agent_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[agent_name] = module
+
+        # Some legacy modules import `schemas` as a top-level module. Scope that
+        # compatibility alias only for module execution, then restore it.
+        previous = sys.modules.get("schemas")
+        if self.schema_module is not None:
+            sys.modules["schemas"] = self.schema_module
         try:
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = module
             spec.loader.exec_module(module)
-            self._agent_module = module
-            return module
         finally:
-            if previous_schema is None:
+            if previous is None:
                 sys.modules.pop("schemas", None)
             else:
-                sys.modules["schemas"] = previous_schema
+                sys.modules["schemas"] = previous
+
+        self._agent_module = module
+        return module
 
 
 class BaseLegacyAdapter:
@@ -78,7 +83,7 @@ class BaseLegacyAdapter:
     evaluate_method: str
     month_dir: str
 
-    def __init__(self) -> None:
+    def __init__(self, *, provider: str | None = None) -> None:
         loader = LegacyAgentLoader(self.month_dir)
         module = loader.load()
         self._module = module
@@ -87,21 +92,29 @@ class BaseLegacyAdapter:
             module, self.payload_class_name, None
         )
         if self._payload_class is None and loader.schema_module is not None:
-            self._payload_class = getattr(loader.schema_module, self.payload_class_name)
+            self._payload_class = getattr(loader.schema_module, self.payload_class_name, None)
         if self._payload_class is None:
-            raise ImportError(f"Payload model {self.payload_class_name} was not found")
-        self._agent = self._agent_class()
+            raise ImportError(f"Payload model {self.payload_class_class_name} was not found")
+        kwargs: Dict[str, Any] = {}
+        if provider is not None:
+            kwargs["provider"] = provider
+        self._agent = self._agent_class(**kwargs)
 
     def evaluate(self, payload: Dict[str, Any]) -> DomainAgentResult:
         model = self._payload_class.model_validate(payload)
         result = getattr(self._agent, self.evaluate_method)(model)
-        result_data = result.model_dump(mode="json") if isinstance(result, BaseModel) else {"value": result}
+        result_data = (
+            result.model_dump(mode="json") if isinstance(result, BaseModel) else {"value": result}
+        )
         return DomainAgentResult(
             domain=self.domain,
             result=result_data,
             confidence=self._confidence(result_data),
             requires_human_review=self._requires_review(result_data),
-            audit_metadata={"adapter": self.__class__.__name__, "legacy_agent": self.agent_class_name},
+            audit_metadata={
+                "adapter": self.__class__.__name__,
+                "legacy_agent": self.agent_class_name,
+            },
         )
 
     @staticmethod
@@ -122,7 +135,11 @@ class BaseLegacyAdapter:
         return {"status": "ready", "agent": self.agent_class_name, "domain": self.domain.value}
 
     def capabilities(self) -> Dict[str, Any]:
-        return {"domain": self.domain.value, "adapter": self.__class__.__name__, "source": self.month_dir}
+        return {
+            "domain": self.domain.value,
+            "adapter": self.__class__.__name__,
+            "source": self.month_dir,
+        }
 
 
 class CybersecurityDomainAdapter(BaseLegacyAdapter):
@@ -133,14 +150,8 @@ class CybersecurityDomainAdapter(BaseLegacyAdapter):
     month_dir = "month-1-cybersecurity"
 
     def __init__(self) -> None:
-        loader = LegacyAgentLoader(self.month_dir)
-        module = loader.load()
-        self._module = module
-        self._agent_class = getattr(module, self.agent_class_name)
-        if loader.schema_module is None:
-            raise ImportError("Month 1 schemas could not be loaded")
-        self._payload_class = getattr(loader.schema_module, self.payload_class_name)
-        self._agent = self._agent_class(provider="openai")
+        provider = os.getenv("FDE_MONTH1_PROVIDER", "mock")
+        super().__init__(provider=provider)
 
 
 class FinanceDomainAdapter(BaseLegacyAdapter):
