@@ -26,12 +26,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push immutable image
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/fde-mastery-platform
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          docker build -t "$IMAGE:$SHA" month-7-platform
-          docker push "$IMAGE:$SHA"
-          echo "IMAGE=$IMAGE:$SHA" >> "$GITHUB_ENV"
+          OWNER="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER}/fde-mastery-platform:${SHA}"
+          docker build -t "$IMAGE" month-7-platform
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
       - name: Keyless sign image
         run: cosign sign --yes "$IMAGE"
       - name: Generate SBOM and attest
