@@ -1,365 +1,307 @@
 # FDE Mastery
 
-### Production-oriented AI systems across security, finance, healthcare, logistics, legal, and revenue operations.
+**Production-oriented Forward Deployed Engineering portfolio for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery is a hands-on portfolio for **Forward Deployed Engineering, AI systems engineering, AI security, and enterprise automation**. It combines six domain AI systems with a Month 7 platform capstone that adds shared contracts, orchestration, tenant/domain controls, persistence, evaluation, observability, and CI security gates.
+FDE Mastery contains six domain systems (Cybersecurity, Finance, HealthTech, Logistics, Legal, and RevOps) integrated by a Month 7 platform capstone. The capstone demonstrates typed agent contracts, orchestration, tenant/domain authorization, OIDC/JWT identity, PostgreSQL persistence, centralized audit events, Redis-compatible rate limiting, resilience controls, OpenTelemetry observability, AI security regression tests, and signed/SBOM-attested container releases.
 
-> **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment to a governed system that can operate inside a real business workflow.
+> **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed business workflow.
 
-## What this repository demonstrates
+## Current platform capabilities
 
-- Forward Deployed Engineering and customer-problem decomposition
-- Typed AI-system contracts and domain adapters
-- Agent orchestration and structured outputs
-- Deterministic controls around probabilistic components
-- Client and domain isolation
-- API authentication and administrator authorization
-- Request-size protection and rate limiting
-- Durable PostgreSQL persistence architecture
-- Optional Redis-backed distributed rate limiting
-- Golden-dataset evaluation and integration tests
-- Structured request observability
-- AI threat modeling and prompt-injection abuse cases
-- Ruff, MyPy, Bandit, pip-audit, and GitHub Actions quality gates
-- Human-in-the-loop boundaries for high-impact workflows
+- Six real Month 1–6 domain adapters behind one `DomainAgent` contract
+- Central `AgentRouter` with per-domain resilience and circuit breaking
+- FastAPI application and structured domain results
+- API-key authentication plus production-oriented OIDC discovery/JWKS validation
+- JWT issuer, audience, expiry, signature, and required-claim validation
+- Tenant and scope/RBAC authorization
+- Request-size and rate-limit controls; Redis backend for horizontal deployments
+- PostgreSQL persistence boundary
+- Append-only centralized audit-event store
+- Checksum-verified, versioned transactional migration runner
+- Request correlation and OpenTelemetry tracing/metrics integration
+- Golden-dataset and integration-test architecture
+- Executable prompt-injection/red-team regression cases
+- Ruff, MyPy, Bandit, pip-audit, pytest, compilation, and Docker CI gates
+- CycloneDX SBOM generation
+- Keyless Cosign container signing and SBOM attestation in the release workflow
+- Managed PostgreSQL/Redis production deployment reference
+- Interactive demo walkthrough and customer-style case-study template
+
+The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
 
 ---
 
-# Architecture
+## Architecture
 
 ```text
                          FDE MASTERY PLATFORM
-                                  │
-                         ┌────────▼────────┐
-                         │   FastAPI API   │
-                         └────────┬────────┘
-                                  │
-              ┌───────────────────┼───────────────────┐
-              │                   │                   │
-       Authentication      Authorization        Request Controls
-       API/Admin keys      Client + Domain       Size + Rate Limit
-              │                   │                   │
-              └───────────────────┼───────────────────┘
-                                  │
-                         ┌────────▼────────┐
-                         │  Agent Router   │
-                         │ Domain Contract │
-                         └────────┬────────┘
-                                  │
-        ┌──────────┬──────────────┼──────────────┬──────────┬──────────┐
-        ▼          ▼              ▼              ▼          ▼          ▼
-    Security    Finance       HealthTech      Logistics   Legal      RevOps
-     Adapter     Adapter       Adapter        Adapter    Adapter     Adapter
-        │          │              │              │          │          │
-        ▼          ▼              ▼              ▼          ▼          ▼
-     Month 1    Month 2         Month 3        Month 4    Month 5    Month 6
-                                  │
-                    ┌─────────────┴─────────────┐
-                    ▼                           ▼
-              Platform State              Observability
-              Repository                  Request IDs/Logs
-               /       \
-              ▼         ▼
-          In-memory  PostgreSQL
-             local     durable
-                                  │
-                         ┌────────▼────────┐
-                         │ Evaluation/CI   │
-                         │ pytest + quality│
-                         └─────────────────┘
+                                  |
+                         +--------v--------+
+                         |   FastAPI API   |
+                         +--------+--------+
+                                  |
+                +-----------------+-----------------+
+                |                 |                 |
+          OIDC / API keys       RBAC          Request controls
+                |          tenant + scopes     size + rate limit
+                +-----------------+-----------------+
+                                  |
+                         +--------v--------+
+                         |   AgentRouter   |
+                         | resilience      |
+                         +--------+--------+
+                                  |
+       +------------+-------------+-------------+------------+------------+
+       |            |             |             |            |            |
+       v            v             v             v            v            v
+   Security      Finance      HealthTech    Logistics      Legal        RevOps
+   Month 1      Month 2        Month 3       Month 4      Month 5      Month 6
+       |            |             |             |            |            |
+       +------------+-------------+-------------+------------+------------+
+                                  |
+                +-----------------+------------------+
+                |                                    |
+          PostgreSQL                            Observability
+        state + audit events                  traces + metrics
+                |                                    |
+                +-----------------+------------------+
+                                  v
+                         CI / security / release
+                  tests + SBOM + signed image + attestations
 ```
+
+## Month 7 platform
+
+Location: `month-7-platform/`
+
+### Identity and authorization
+
+OIDC authentication supports issuer discovery, JWKS key rotation/caching, signature verification, required JWT claims, issuer/audience checks, tenant extraction, and scopes. API-key authentication remains useful for controlled service/demo environments.
+
+Production configuration uses:
+
+```text
+FDE_OIDC_ISSUER=https://<identity-provider>
+FDE_OIDC_AUDIENCE=<audience>
+FDE_OIDC_JWKS_URL=<optional-explicit-jwks-url>
+```
+
+Never commit tokens, signing keys, API keys, or provider secrets.
+
+### Persistence and audit
+
+Production deployments use PostgreSQL. The platform includes a centralized audit-event schema and repository with request ID, tenant/client, domain, action, outcome, status, duration, timestamp, and metadata.
+
+### Migrations
+
+The canonical runner is `persistence/migrations/runner.py`. It provides:
+
+- numeric migration versions
+- durable version tracking
+- SHA-256 checksums
+- duplicate-version detection
+- checksum drift detection
+- transactional application
+- migration status inspection
+
+Run:
+
+```bash
+python -m persistence.migrate
+```
+
+### Observability
+
+OpenTelemetry support lives under `month-7-platform/observability/` and supports API instrumentation plus OTLP export when enabled. Production deployments should send telemetry to an OpenTelemetry Collector and then to the organization's managed tracing/metrics backend.
+
+```text
+OTEL_ENABLED=true
+OTEL_SERVICE_NAME=fde-mastery-platform
+OTEL_EXPORTER_OTLP_ENDPOINT=https://<collector>
+```
+
+### AI security
+
+`security/redteam_cases.json` and `security/redteam.py` provide deterministic regression coverage for prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource-abuse scenarios.
 
 ---
 
-# Month 7 — Platform Capstone
-
-`month-7-platform/`
-
-Month 7 integrates the six domain systems behind a common `DomainAgent` contract and central router while adding cross-cutting platform controls.
-
-### Implemented
-
-- Common `DomainAgent` interface
-- Six domain adapters
-- Central `AgentRouter`
-- Real API → router → adapter execution path
-- API-key authentication
-- Separate administrator authorization
-- Client/domain authorization
-- Request body-size protection
-- Per-client rate limiting
-- PostgreSQL repository implementation
-- Configurable memory/PostgreSQL storage backend
-- Repository contract tests
-- Request IDs and structured JSON request logging
-- Health and capability endpoints
-- Platform integration tests
-- GitHub Actions test/quality/security workflow
-- Ruff + MyPy configuration
-- Bandit and pip-audit checks
-- AI threat model
-- Architecture Decision Record
-- Production-oriented environment configuration
-
-### Storage
-
-Local tests default to:
-
-```text
-FDE_STORAGE_BACKEND=memory
-```
-
-Durable deployments can use:
-
-```text
-FDE_STORAGE_BACKEND=postgres
-FDE_DATABASE_URL=postgresql+psycopg://...
-```
-
-### Rate limiting
-
-The default implementation is process-local for simple development. Horizontally scaled deployments can use the optional Redis implementation with:
-
-```text
-FDE_REDIS_URL=redis://...
-```
-
-Production should use a managed Redis service or an API gateway with shared rate-limit state.
-
-### Security model
-
-```text
-Request
-  ↓
-Authentication
-  ↓
-Client authorization
-  ↓
-Domain authorization
-  ↓
-Body-size + rate controls
-  ↓
-AgentRouter
-  ↓
-Domain adapter
-  ↓
-Structured result + request/audit identifiers
-```
-
-The repository demonstrates production-oriented controls but is **not a production security certification or compliance claim**.
-
----
-
-# Six-domain FDE portfolio
+## Six-domain FDE portfolio
 
 | Domain | System | Core problem |
 |---|---|---|
-| **01 — Cybersecurity** | SOC Triage Agent | SIEM alert analysis and triage |
-| **02 — Finance** | Transaction Risk & Governance Engine | Transaction risk and mitigation |
-| **03 — HealthTech** | HealthTech Compliance & Triage Engine | PHI handling and clinical triage |
-| **04 — Logistics** | Supply Chain Risk Engine | Shipment and telemetry risk |
-| **05 — Legal** | Contract Risk Analysis Engine | Contract clause risk |
-| **06 — RevOps** | Enterprise Automation Engine | Pipeline and account operations |
+| 01 — Cybersecurity | SOC Triage Agent | SIEM alert analysis and triage |
+| 02 — Finance | Transaction Risk & Governance Engine | Transaction risk and mitigation |
+| 03 — HealthTech | HealthTech Compliance & Triage Engine | PHI handling and clinical triage |
+| 04 — Logistics | Supply Chain Risk Engine | Shipment and telemetry risk |
+| 05 — Legal | Contract Risk Analysis Engine | Contract clause risk |
+| 06 — RevOps | Enterprise Automation Engine | Pipeline and account operations |
 
 Each domain remains independently testable while Month 7 provides the common integration layer.
 
-See the individual month READMEs for domain-specific implementation and evaluation details.
-
 ---
 
-# Evaluation philosophy
+## Security and release pipeline
 
-> **A demo is not enough. An AI system needs measurable behavior.**
-
-The domain projects use golden datasets and evaluation harnesses. Month 7 adds platform integration and security tests.
+The repository separates quality validation from release attestation:
 
 ```text
-golden datasets
-      ↓
-evaluation harnesses
-      ↓
-platform integration tests
-      ↓
-quality checks
-      ↓
-security/dependency checks
-      ↓
-CI evidence
+Pull request / main push
+        |
+        v
+Platform Quality
+  pytest
+  six-domain smoke test
+  compileall
+  security/dependency checks
+  Docker build
+        |
+        v
+main success
+        |
+        v
+Release Attestation
+  immutable GHCR image
+  keyless Cosign signature
+  CycloneDX SBOM
+  SBOM attestation
 ```
 
-Reported benchmark numbers are repository test-suite results, not claims of production accuracy.
+The release workflow signs the immutable commit-tagged image rather than a mutable `latest` tag.
 
 ---
 
-# Repository structure
+## Production reference
+
+See [`month-7-platform/docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) for the managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry requirements, and operational controls.
+
+Minimum production configuration:
+
+```text
+FDE_ENVIRONMENT=production
+FDE_STORAGE_BACKEND=postgres
+FDE_RATE_LIMIT_BACKEND=redis
+FDE_DATABASE_URL=<managed-postgresql-tls-url>
+FDE_REDIS_URL=<managed-redis-tls-url>
+FDE_OIDC_ISSUER=https://<identity-provider>
+FDE_OIDC_AUDIENCE=<audience>
+OTEL_ENABLED=true
+```
+
+---
+
+## Quick start
+
+```bash
+cd month-7-platform
+python -m pip install -e ".[test,quality,security,observability,sbom]"
+export FDE_STORAGE_BACKEND=memory
+export FDE_RATE_LIMIT_BACKEND=memory
+export FDE_MONTH1_PROVIDER=mock
+export MOCK_LLM=true
+export FDE_ENVIRONMENT=test
+python -m pytest -q
+```
+
+For PostgreSQL:
+
+```bash
+export FDE_STORAGE_BACKEND=postgres
+export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_mastery"
+python -m persistence.migrate
+```
+
+For production, use a secret manager and managed PostgreSQL/Redis rather than local development credentials.
+
+---
+
+## Evidence and demonstrations
+
+- [`docs/DEMO.md`](month-7-platform/docs/DEMO.md) — five-minute interactive walkthrough
+- [`docs/CASE-STUDY.md`](month-7-platform/docs/CASE-STUDY.md) — synthetic customer-style case study template
+- [`docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) — production deployment reference
+- [`security/ai-threat-model.md`](month-7-platform/security/ai-threat-model.md) — AI threat model
+
+Customer outcome numbers must only be added after a real deployment and measurement.
+
+---
+
+## Repository structure
 
 ```text
 fde-mastery/
 ├── README.md
-├── requirements.txt
-├── .github/workflows/platform-tests.yml
-│
+├── .github/workflows/
+│   ├── platform-tests.yml
+│   └── release-attestation.yml
 ├── month-1-cybersecurity/
 ├── month-2-finance/
 ├── month-3-healthtech/
 ├── month-4-logistics/
 ├── month-5-legal/
 ├── month-6-revops/
-│
 └── month-7-platform/
     ├── schemas.py
     ├── pyproject.toml
-    ├── observability.py
-    ├── shared_orchestrator/
-    │   ├── domain_agent.py
-    │   ├── router.py
-    │   └── adapters/
+    ├── security/
     ├── persistence/
-    │   ├── models.py
-    │   ├── repository.py
-    │   ├── factory.py
-    │   ├── postgres.py
-    │   └── migrations/001_initial.sql
-    ├── deployment/api_gateway/
-    │   ├── main.py
-    │   ├── auth.py
-    │   ├── rate_limit.py
-    │   ├── redis_rate_limit.py
-    │   └── .env.example
-    ├── security/ai-threat-model.md
-    ├── docs/adr/
+    ├── observability/
+    ├── shared_orchestrator/
+    ├── deployment/
+    ├── scripts/
+    ├── docs/
     └── tests/
-        ├── test_platform_integration.py
-        ├── test_persistence.py
-        └── test_rate_limit.py
 ```
 
 ---
 
-# Quick start
+## Roadmap status
 
-```bash
-cd month-7-platform
-pip install -e ".[test,quality,security]"
-```
-
-For local tests:
-
-```bash
-export FDE_API_KEYS="test-api-key"
-export FDE_ADMIN_API_KEYS="test-admin-key"
-export FDE_STORAGE_BACKEND="memory"
-python -m pytest -q
-```
-
-For durable PostgreSQL execution:
-
-```bash
-export FDE_STORAGE_BACKEND="postgres"
-export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_mastery"
-```
-
-Do not commit real credentials. Use a secret manager for deployed environments.
-
----
-
-# Engineering principles
-
-### 1. Deterministic controls around probabilistic components
-
-LLMs are used for reasoning and extraction, but high-impact decisions require schemas, validation, explicit policy, and human approval where appropriate.
-
-### 2. Tenant and domain isolation
-
-Client identity and enabled domains are checked before domain-agent execution.
-
-### 3. Storage abstraction
-
-Application logic depends on `PlatformRepository`, not a specific database. This keeps local evaluation deterministic while allowing durable deployment.
-
-### 4. Evaluation before optimization
-
-Golden datasets and repeatable tests establish behavior before prompts, models, or orchestration are changed.
-
-### 5. Security by design
-
-Authentication, authorization, request limits, dependency auditing, threat modeling, and structured error handling are first-class concerns.
-
-### 6. Human-in-the-loop governance
-
-High-impact workflows distinguish automated analysis from actions requiring an authorized human.
-
----
-
-# Security
-
-Do not commit API keys, credentials, patient data, financial records, private contracts, or other sensitive information.
-
-The Month 7 platform includes API authentication, administrator authorization, tenant/domain isolation, request-size controls, rate limiting, structured request identifiers, dependency auditing, static security checks, and an AI threat model.
-
-See:
-
-- `month-7-platform/security/ai-threat-model.md`
-- `month-7-platform/docs/adr/0001-month-7-platform-architecture.md`
-
-Production deployment still requires managed identity, secret rotation, distributed state, centralized audit/event storage, monitoring, network controls, penetration testing, red teaming, incident response, and domain-specific compliance review.
-
----
-
-# Responsible use
-
-The domain projects use synthetic/example data and demonstrate engineering patterns.
-
-They are not represented as:
-
-- financial or investment advice;
-- medical diagnosis or treatment advice;
-- legal advice;
-- regulatory certification;
-- proof of production deployment;
-- proof of performance in a real customer environment.
-
----
-
-# Roadmap
-
-The core Month 7 hardening sequence is now implemented. Remaining work is primarily productionization and evidence rather than basic architecture.
+### Implemented
 
 - [x] Common `DomainAgent` contract
-- [x] Six domain adapters
-- [x] Central domain router
-- [x] Real API → router → adapter execution path
-- [x] Integration tests
-- [x] API authentication and admin authorization
-- [x] Client/domain isolation
-- [x] Request-size protection and rate limiting
-- [x] PostgreSQL persistence boundary and backend
-- [x] Configurable storage backend
-- [x] Redis distributed-rate-limit implementation
-- [x] Structured request observability
-- [x] Ruff + MyPy configuration
-- [x] Bandit + pip-audit CI gates
-- [x] AI threat model
-- [x] Architecture Decision Record
-- [ ] Production OIDC/JWT identity provider integration
-- [ ] Centralized audit/event store
-- [ ] Formal migration runner with version tracking
-- [ ] Full distributed tracing and metrics backend
-- [ ] Container image signing and SBOM publication
-- [ ] Formal prompt-injection/red-team benchmark suite
-- [ ] Production deployment reference with managed PostgreSQL/Redis
-- [ ] Interactive demonstrations and customer case studies
+- [x] Six real domain adapters
+- [x] Central router and resilience layer
+- [x] End-to-end adapter execution tests
+- [x] API-key authentication
+- [x] OIDC issuer discovery + JWKS JWT validation
+- [x] Tenant/scope/RBAC authorization
+- [x] PostgreSQL persistence boundary
+- [x] Centralized audit-event schema and PostgreSQL store
+- [x] Checksum-verified migration runner
+- [x] Redis-compatible distributed rate limiting
+- [x] OpenTelemetry tracing/metrics integration
+- [x] Executable AI red-team regression suite
+- [x] CycloneDX SBOM generation
+- [x] Keyless Cosign image signing and SBOM attestation workflow
+- [x] Managed PostgreSQL/Redis production reference
+- [x] Interactive demo walkthrough
+- [x] Customer-style case-study template
+- [x] CI quality/security/release gates
+
+### Evidence still requiring a real deployment
+
+These are intentionally **not** marked as production claims:
+
+- [ ] Real customer deployment and measured outcomes
+- [ ] External penetration test / independent security assessment
+- [ ] Production telemetry backend with real workload data
+- [ ] Customer-specific case study with verified metrics
 
 ---
 
-# About
+## Responsible use
+
+The domain projects use synthetic/example data and demonstrate engineering patterns. They are not financial advice, medical diagnosis/treatment, legal advice, regulatory certification, or proof of production performance.
+
+High-impact workflows should retain authorized human review and appropriate domain-specific controls.
+
+## About
 
 **FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
 
-The emphasis is not simply on calling an LLM. It is on designing the surrounding system: **schemas, policies, evaluation, recovery, orchestration, security, governance, persistence, and evidence.**
-
----
+The emphasis is on the surrounding system—not merely an LLM call: **schemas, policy, evaluation, recovery, orchestration, security, governance, persistence, observability, and release evidence.**
 
 ## License
 
-See [LICENSE](./LICENSE).
+See [`LICENSE`](./LICENSE).
