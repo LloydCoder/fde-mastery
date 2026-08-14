@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Run platform checks
+      - name: Install platform
         working-directory: month-7-platform
         env:
           FDE_STORAGE_BACKEND: memory
@@ -35,6 +35,23 @@ jobs:
           python -m pip install --upgrade pip "setuptools>=83.0.0"
           pip install -e ".[test,quality,security,redis,observability,sbom]"
           pip check
-          python -m pytest -q
-          python -m compileall -q .
-          python -c "from shared_orchestrator.router import AgentRouter; r=AgentRouter(); r.register_defaults(); assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'}; r.close()"
+      - name: Unit and integration tests
+        working-directory: month-7-platform
+        env:
+          FDE_STORAGE_BACKEND: memory
+          FDE_RATE_LIMIT_BACKEND: memory
+          FDE_MONTH1_PROVIDER: mock
+          MOCK_LLM: "true"
+          FDE_ENVIRONMENT: test
+          OTEL_ENABLED: "false"
+        run: python -m pytest -q
+      - name: Six-domain registration
+        working-directory: month-7-platform
+        env:
+          FDE_MONTH1_PROVIDER: mock
+          MOCK_LLM: "true"
+          FDE_ENVIRONMENT: test
+        run: python -c "from shared_orchestrator.router import AgentRouter; r=AgentRouter(); r.register_defaults(); assert set(r.list_domains()) == {'cybersecurity','finance','healthtech','logistics','legal','revops'}; r.close()"
+      - name: Compile
+        working-directory: month-7-platform
+        run: python -m compileall -q .
