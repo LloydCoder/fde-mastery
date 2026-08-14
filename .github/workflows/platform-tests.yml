@@ -36,6 +36,8 @@ jobs:
           pip install -e ".[test,quality,security,redis,observability,sbom]"
           pip check
       - name: Unit and integration tests
+        id: tests
+        continue-on-error: true
         working-directory: month-7-platform
         env:
           FDE_STORAGE_BACKEND: memory
@@ -44,7 +46,22 @@ jobs:
           MOCK_LLM: "true"
           FDE_ENVIRONMENT: test
           OTEL_ENABLED: "false"
-        run: python -m pytest -q
+        run: |
+          set -o pipefail
+          python -m pytest -q --junitxml=artifacts/pytest.xml 2>&1 | tee artifacts/pytest.log
+          exit ${PIPESTATUS[0]}
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-diagnostics
+          path: |
+            month-7-platform/artifacts/pytest.xml
+            month-7-platform/artifacts/pytest.log
+          if-no-files-found: warn
+      - name: Fail when tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
       - name: Six-domain registration
         working-directory: month-7-platform
         env:
