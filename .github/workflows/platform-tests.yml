@@ -29,6 +29,7 @@ jobs:
       FDE_MONTH1_PROVIDER: mock
       MOCK_LLM: "true"
       FDE_ENVIRONMENT: test
+      FDE_OTEL_ENABLED: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -41,7 +42,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip "setuptools>=83.0.0"
-          pip install -e ".[test,quality,security,redis]"
+          pip install -e ".[test,quality,security,redis,observability,sbom]"
       - name: Dependency consistency
         run: pip check
       - name: Test
@@ -65,13 +66,23 @@ jobs:
           --explicit-package-bases
           --ignore-missing-imports
       - name: Bandit
-        run: bandit -r deployment persistence shared_orchestrator -q
+        run: bandit -r deployment persistence shared_orchestrator security -q
       - name: Dependency audit
         run: pip-audit --skip-editable
       - name: Compile all platform Python
         run: python -m compileall -q .
       - name: OIDC JWT smoke test
         run: python -c "import jwt; from security.oidc import OIDCSettings; assert 'RS256' in OIDCSettings(issuer='https://issuer.example', audience='fde-platform').algorithms"
+      - name: OpenTelemetry smoke test
+        run: python -c "from shared_orchestrator.tracing import configure_tracing, span; configure_tracing();\nwith span('ci.smoke', component='platform'): pass"
+      - name: Generate CycloneDX SBOM
+        run: ./sbom.sh artifacts
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: fde-mastery-sbom
+          path: month-7-platform/artifacts/sbom.cdx.json
+          if-no-files-found: error
       - name: Resilience smoke test
         run: >-
           python -c "from shared_orchestrator.resilience import ResilienceExecutor;
