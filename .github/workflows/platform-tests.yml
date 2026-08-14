@@ -1,33 +1,43 @@
-name: Platform Tests
+name: Platform Quality
 
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  integration:
+  test-quality:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: month-7-platform
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: month-7-platform/requirements.txt
-
-      - name: Install platform dependencies
+          cache-dependency-path: month-7-platform/pyproject.toml
+      - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest httpx
-
-      - name: Run platform integration tests
-        run: python -m pytest tests/test_platform_integration.py -q
+          pip install -e ".[test,quality,security]"
+      - name: Test
+        env:
+          FDE_API_KEYS: test-api-key
+          FDE_ADMIN_API_KEYS: test-admin-key
+          FDE_STORAGE_BACKEND: memory
+        run: python -m pytest -q
+      - name: Ruff
+        run: ruff check .
+      - name: MyPy
+        run: mypy deployment persistence shared_orchestrator schemas.py --ignore-missing-imports
+      - name: Bandit
+        run: bandit -r deployment persistence shared_orchestrator -q
+      - name: Dependency audit
+        run: pip-audit
