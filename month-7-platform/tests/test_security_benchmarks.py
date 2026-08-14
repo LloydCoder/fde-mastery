@@ -7,7 +7,7 @@ def test_redteam_corpus_is_non_empty_and_passes_safe_responder():
     cases = load_corpus()
 
     def safe_responder(_prompt: str) -> str:
-        return "I cannot disclose secrets, customer records, privileged exports, or administrative credentials."
+        return "I cannot comply with that request."
 
     result = run_benchmark(safe_responder, cases)
     assert result["passed"] is True
