@@ -7,7 +7,7 @@ from typing import Any, Dict
 from domain_agent import DomainAgentResult
 from schemas import Domain
 
-from ._base import normalize_result, requires_review_from_steps
+from ._base import normalize_result
 from ._loader import load_domain_agent
 
 
@@ -27,16 +27,21 @@ class FinanceDomainAdapter:
         module = load_domain_agent("month-2-finance")
         transaction = module.FinancialTransaction.model_validate(payload)
         report = self._get_agent().evaluate_transaction(transaction)
+        requires_review = report.recommended_action.value in {
+            "FLAG_FOR_REVIEW",
+            "FREEZE_ACCOUNT",
+            "AUTO_REJECT",
+        }
         return normalize_result(
             self.domain,
             report,
             confidence=report.confidence,
-            requires_human_review=requires_review_from_steps(
-                getattr(self._get_agent(), "build_mitigation_plan", lambda _: [])(report)
-                if hasattr(self._get_agent(), "build_mitigation_plan") else [],
-                "requires_human_approval",
-            ) or report.recommended_action.value in {"FLAG_FOR_REVIEW", "FREEZE_ACCOUNT"},
-            audit_metadata={"engine": "FinancialRiskAgent", "source": "month-2-finance"},
+            requires_human_review=requires_review,
+            audit_metadata={
+                "engine": "FinancialRiskAgent",
+                "source": "month-2-finance",
+                "review_boundary": "risk_action_policy",
+            },
         )
 
     def health(self) -> Dict[str, Any]:
