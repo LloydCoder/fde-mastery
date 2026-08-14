@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
-import os
+from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from schemas import Domain
-from security.auth import Identity, bearer_authenticator, require_identity
+from security.auth import Identity, OIDCAuthenticator, bearer_authenticator, require_identity
 from security.rbac import AuthorizationError, Principal, require_access
 from shared_orchestrator.router import AgentRouter
 
 app = FastAPI(title="FDE Mastery Platform", version="1.0.0")
 router = AgentRouter()
 router.register_defaults()
-authenticator = bearer_authenticator()
+
+
+@lru_cache(maxsize=1)
+def get_authenticator() -> OIDCAuthenticator:
+    return bearer_authenticator()
+
+
+def authenticated_identity():
+    return require_identity(get_authenticator())
 
 
 class AgentRequest(BaseModel):
@@ -29,11 +37,14 @@ def health() -> dict:
 
 
 @app.post("/v1/{domain}/execute")
-def execute(domain: Domain, request: AgentRequest, identity: Identity = Depends(require_identity(authenticator))):
+def execute(
+    domain: Domain,
+    request: AgentRequest,
+    identity: Identity = Depends(authenticated_identity),
+):
     principal = Principal.from_claims(identity.claims)
     try:
         require_access(principal, tenant_id=request.tenant_id, scope="agents:execute")
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail="Access denied") from exc
-    result = router.route(domain, request.payload)
-    return result
+    return router.route(domain, request.payload)
