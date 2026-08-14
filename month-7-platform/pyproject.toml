@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fde-mastery-platform"
-version = "0.8.4"
+version = "0.9.0"
 description = "Unified FDE AI platform capstone"
 requires-python = ">=3.10"
 dependencies = [
@@ -25,7 +25,7 @@ security = ["bandit>=1.7", "pip-audit>=2.7"]
 redis = ["redis>=5.0"]
 
 [tool.setuptools]
-py-modules = ["schemas", "observability", "domain_agent"]
+py-modules = ["schemas", "observability", "observability_metrics", "config", "domain_agent"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -34,7 +34,6 @@ include = [
   "persistence*",
   "shared_orchestrator*",
   "integrations*",
-  "observability*",
   "security*",
   "client_onboarding*",
   "golden_datasets*",
