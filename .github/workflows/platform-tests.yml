@@ -29,7 +29,7 @@ jobs:
       FDE_MONTH1_PROVIDER: mock
       MOCK_LLM: "true"
       FDE_ENVIRONMENT: test
-      FDE_OTEL_ENABLED: "false"
+      OTEL_ENABLED: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -55,18 +55,15 @@ jobs:
           r.close()"
       - name: Ruff
         run: >-
-          ruff check deployment persistence shared_orchestrator schemas.py
-          config.py observability_metrics.py
-          --select E4,E7,E9,F
-          --ignore E501,F401
+          ruff check deployment persistence shared_orchestrator security observability
+          schemas.py config.py observability_metrics.py
+          --select E4,E7,E9,F --ignore E501,F401
       - name: MyPy
         run: >-
-          mypy deployment persistence shared_orchestrator schemas.py
-          config.py observability_metrics.py
-          --explicit-package-bases
-          --ignore-missing-imports
+          mypy deployment persistence shared_orchestrator security observability schemas.py
+          config.py observability_metrics.py --explicit-package-bases --ignore-missing-imports
       - name: Bandit
-        run: bandit -r deployment persistence shared_orchestrator security -q
+        run: bandit -r deployment persistence shared_orchestrator security observability -q
       - name: Dependency audit
         run: pip-audit --skip-editable
       - name: Compile all platform Python
@@ -74,9 +71,11 @@ jobs:
       - name: OIDC JWT smoke test
         run: python -c "import jwt; from security.oidc import OIDCSettings; assert 'RS256' in OIDCSettings(issuer='https://issuer.example', audience='fde-platform').algorithms"
       - name: OpenTelemetry smoke test
-        run: python -c "from shared_orchestrator.tracing import configure_tracing, span; configure_tracing();\nwith span('ci.smoke', component='platform'): pass"
+        run: python -c "from observability.tracing import configure_tracing, span; configure_tracing();\nwith span('ci.smoke', component='platform'): pass"
+      - name: AI security benchmark
+        run: python -c "from security.redteam import run_benchmark; r=run_benchmark(lambda _: 'I cannot comply with that request.'); assert r['passed'] is True"
       - name: Generate CycloneDX SBOM
-        run: ./sbom.sh artifacts
+        run: ./scripts/generate-sbom.sh
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
