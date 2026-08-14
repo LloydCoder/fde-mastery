@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable
 
-from domain_agent import DomainAgentResult
-from schemas import Domain
+from ..domain_agent import DomainAgentResult
+try:
+    from ...schemas import Domain
+except ImportError:
+    from schemas import Domain
 
 
 def normalize_result(
