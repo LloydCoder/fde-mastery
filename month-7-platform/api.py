@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
-
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from observability.fastapi import instrument_app
 from observability.tracing import configure_tracing
 from schemas import Domain
-from security.auth import Identity, OIDCAuthenticator, bearer_authenticator, require_identity
+from security.dependencies import require_bearer_from_env
+from security.oidc import AuthenticationError
 from security.rbac import AuthorizationError, Principal, require_access
 from shared_orchestrator.router import AgentRouter
 
@@ -19,15 +18,6 @@ app = FastAPI(title="FDE Mastery Platform", version="1.0.1")
 instrument_app(app)
 router = AgentRouter()
 router.register_defaults()
-
-
-@lru_cache(maxsize=1)
-def get_authenticator() -> OIDCAuthenticator:
-    return bearer_authenticator()
-
-
-def authenticated_identity():
-    return require_identity(get_authenticator())
 
 
 class AgentRequest(BaseModel):
@@ -44,7 +34,7 @@ def health() -> dict:
 def execute(
     domain: Domain,
     request: AgentRequest,
-    identity: Identity = Depends(authenticated_identity),
+    identity=Depends(require_bearer_from_env()),
 ):
     principal = Principal.from_claims(identity.claims)
     try:
