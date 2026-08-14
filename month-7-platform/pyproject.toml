@@ -33,7 +33,7 @@ observability = [
 sbom = ["cyclonedx-bom>=7.0"]
 
 [tool.setuptools]
-py-modules = ["schemas", "observability", "observability_metrics", "config", "domain_agent"]
+py-modules = ["schemas", "observability_metrics", "config", "domain_agent"]
 
 [tool.setuptools.packages.find]
 where = ["."]
