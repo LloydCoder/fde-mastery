@@ -17,7 +17,7 @@ if str(_PLATFORM_ROOT) not in sys.path:
 
 from config import settings  # noqa: E402
 from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
-from observability.metrics import metrics  # noqa: E402
+from observability_metrics import metrics  # noqa: E402
 from persistence.audit import AuditEvent  # noqa: E402
 from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
@@ -105,7 +105,6 @@ def health():
 
 @app.get("/health/ready")
 def readiness():
-    """Return 200 only when required backing services are usable."""
     checks: dict[str, str] = {"repository": "ok", "rate_limiter": "ok"}
     if settings.storage_backend == "postgres":
         try:
@@ -150,7 +149,6 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
     client = REPOSITORY.get_client(client_id)
     if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
-
     RATE_LIMITER(request, client_id)
     if domain.value not in client.domains:
         raise HTTPException(status_code=403, detail=f"Domain {domain.value} is not enabled for client {client_id}.")
@@ -163,7 +161,6 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
                 rubric = json.load(f)
         except (OSError, json.JSONDecodeError) as exc:
             raise HTTPException(status_code=500, detail="Client preference configuration is invalid.") from exc
-
     if rubric:
         payload = {**payload, "_platform": {"rubric_overrides": rubric}}
 
