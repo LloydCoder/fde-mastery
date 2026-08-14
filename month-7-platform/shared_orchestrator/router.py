@@ -12,6 +12,16 @@ except ImportError:
 from .resilience import ResilienceConfig, ResilienceExecutor
 
 
+_MONTH_SOURCES = {
+    Domain.CYBERSECURITY: "month-1-cybersecurity",
+    Domain.FINANCE: "month-2-finance",
+    Domain.HEALTHTECH: "month-3-healthtech",
+    Domain.LOGISTICS: "month-4-logistics",
+    Domain.LEGAL: "month-5-legal",
+    Domain.REVOPS: "month-6-revops",
+}
+
+
 class AgentRouter:
     """Routes requests while isolating failures and capacity per domain."""
 
@@ -82,10 +92,13 @@ class AgentRouter:
         }
 
     def capabilities(self) -> Dict[str, Any]:
-        return {
-            domain.value: agent.capabilities() if hasattr(agent, "capabilities") else {}
-            for domain, agent in self._agents.items()
-        }
+        result: Dict[str, Any] = {}
+        for domain, agent in self._agents.items():
+            capabilities = dict(agent.capabilities()) if hasattr(agent, "capabilities") else {}
+            capabilities.setdefault("domain", domain.value)
+            capabilities.setdefault("source", _MONTH_SOURCES[domain])
+            result[domain.value] = capabilities
+        return result
 
     def list_domains(self) -> list:
         return [d.value for d in self._agents.keys()]
