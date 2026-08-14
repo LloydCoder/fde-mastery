@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: platform-quality-${{ github.workflow }}-${{ github.ref }}
@@ -88,3 +89,37 @@ jobs:
           e=ResilienceExecutor(); assert e.health()['circuit']=='closed'; e.close()"
       - name: Build container
         run: docker build --tag fde-mastery-platform:ci .
+
+  release-attestation:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test-quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.9.0
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/fde-mastery-platform
+        run: |
+          docker build -t "$IMAGE:${GITHUB_SHA}" month-7-platform
+          docker push "$IMAGE:${GITHUB_SHA}"
+          echo "IMAGE=$IMAGE:${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - name: Sign image with keyless Sigstore identity
+        run: cosign sign --yes "$IMAGE"
+      - name: Generate and attach SBOM
+        working-directory: month-7-platform
+        run: |
+          bash scripts/generate-sbom.sh
+          cosign attest --yes --predicate artifacts/sbom.cdx.json --type cyclonedx "$IMAGE"
