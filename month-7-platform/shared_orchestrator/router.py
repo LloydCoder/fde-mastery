@@ -29,6 +29,8 @@ class AgentRouter:
         )
 
     def register_agent(self, domain: Domain, agent_instance: Any) -> None:
+        if not isinstance(domain, Domain):
+            raise TypeError("domain must be a Domain enum value")
         if not hasattr(agent_instance, "evaluate"):
             raise TypeError(f"Agent for {domain.value} must expose evaluate(payload)")
         old = self._resilience.pop(domain, None)
@@ -59,6 +61,10 @@ class AgentRouter:
         return isinstance(exc, (ConnectionError, TimeoutError, OSError))
 
     def route(self, domain: Domain, payload: Dict[str, Any]) -> Any:
+        if not isinstance(domain, Domain):
+            raise TypeError("domain must be a Domain enum value")
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dictionary")
         if domain not in self._agents:
             raise ValueError(f"No agent registered for domain: {domain.value}")
         return self._resilience[domain].execute(
