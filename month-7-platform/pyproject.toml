@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fde-mastery-platform"
-version = "0.9.1"
+version = "0.9.2"
 description = "Unified FDE AI platform capstone"
 requires-python = ">=3.10"
 dependencies = [
@@ -16,6 +16,7 @@ dependencies = [
   "openai>=1.50",
   "python-dotenv>=1.0",
   "loguru>=0.7",
+  "PyJWT[crypto]>=2.9",
 ]
 
 [project.optional-dependencies]
