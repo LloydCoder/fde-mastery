@@ -1,0 +1,6 @@
+pydantic>=2.0
+openai
+anthropic
+pytest
+python-dotenv
+loguru
