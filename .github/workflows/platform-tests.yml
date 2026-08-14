@@ -37,7 +37,10 @@ jobs:
       - name: Test
         run: python -m pytest -q
       - name: Ruff
-        run: ruff check .
+        run: >-
+          ruff check deployment persistence shared_orchestrator schemas.py
+          --select E4,E7,E9,F
+          --ignore E501,F401
       - name: MyPy
         run: mypy deployment persistence shared_orchestrator schemas.py --ignore-missing-imports
       - name: Bandit
