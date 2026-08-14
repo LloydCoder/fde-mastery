@@ -9,7 +9,6 @@ from observability.fastapi import instrument_app
 from observability.tracing import configure_tracing
 from schemas import Domain
 from security.dependencies import require_bearer_from_env
-from security.oidc import AuthenticationError
 from security.rbac import AuthorizationError, Principal, require_access
 from shared_orchestrator.router import AgentRouter
 
