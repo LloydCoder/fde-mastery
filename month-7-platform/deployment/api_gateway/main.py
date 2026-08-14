@@ -4,7 +4,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -16,14 +16,15 @@ if str(_PLATFORM_ROOT) not in sys.path:
 from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
-from deployment.api_gateway.rate_limit import enforce_request_limits  # noqa: E402
+from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
 from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
 from persistence.repository import PlatformRepository  # noqa: E402
 from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
 
-app = FastAPI(title="FDE Mastery Platform API", version="7.0.0")
+app = FastAPI(title="FDE Mastery Platform API", version="0.8.0")
 REPOSITORY: PlatformRepository = build_repository()
+RATE_LIMITER = build_rate_limiter()
 _START_TIME = time.time()
 
 
@@ -32,6 +33,7 @@ class HealthResponse(BaseModel):
     version: str
     uptime_seconds: float
     storage_backend: str
+    rate_limit_backend: str
 
 
 class ClientRegistration(BaseModel):
@@ -49,22 +51,28 @@ async def request_observability(request: Request, call_next):
     request_id = new_request_id()
     request.state.request_id = request_id
     started = monotonic_ms()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = monotonic_ms() - started
+        log_request(request_id, request.method, request.url.path, 500, duration_ms, request.path_params.get("client_id"))
+        raise
     duration_ms = monotonic_ms() - started
-    client_id = request.path_params.get("client_id")
     response.headers["X-Request-ID"] = request_id
-    log_request(request_id, request.method, request.url.path, response.status_code, duration_ms, client_id)
+    log_request(request_id, request.method, request.url.path, response.status_code, duration_ms, request.path_params.get("client_id"))
     return response
 
 
 @app.get("/health", response_model=HealthResponse)
 def health():
     backend = type(REPOSITORY).__name__.replace("PlatformRepository", "").lower()
+    limiter_backend = "redis" if RATE_LIMITER.__module__.endswith("redis_rate_limit") else "memory"
     return HealthResponse(
         status="healthy",
-        version="7.0.0",
+        version="0.8.0",
         uptime_seconds=round(time.time() - _START_TIME, 2),
         storage_backend=backend,
+        rate_limit_backend=limiter_backend,
     )
 
 
@@ -79,24 +87,25 @@ def capabilities():
 
 
 @app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
-def triage(client_id: str, domain: Domain, request: Request, payload: Dict[str, Any]):
+def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, Any]):
     start = time.time()
     request_id = getattr(request.state, "request_id", new_request_id())[:8]
-
     client = REPOSITORY.get_client(client_id)
     if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
 
-    enforce_request_limits(request, client_id)
-
+    RATE_LIMITER(request, client_id)
     if domain.value not in client.domains:
         raise HTTPException(status_code=403, detail=f"Domain {domain.value} is not enabled for client {client_id}.")
 
-    pref_path = Path("preferences") / client_id / "rubric_overrides.json"
-    rubric: Dict[str, Any] = {}
+    pref_path = _PLATFORM_ROOT / "preferences" / client_id / "rubric_overrides.json"
+    rubric: dict[str, Any] = {}
     if pref_path.exists():
-        with pref_path.open("r", encoding="utf-8") as f:
-            rubric = json.load(f)
+        try:
+            with pref_path.open("r", encoding="utf-8") as f:
+                rubric = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=500, detail="Client preference configuration is invalid.") from exc
 
     if rubric:
         payload = {**payload, "_platform": {"rubric_overrides": rubric}}
@@ -110,7 +119,6 @@ def triage(client_id: str, domain: Domain, request: Request, payload: Dict[str, 
 
     REPOSITORY.increment_usage(client_id)
     elapsed_ms = (time.time() - start) * 1000
-
     return TriageResponse(
         request_id=request_id,
         client_id=client_id,
