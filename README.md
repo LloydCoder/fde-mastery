@@ -2,77 +2,117 @@
 
 ### Production-oriented AI systems across security, finance, healthcare, logistics, legal, and revenue operations.
 
-FDE Mastery is a six-domain engineering portfolio focused on building **deployable, governed AI systems for real operational workflows**.
+FDE Mastery is a hands-on portfolio for **Forward Deployed Engineering, AI systems engineering, AI security, and enterprise automation**. It contains six domain-specific AI systems plus a Month 7 platform layer that integrates them behind a common agent contract, API gateway, evaluation layer, deployment tooling, and security controls.
 
-The repository explores a consistent architecture for domain-specific agents: strict Pydantic schemas, deterministic policy controls, LLM-assisted reasoning where appropriate, resilient fallback paths, golden-dataset evaluation, explicit human-approval boundaries, and audit-oriented outputs.
-
-> **Portfolio objective:** demonstrate the engineering judgment required to take AI from a model/API experiment to a system that can operate inside a real business workflow.
+> **Portfolio objective:** demonstrate the engineering judgment required to take AI from a model/API experiment to a governed system that can operate inside a real business workflow.
 
 ---
 
 ## What this repository demonstrates
 
-- **Forward Deployed Engineering (FDE)** — translating operational problems into working technical systems.
-- **AI systems engineering** — structured inputs/outputs, orchestration, recovery paths, and model-provider abstraction.
-- **AI security** — security operations workflows, validation, deterministic guardrails, and auditability.
-- **Enterprise automation** — explicit workflow actions and human-in-the-loop boundaries.
-- **Evaluation engineering** — golden datasets and repeatable benchmark harnesses rather than relying only on qualitative demos.
+- **Forward Deployed Engineering** — translating operational problems into working technical systems.
+- **AI systems engineering** — typed contracts, orchestration, recovery paths, model-provider abstraction, and structured outputs.
+- **AI security** — authentication, authorization, domain isolation, deterministic guardrails, human approval boundaries, and audit-oriented outputs.
+- **Enterprise automation** — domain agents connected to a shared platform rather than isolated demos.
+- **Evaluation engineering** — golden datasets, domain evaluation harnesses, and platform integration tests.
 - **Regulated-domain engineering** — security, financial risk, healthcare, logistics compliance, legal operations, and RevOps governance.
+- **Platform engineering** — API gateway, domain routing, Docker deployment, health/readiness endpoints, and CI test automation.
 
 ---
 
-## Architecture pattern
+# Architecture
 
 ```text
-                    ┌──────────────────────────┐
-                    │   Operational Input      │
-                    │ logs / transactions /    │
-                    │ clinical / shipment /    │
-                    │ contract / CRM data      │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │ Schema Validation        │
-                    │ Pydantic / typed models  │
-                    └────────────┬─────────────┘
-                                 │
-                                 ▼
-              ┌────────────────────────────────────┐
-              │     Domain Evaluation Engine      │
-              │                                    │
-              │ LLM reasoning + deterministic     │
-              │ policy / rules / fallback logic   │
-              └───────────────┬────────────────────┘
-                              │
-                ┌─────────────┴─────────────┐
-                ▼                           ▼
-      ┌──────────────────┐        ┌──────────────────┐
-      │ Structured       │        │ Risk / Policy    │
-      │ Decision         │        │ & Exception      │
-      │                  │        │ Evaluation       │
-      └────────┬─────────┘        └────────┬─────────┘
-               │                           │
-               └─────────────┬─────────────┘
-                             ▼
-                    ┌───────────────────┐
-                    │ Action / Workflow │
-                    │ Orchestration      │
-                    └─────────┬─────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    ▼                   ▼
-             Autonomous action     Human approval
-                    │                   │
-                    └─────────┬─────────┘
-                              ▼
-                    ┌───────────────────┐
-                    │ Audit / Evidence  │
-                    │ & Evaluation      │
-                    └───────────────────┘
+                         FDE MASTERY PLATFORM
+                                  │
+                         ┌────────▼────────┐
+                         │   API Gateway   │
+                         │ FastAPI + Auth  │
+                         └────────┬────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │ Authentication /           │
+                    │ Authorization / Rate Limit │
+                    └─────────────┬─────────────┘
+                                  │
+                         ┌────────▼────────┐
+                         │  Agent Router   │
+                         │ Domain Contract │
+                         └────────┬────────┘
+                                  │
+          ┌───────────┬───────────┼───────────┬───────────┐
+          ▼           ▼           ▼           ▼           ▼           ▼
+     Security     Finance     HealthTech  Logistics     Legal       RevOps
+      Adapter      Adapter      Adapter     Adapter     Adapter      Adapter
+          │           │           │           │           │           │
+          ▼           ▼           ▼           ▼           ▼           ▼
+       Month 1      Month 2     Month 3     Month 4     Month 5     Month 6
+                                  │
+                                  ▼
+                    ┌─────────────────────────┐
+                    │ Evaluation & Evidence   │
+                    │ Golden data + pytest    │
+                    └─────────────────────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    ▼                           ▼
+              Audit / Metrics              Human Review
 ```
 
-The exact implementation differs by domain; the goal is to keep the **engineering principles** consistent while adapting the system to the operational context.
+The Month 7 layer is the integration capstone. The six domain projects remain independently understandable while adapters expose them through a common `DomainAgent` contract.
+
+---
+
+# Month 7 — Platform Capstone
+
+`month-7-platform/`
+
+Month 7 turns the six domain systems into a unified platform-oriented architecture.
+
+### Current platform capabilities
+
+- Common `DomainAgent` contract
+- Six domain adapters
+- Central `AgentRouter`
+- FastAPI gateway
+- Domain-aware client authorization
+- API-key authentication
+- Separate administrator authorization
+- Per-client sliding-window rate limiting
+- Request body-size protection
+- Health and agent-readiness endpoints
+- Capability discovery endpoint
+- Platform integration tests
+- GitHub Actions test workflow
+- Docker-based deployment foundation
+- Client onboarding and preferences infrastructure
+- Synthetic evaluation datasets
+
+### Security model
+
+```text
+Request
+   │
+   ▼
+API authentication
+   │
+   ▼
+Client authorization
+   │
+   ▼
+Domain authorization
+   │
+   ▼
+Request-size / rate controls
+   │
+   ▼
+Domain agent
+   │
+   ▼
+Structured result + audit identifier
+```
+
+The current authentication and rate-limiting implementations are **portfolio/demo controls**. Production deployments should use managed identity, secret management, distributed rate limiting, durable persistence, centralized audit logging, and additional network/application controls.
 
 ---
 
@@ -80,7 +120,7 @@ The exact implementation differs by domain; the goal is to keep the **engineerin
 
 | Domain | System | Core problem | Engineering focus |
 |---|---|---|---|
-| **01 — Cybersecurity** | SOC Triage Agent | SIEM alert analysis and triage | Threat classification, schema recovery, provider fallback, evaluation |
+| **01 — Cybersecurity** | SOC Triage Agent | SIEM alert analysis and triage | Threat classification, recovery, provider fallback, evaluation |
 | **02 — Finance** | Transaction Risk & Governance Engine | Transaction risk and mitigation | Risk scoring, policy hard-stops, execution orders, audit ledger |
 | **03 — HealthTech** | HealthTech Compliance & Triage Engine | PHI handling and clinical triage | De-identification, clinical risk rules, auditability |
 | **04 — Logistics** | Supply Chain Risk Engine | Shipment and telemetry risk | Compliance checks, cold-chain detection, mitigation workflows |
@@ -122,7 +162,7 @@ Key engineering patterns:
 - Sanctions hard-stop rules
 - Human-approval boundaries
 - Structured execution orders
-- Immutable audit-oriented ledger entries
+- Audit-oriented ledger entries
 - Golden-dataset benchmark suite
 
 [Open the Finance project →](./month-2-finance/README.md)
@@ -216,15 +256,9 @@ Key engineering patterns:
 
 # Evaluation philosophy
 
-A central principle of FDE Mastery is:
-
 > **A demo is not enough. An AI system needs measurable behavior.**
 
-Each domain contains a `golden_dataset.json` and an `eval_harness.py` used to benchmark the implementation against labeled scenarios.
-
-The evaluation layer is intended to make regressions visible as the systems evolve.
-
-Typical flow:
+Each domain contains a `golden_dataset.json` and an `eval_harness.py` used to benchmark labeled scenarios. Month 7 adds integration tests that exercise the API → router → adapter path across all six domains.
 
 ```text
 golden_dataset.json
@@ -238,37 +272,12 @@ golden_dataset.json
         │
         ▼
  benchmark result
+        │
+        ▼
+ platform integration tests
 ```
 
-The current domain READMEs document the benchmark cases and reported results. These figures should be treated as **repository test-suite results**, not claims of production accuracy.
-
----
-
-# Engineering principles
-
-### 1. Deterministic controls around probabilistic components
-
-LLMs are useful for reasoning and extraction, but high-impact decisions should have explicit schemas, validation, deterministic policies, and human-review boundaries where appropriate.
-
-### 2. Structured outputs
-
-Pydantic models define the contract between inputs, reasoning components, decisions, workflows, and audit records.
-
-### 3. Graceful degradation
-
-Where implemented, systems can fall back to deterministic logic or mock execution so core evaluation and demonstrations do not depend entirely on live model APIs.
-
-### 4. Evaluation before optimization
-
-Golden datasets provide a repeatable baseline before changing prompts, rules, models, or orchestration.
-
-### 5. Auditability
-
-High-impact workflows expose structured decisions, exception flags, mitigation steps, and audit-oriented records rather than returning an opaque natural-language answer.
-
-### 6. Human-in-the-loop governance
-
-The systems distinguish actions that can be automated from actions that should require an analyst, physician, counsel, compliance officer, or other authorized human depending on the domain.
+Reported benchmark figures in domain READMEs should be treated as repository test-suite results, not claims of production accuracy.
 
 ---
 
@@ -279,34 +288,32 @@ fde-mastery/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
+├── .github/
+│   └── workflows/
+│       └── platform-tests.yml
 │
 ├── month-1-cybersecurity/
-│   ├── README.md
-│   ├── agent.py
-│   ├── schemas.py
-│   ├── eval_harness.py
-│   ├── golden_dataset.json
-│   └── main.py
-│
 ├── month-2-finance/
-│   ├── README.md
-│   ├── agent.py
-│   ├── schemas.py
-│   ├── eval_harness.py
-│   ├── golden_dataset.json
-│   └── main.py
-│
 ├── month-3-healthtech/
-│   └── ...
-│
 ├── month-4-logistics/
-│   └── ...
-│
 ├── month-5-legal/
-│   └── ...
+├── month-6-revops/
 │
-└── month-6-revops/
-    └── ...
+└── month-7-platform/
+    ├── schemas.py
+    ├── shared_orchestrator/
+    │   ├── domain_agent.py
+    │   ├── router.py
+    │   └── adapters/
+    ├── deployment/
+    │   ├── api_gateway/
+    │   │   ├── main.py
+    │   │   ├── auth.py
+    │   │   ├── rate_limit.py
+    │   │   └── .env.example
+    │   └── docker/
+    └── tests/
+        └── test_platform_integration.py
 ```
 
 ---
@@ -317,86 +324,126 @@ fde-mastery/
 
 - Python 3.10+
 - `pip`
-- API key only for domains/configurations that use a live LLM provider
+- API keys only for live LLM-provider execution
 
-## Install
-
-```bash
-git clone https://github.com/LloydCoder/fde-mastery.git
-cd fde-mastery
-pip install -r requirements.txt
-```
-
-## Run an offline evaluation
-
-For example:
+## Domain evaluation
 
 ```bash
 cd month-2-finance
 python eval_harness.py --mock
 ```
 
-Other domain READMEs contain their domain-specific commands and options.
+See each domain README for its exact evaluation and demo commands.
 
-## Run a domain demo
+## Platform tests
 
 ```bash
-cd month-2-finance
-python main.py
+cd month-7-platform
+pip install fastapi uvicorn pydantic pytest httpx
+python -m pytest tests/test_platform_integration.py -q
 ```
 
-See each domain README before enabling live API execution.
+## Platform API authentication
+
+Set environment variables before running the gateway:
+
+```bash
+export FDE_API_KEYS="your-application-key"
+export FDE_ADMIN_API_KEYS="your-admin-key"
+```
+
+Never commit real credentials. A template is provided at:
+
+`month-7-platform/deployment/api_gateway/.env.example`
+
+Application endpoints accept either:
+
+```text
+Authorization: Bearer <application-key>
+```
+
+or:
+
+```text
+X-API-Key: <application-key>
+```
+
+Administrative endpoints require the dedicated administrator key.
 
 ---
 
-# Technology
+# Engineering principles
 
-- Python
-- Pydantic v2
-- OpenAI API
-- Anthropic API
-- pytest
-- python-dotenv
-- Loguru
-- JSON-based evaluation datasets
+### 1. Deterministic controls around probabilistic components
 
-The current dependency baseline is intentionally small; repository-wide tooling, CI, packaging, observability, and deployment infrastructure are part of the engineering hardening roadmap.
+LLMs are useful for reasoning and extraction, but high-impact decisions should have explicit schemas, validation, deterministic policies, and human-review boundaries where appropriate.
+
+### 2. Structured contracts
+
+Pydantic models and the Month 7 `DomainAgent` interface define contracts between inputs, reasoning components, decisions, workflows, and platform orchestration.
+
+### 3. Graceful degradation
+
+Where implemented, systems can fall back to deterministic logic or mock execution so evaluation does not depend entirely on live model APIs.
+
+### 4. Evaluation before optimization
+
+Golden datasets provide repeatable baselines before changing prompts, rules, models, or orchestration.
+
+### 5. Security by design
+
+Authentication, authorization, input limits, client isolation, domain isolation, human approval, and audit-oriented outputs are treated as first-class engineering concerns.
+
+### 6. Human-in-the-loop governance
+
+The systems distinguish actions that can be automated from actions that should require an analyst, physician, counsel, compliance officer, or other authorized human depending on the domain.
 
 ---
 
 # Roadmap
 
-FDE Mastery is being hardened progressively from a domain-project portfolio into a reusable engineering platform.
+The repository is being hardened progressively from a domain-project portfolio into a reusable FDE platform.
 
-- [ ] Repository-wide packaging with `pyproject.toml`
-- [ ] Standardized test suite and coverage reporting
-- [ ] Ruff + type checking + pre-commit
-- [ ] GitHub Actions CI
-- [ ] Dependency and secret scanning
-- [ ] Standardized evaluation result format
-- [ ] AI security and threat-model test suites
-- [ ] Structured observability and cost/latency metrics
-- [ ] Dockerized reproducible demos
-- [ ] Architecture Decision Records (ADRs)
-- [ ] Production deployment reference architectures
-- [ ] Interactive demonstrations and screenshots
-- [ ] Domain-specific case studies
+- [x] Common `DomainAgent` contract
+- [x] Six domain adapters
+- [x] Central domain router
+- [x] Real API → router → adapter execution path
+- [x] Platform integration tests
+- [x] GitHub Actions platform test workflow
+- [x] API-key authentication
+- [x] Administrator authorization
+- [x] Per-client rate limiting and request-size controls
+- [x] Updated platform architecture documentation
+- [ ] Distributed rate limiting with Redis
+- [ ] Durable PostgreSQL client/billing state
+- [ ] Production-grade OIDC/JWT identity
+- [ ] Centralized audit/event store
+- [ ] Repository-wide `pyproject.toml`
+- [ ] Ruff + MyPy + pre-commit
+- [ ] Full CI quality/security gates
+- [ ] Dependency and container scanning
+- [ ] Standardized evaluation result artifacts
+- [ ] AI threat-model and prompt-injection test suites
+- [ ] Structured observability, tracing, cost, and latency metrics
+- [ ] Production deployment reference architecture
+- [ ] Architecture Decision Records
+- [ ] Interactive demonstrations and case studies
 
 ---
 
 # Security
 
-Do not commit API keys, credentials, patient data, financial records, private contracts, or other sensitive information to this repository.
+Do not commit API keys, credentials, patient data, financial records, private contracts, or other sensitive information.
 
-Security hardening, threat modeling, and automated security checks are part of the roadmap for the repository.
+The Month 7 gateway currently demonstrates API-key authentication, administrator authorization, domain authorization, per-client rate limiting, request-size controls, and structured error handling.
 
-See [SECURITY.md](./SECURITY.md) once the repository security policy is established.
+These controls are **portfolio/demo implementations**, not a production security certification. Production deployment requires managed identity, secret rotation, distributed state, centralized logging, monitoring, network controls, formal threat modeling, penetration testing, and domain-specific compliance review.
 
 ---
 
 # Responsible-use notes
 
-The domain projects use synthetic/example data and are intended to demonstrate engineering patterns.
+The domain projects use synthetic/example data and demonstrate engineering patterns.
 
 They should not be interpreted as:
 
@@ -407,7 +454,7 @@ They should not be interpreted as:
 - proof of production deployment;
 - proof of performance in a real customer environment.
 
-Production deployment would require domain-specific validation, security controls, integration testing, compliance review, monitoring, and operational ownership.
+Production deployment requires domain-specific validation, security controls, integration testing, compliance review, monitoring, and operational ownership.
 
 ---
 
@@ -415,7 +462,7 @@ Production deployment would require domain-specific validation, security control
 
 **FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
 
-The emphasis is not simply on calling an LLM. It is on designing the surrounding system: **schemas, policies, evaluation, recovery, orchestration, governance, and evidence.**
+The emphasis is not simply on calling an LLM. It is on designing the surrounding system: **schemas, policies, evaluation, recovery, orchestration, security, governance, and evidence.**
 
 ---
 
