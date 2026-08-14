@@ -15,19 +15,20 @@ _PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
-from config import settings  # noqa: E402
-from observability import log_request, monotonic_ms, new_request_id  # noqa: E402
-from observability_metrics import metrics  # noqa: E402
-from persistence.audit import AuditEvent  # noqa: E402
-from persistence.factory import build_repository  # noqa: E402
-from persistence.models import ClientRecord  # noqa: E402
-from persistence.repository import PlatformRepository  # noqa: E402
-from schemas import Domain, TriageResponse  # noqa: E402
-from shared_orchestrator.resilience import AgentTimeoutError, CircuitOpenError  # noqa: E402
-from shared_orchestrator.router import AgentRouter  # noqa: E402
-from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
-from deployment.api_gateway.errors import api_error  # noqa: E402
-from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
+from config import settings
+from observability import log_request, monotonic_ms, new_request_id
+from observability_metrics import metrics
+from persistence.audit import AuditEvent
+from persistence.factory import build_repository
+from persistence.models import ClientRecord
+from persistence.repository import PlatformRepository
+from schemas import Domain, TriageResponse
+from shared_orchestrator.resilience import AgentTimeoutError, CircuitOpenError
+from shared_orchestrator.router import AgentRouter
+from deployment.api_gateway.auth import require_admin_api_key, require_api_or_oidc, require_scope
+from deployment.api_gateway.errors import api_error
+from deployment.api_gateway.limiter_factory import build_rate_limiter
+from security.auth import Identity
 
 app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
 if settings.cors_origins:
@@ -120,25 +121,29 @@ def readiness():
     return {"status": "ready" if ready else "not_ready", "checks": checks}
 
 
-@app.get("/metrics", response_class=PlainTextResponse, dependencies=[Depends(require_api_key)])
+@app.get("/metrics", response_class=PlainTextResponse, dependencies=[Depends(require_api_or_oidc)])
 def metrics_endpoint():
     return metrics.prometheus()
 
 
-@app.get("/health/agents", dependencies=[Depends(require_api_key)])
+@app.get("/health/agents", dependencies=[Depends(require_api_or_oidc)])
 def agent_health():
     return AGENT_ROUTER.health()
 
 
-@app.get("/capabilities", dependencies=[Depends(require_api_key)])
+@app.get("/capabilities", dependencies=[Depends(require_api_or_oidc)])
 def capabilities():
     return AGENT_ROUTER.capabilities()
 
 
-@app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
-def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, Any]):
+@app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_or_oidc)])
+def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, Any], identity: Identity | str = Depends(require_api_or_oidc)):
     start = time.time()
     request_id = getattr(request.state, "request_id", new_request_id())
+    if isinstance(identity, Identity):
+        if identity.tenant_id != client_id:
+            raise HTTPException(status_code=403, detail="Token tenant does not match client.")
+        require_scope(identity, "triage:execute")
     client = REPOSITORY.get_client(client_id)
     if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
