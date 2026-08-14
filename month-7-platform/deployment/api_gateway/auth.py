@@ -1,8 +1,8 @@
 """Authentication helpers for the Month 7 API gateway.
 
-Demo/portfolio implementation: API keys are supplied through environment
-variables and never persisted in the client registry. Production deployments
-should replace this with a managed identity provider or secret manager.
+API keys are supplied through environment variables and never persisted in the
+client registry. Production deployments should replace this with a managed
+identity provider or secret manager.
 """
 
 import hmac
@@ -22,7 +22,7 @@ def _configured_keys() -> tuple[set[str], set[str]]:
 
 
 def _extract_api_key(authorization: Optional[str], x_api_key: Optional[str]) -> Optional[str]:
-    if x_api_key:
+    if x_api_key and x_api_key.strip():
         return x_api_key.strip()
     if authorization:
         scheme, _, value = authorization.partition(" ")
@@ -31,16 +31,37 @@ def _extract_api_key(authorization: Optional[str], x_api_key: Optional[str]) -> 
     return None
 
 
+def _require_key(
+    authorization: Optional[str],
+    x_api_key: Optional[str],
+    configured_keys: set[str],
+    *,
+    role: str,
+) -> str:
+    """Authenticate with RFC 9110-style 401/403 semantics.
+
+    401 is used when no credentials were supplied. 403 is used when credentials
+    were supplied but are not authorized for the requested resource.
+    """
+    key = _extract_api_key(authorization, x_api_key)
+    if key is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not any(hmac.compare_digest(key, valid) for valid in configured_keys):
+        raise HTTPException(status_code=403, detail=f"{role} authorization required.")
+    return key
+
+
 def require_api_key(
     authorization: Optional[str] = Header(default=None),
     x_api_key: Optional[str] = Header(default=None),
 ) -> str:
     """Require a valid application API key using constant-time comparison."""
-    key = _extract_api_key(authorization, x_api_key)
     regular_keys, _ = _configured_keys()
-    if not key or not any(hmac.compare_digest(key, valid) for valid in regular_keys):
-        raise HTTPException(status_code=401, detail="Authentication required.")
-    return key
+    return _require_key(authorization, x_api_key, regular_keys, role="Application")
 
 
 def require_admin_api_key(
@@ -48,8 +69,5 @@ def require_admin_api_key(
     x_api_key: Optional[str] = Header(default=None),
 ) -> str:
     """Require a dedicated administrator API key."""
-    key = _extract_api_key(authorization, x_api_key)
     _, admin_keys = _configured_keys()
-    if not key or not any(hmac.compare_digest(key, valid) for valid in admin_keys):
-        raise HTTPException(status_code=403, detail="Administrator authorization required.")
-    return key
+    return _require_key(authorization, x_api_key, admin_keys, role="Administrator")
