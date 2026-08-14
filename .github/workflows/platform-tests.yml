@@ -68,3 +68,6 @@ jobs:
       - name: Compile
         working-directory: month-7-platform
         run: python -m compileall -q .
+      - name: Production Docker build
+        working-directory: month-7-platform
+        run: docker build --tag fde-mastery-platform:ci .
