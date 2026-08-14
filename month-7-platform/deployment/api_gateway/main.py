@@ -1,14 +1,13 @@
 """FastAPI Gateway — Unified API for all domain agents."""
 
 import json
-import os
 import sys
 import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +17,7 @@ if str(_PLATFORM_ROOT) not in sys.path:
 from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
+from deployment.api_gateway.rate_limit import enforce_request_limits  # noqa: E402
 
 app = FastAPI(title="FDE Mastery Platform API", version="7.0.0")
 
@@ -62,12 +62,19 @@ def capabilities():
 
 
 @app.post("/api/{client_id}/{domain}/triage", dependencies=[Depends(require_api_key)])
-def triage(client_id: str, domain: Domain, payload: Dict[str, Any]):
+def triage(
+    client_id: str,
+    domain: Domain,
+    request: Request,
+    payload: Dict[str, Any],
+):
     start = time.time()
     request_id = str(uuid.uuid4())[:8]
 
     if client_id not in CLIENT_REGISTRY:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
+
+    enforce_request_limits(request, client_id)
 
     enabled_domains = {str(value) for value in CLIENT_REGISTRY[client_id].get("domains", [])}
     if domain.value not in enabled_domains:
