@@ -24,6 +24,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install SBOM generator
+        run: python -m pip install --upgrade pip "cyclonedx-bom>=7.0"
       - name: Build and push immutable image
         env:
           SHA: ${{ github.event.workflow_run.head_sha }}
