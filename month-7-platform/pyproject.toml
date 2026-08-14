@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fde-mastery-platform"
-version = "0.7.0"
+version = "0.8.1"
 description = "Unified FDE AI platform capstone"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,6 +18,24 @@ dependencies = [
 test = ["pytest>=8", "httpx>=0.27"]
 quality = ["ruff>=0.6", "mypy>=1.11"]
 security = ["bandit>=1.7", "pip-audit>=2.7"]
+redis = ["redis>=5.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+  "deployment*",
+  "persistence*",
+  "shared_orchestrator*",
+  "integrations*",
+  "observability*",
+  "security*",
+  "client_onboarding*",
+  "golden_datasets*",
+  "demo*",
+]
+
+[tool.setuptools.py-modules]
+# Intentionally empty: platform root modules are imported from the checkout.
 
 [tool.ruff]
 line-length = 110
