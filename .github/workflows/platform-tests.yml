@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -57,5 +58,9 @@ jobs:
         run: pip-audit --skip-editable
       - name: Compile all platform Python
         run: python -m compileall -q .
+      - name: Resilience smoke test
+        run: >-
+          python -c "from shared_orchestrator.resilience import ResilienceExecutor;
+          e=ResilienceExecutor(); assert e.health()['circuit']=='closed'; e.close()"
       - name: Build container
         run: docker build --tag fde-mastery-platform:ci .
