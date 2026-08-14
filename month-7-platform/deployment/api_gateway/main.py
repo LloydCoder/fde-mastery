@@ -18,11 +18,14 @@ from schemas import Domain, TriageResponse  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
 from deployment.api_gateway.rate_limit import enforce_request_limits  # noqa: E402
+from persistence.models import ClientRecord  # noqa: E402
+from persistence.repository import InMemoryPlatformRepository, PlatformRepository  # noqa: E402
 
 app = FastAPI(title="FDE Mastery Platform API", version="7.0.0")
 
-CLIENT_REGISTRY: Dict[str, Dict[str, Any]] = {}
-BILLING_COUNTER: Dict[str, int] = {}
+# The gateway depends on an interface rather than a concrete storage format.
+# Swap this for a PostgreSQL implementation without changing endpoint logic.
+REPOSITORY: PlatformRepository = InMemoryPlatformRepository()
 _START_TIME = time.time()
 
 
@@ -71,13 +74,13 @@ def triage(
     start = time.time()
     request_id = str(uuid.uuid4())[:8]
 
-    if client_id not in CLIENT_REGISTRY:
+    client = REPOSITORY.get_client(client_id)
+    if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
 
     enforce_request_limits(request, client_id)
 
-    enabled_domains = {str(value) for value in CLIENT_REGISTRY[client_id].get("domains", [])}
-    if domain.value not in enabled_domains:
+    if domain.value not in client.domains:
         raise HTTPException(
             status_code=403,
             detail=f"Domain {domain.value} is not enabled for client {client_id}.",
@@ -99,7 +102,7 @@ def triage(
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Domain agent execution failed.") from exc
 
-    BILLING_COUNTER[client_id] = BILLING_COUNTER.get(client_id, 0) + 1
+    REPOSITORY.increment_usage(client_id)
     elapsed_ms = (time.time() - start) * 1000
 
     return TriageResponse(
@@ -115,11 +118,13 @@ def triage(
 
 @app.post("/admin/clients/register")
 def register_client(registration: ClientRegistration, _: str = Depends(require_admin_api_key)):
-    CLIENT_REGISTRY[registration.client_id] = {
-        "client_name": registration.client_name,
-        "domains": [domain.value for domain in registration.domains],
-        "registered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
+    REPOSITORY.register_client(
+        ClientRecord.create(
+            client_id=registration.client_id,
+            client_name=registration.client_name,
+            domains=[domain.value for domain in registration.domains],
+        )
+    )
     return {"status": "registered", "client_id": registration.client_id}
 
 
@@ -127,6 +132,6 @@ def register_client(registration: ClientRegistration, _: str = Depends(require_a
 def client_usage(client_id: str, _: str = Depends(require_admin_api_key)):
     return {
         "client_id": client_id,
-        "total_calls": BILLING_COUNTER.get(client_id, 0),
+        "total_calls": REPOSITORY.get_usage(client_id),
         "billing_period": "current",
     }
