@@ -23,8 +23,10 @@ from persistence.factory import build_repository  # noqa: E402
 from persistence.models import ClientRecord  # noqa: E402
 from persistence.repository import PlatformRepository  # noqa: E402
 from schemas import Domain, TriageResponse  # noqa: E402
+from shared_orchestrator.resilience import AgentTimeoutError, CircuitOpenError  # noqa: E402
 from shared_orchestrator.router import AgentRouter  # noqa: E402
 from deployment.api_gateway.auth import require_admin_api_key, require_api_key  # noqa: E402
+from deployment.api_gateway.errors import api_error  # noqa: E402
 from deployment.api_gateway.limiter_factory import build_rate_limiter  # noqa: E402
 
 app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
@@ -68,6 +70,20 @@ def _limiter_backend() -> str:
     return "redis" if RATE_LIMITER.__module__.endswith("redis_rate_limit") else "memory"
 
 
+def _audit_failure(request_id: str, client_id: str, domain: Domain, code: str, status_code: int, duration_ms: float) -> None:
+    REPOSITORY.record_audit_event(AuditEvent.create(
+        event_id=f"AUDIT-{request_id}",
+        request_id=request_id,
+        client_id=client_id,
+        domain=domain.value,
+        action="triage",
+        outcome="failure",
+        status_code=status_code,
+        duration_ms=duration_ms,
+        metadata={"error_code": code},
+    ))
+
+
 @app.middleware("http")
 async def security_and_observability(request: Request, call_next):
     request_id = new_request_id()
@@ -80,7 +96,6 @@ async def security_and_observability(request: Request, call_next):
         metrics.observe_request(request.method, request.url.path, 500, duration_ms)
         log_request(request_id, request.method, request.url.path, 500, duration_ms, request.path_params.get("client_id"))
         raise
-
     duration_ms = monotonic_ms() - started
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -94,13 +109,7 @@ async def security_and_observability(request: Request, call_next):
 
 @app.get("/health", response_model=HealthResponse)
 def health():
-    return HealthResponse(
-        status="healthy",
-        version=settings.version,
-        uptime_seconds=round(time.time() - _START_TIME, 2),
-        storage_backend=_storage_backend(),
-        rate_limit_backend=_limiter_backend(),
-    )
+    return HealthResponse(status="healthy", version=settings.version, uptime_seconds=round(time.time() - _START_TIME, 2), storage_backend=_storage_backend(), rate_limit_backend=_limiter_backend())
 
 
 @app.get("/health/ready")
@@ -166,34 +175,28 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
 
     try:
         agent_result = AGENT_ROUTER.route(domain, payload)
+    except AgentTimeoutError:
+        elapsed_ms = (time.time() - start) * 1000
+        _audit_failure(request_id, client_id, domain, "AGENT_TIMEOUT", 504, elapsed_ms)
+        return api_error(status_code=504, code="AGENT_TIMEOUT", message="The domain agent exceeded the execution deadline.", request_id=request_id, retryable=True)
+    except CircuitOpenError:
+        elapsed_ms = (time.time() - start) * 1000
+        _audit_failure(request_id, client_id, domain, "AGENT_CIRCUIT_OPEN", 503, elapsed_ms)
+        return api_error(status_code=503, code="AGENT_CIRCUIT_OPEN", message="The domain agent is temporarily unavailable.", request_id=request_id, retryable=True)
     except (ValueError, TypeError, KeyError) as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Domain agent execution failed.") from exc
+        elapsed_ms = (time.time() - start) * 1000
+        _audit_failure(request_id, client_id, domain, "INVALID_AGENT_INPUT", 422, elapsed_ms)
+        return api_error(status_code=422, code="INVALID_AGENT_INPUT", message="The request could not be processed by the domain agent.", request_id=request_id, retryable=False, details=str(exc))
+    except Exception:
+        elapsed_ms = (time.time() - start) * 1000
+        _audit_failure(request_id, client_id, domain, "AGENT_EXECUTION_FAILED", 500, elapsed_ms)
+        return api_error(status_code=500, code="AGENT_EXECUTION_FAILED", message="The domain agent failed to process the request.", request_id=request_id, retryable=False)
 
     REPOSITORY.increment_usage(client_id)
     elapsed_ms = (time.time() - start) * 1000
     audit_id = f"AUDIT-{request_id}"
-    REPOSITORY.record_audit_event(AuditEvent.create(
-        event_id=audit_id,
-        request_id=request_id,
-        client_id=client_id,
-        domain=domain.value,
-        action="triage",
-        outcome="success",
-        status_code=200,
-        duration_ms=elapsed_ms,
-        metadata={"agent": domain.value},
-    ))
-    return TriageResponse(
-        request_id=request_id,
-        client_id=client_id,
-        domain=domain.value,
-        result=agent_result.result,
-        confidence=agent_result.confidence,
-        processing_time_ms=round(elapsed_ms, 2),
-        audit_log_id=audit_id,
-    )
+    REPOSITORY.record_audit_event(AuditEvent.create(event_id=audit_id, request_id=request_id, client_id=client_id, domain=domain.value, action="triage", outcome="success", status_code=200, duration_ms=elapsed_ms, metadata={"agent": domain.value}))
+    return TriageResponse(request_id=request_id, client_id=client_id, domain=domain.value, result=agent_result.result, confidence=agent_result.confidence, processing_time_ms=round(elapsed_ms, 2), audit_log_id=audit_id)
 
 
 @app.get("/admin/audit/{event_id}", dependencies=[Depends(require_admin_api_key)])
