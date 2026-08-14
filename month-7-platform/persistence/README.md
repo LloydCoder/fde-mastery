@@ -11,21 +11,29 @@ Month 7 separates application logic from storage through `PlatformRepository`.
 
 ```bash
 FDE_DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/fde_mastery
+FDE_STORAGE_BACKEND=postgres
 ```
 
-Required packages:
+Required packages are included in the platform package:
 
 ```bash
-pip install sqlalchemy psycopg[binary]
+pip install -e "."
 ```
 
-## Schema
+## Migrations
 
-The initial SQL schema is in:
+The platform now tracks applied migrations in `fde_schema_migrations`.
 
-`migrations/001_initial.sql`
+Run:
 
-For production, use a migration runner and a tracked migration history rather than calling `Base.metadata.create_all()` on application startup.
+```bash
+cd month-7-platform
+python -m persistence.migrate
+```
+
+The migration runner applies files from `persistence/migrations/` in filename order and records each applied migration. This makes schema changes explicit and repeatable instead of relying on application startup to call `create_all()`.
+
+For a larger production deployment, this migration contract can later be replaced by Alembic while preserving the repository interface.
 
 ## Security
 
