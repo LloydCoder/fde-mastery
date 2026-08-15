@@ -2,30 +2,35 @@
 
 **Production-oriented Forward Deployed Engineering portfolio for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery contains six domain systems (Cybersecurity, Finance, HealthTech, Logistics, Legal, and RevOps) integrated by a Month 7 platform capstone. The capstone demonstrates typed agent contracts, orchestration, tenant/domain authorization, OIDC/JWT identity, PostgreSQL persistence, centralized audit events, Redis-compatible rate limiting, resilience controls, OpenTelemetry observability, AI security regression tests, and signed/SBOM-attested container releases.
+FDE Mastery contains six domain systems—Cybersecurity, Finance, HealthTech, Logistics, Legal, and RevOps—integrated by a Month 7 platform capstone. The platform demonstrates typed agent contracts, orchestration, tenant/domain authorization, OIDC/JWT identity, PostgreSQL persistence, centralized audit events, Redis-compatible rate limiting, resilience controls, OpenTelemetry integration, AI security regression tests, enterprise mutation safety, and signed/SBOM-attested container releases.
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed business workflow.
 
 ## Current platform capabilities
 
 - Six real Month 1–6 domain adapters behind one `DomainAgent` contract
-- Central `AgentRouter` with per-domain resilience and circuit breaking
-- FastAPI application and structured domain results
+- Central `AgentRouter` with per-domain resilience, retries, jitter, circuit breaking, and concurrency limits
+- FastAPI API with typed domain results and request correlation
 - API-key authentication plus production-oriented OIDC discovery/JWKS validation
 - JWT issuer, audience, expiry, signature, and required-claim validation
 - Tenant and scope/RBAC authorization
-- Request-size and rate-limit controls; Redis backend for horizontal deployments
-- PostgreSQL persistence boundary
-- Append-only centralized audit-event store
-- Checksum-verified, versioned transactional migration runner
-- Request correlation and OpenTelemetry tracing/metrics integration
-- Golden-dataset and integration-test architecture
+- Short-lived service-to-service signed tokens and mTLS identity validation contract
+- Request-size and distributed rate-limit controls
+- PostgreSQL persistence boundary and formal checksum-verified migrations
+- Centralized audit events with tamper-evident hash-chain utility
+- Mutation idempotency contract with production PostgreSQL schema
+- Sensitive-data redaction at the audit/output boundary
+- Policy-as-code gate for high-impact actions and human-approval escalation
+- OpenTelemetry tracing/metrics integration with OTLP Collector references
+- Golden-dataset evaluation and statistical drift detection
 - Executable prompt-injection/red-team regression cases
-- Ruff, MyPy, Bandit, pip-audit, pytest, compilation, and Docker CI gates
+- Deterministic resilience/chaos tests and staging load-smoke harness
+- Ruff, MyPy, Bandit, pip-audit, pytest, compilation, Terraform validation, and Docker CI gates
 - CycloneDX SBOM generation
 - Keyless Cosign container signing and SBOM attestation in the release workflow
-- Managed PostgreSQL/Redis production deployment reference
-- Interactive demo walkthrough and customer-style case-study template
+- Managed PostgreSQL/Redis production infrastructure reference
+- Interactive demo walkthrough and synthetic customer case-study template
+- Scheduled continuous-evaluation workflow
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
 
@@ -40,11 +45,11 @@ The repository demonstrates **production-oriented engineering controls**. It is 
                          |   FastAPI API   |
                          +--------+--------+
                                   |
-                +-----------------+-----------------+
-                |                 |                 |
-          OIDC / API keys       RBAC          Request controls
-                |          tenant + scopes     size + rate limit
-                +-----------------+-----------------+
+                +-----------------+------------------+
+                |                 |                  |
+          OIDC / API keys       RBAC            Policy + idempotency
+          service identity   tenant + scopes       redaction
+                +-----------------+------------------+
                                   |
                          +--------v--------+
                          |   AgentRouter   |
@@ -56,13 +61,12 @@ The repository demonstrates **production-oriented engineering controls**. It is 
        v            v             v             v            v            v
    Security      Finance      HealthTech    Logistics      Legal        RevOps
    Month 1      Month 2        Month 3       Month 4      Month 5      Month 6
-       |            |             |             |            |            |
-       +------------+-------------+-------------+------------+------------+
                                   |
                 +-----------------+------------------+
                 |                                    |
-          PostgreSQL                            Observability
-        state + audit events                  traces + metrics
+          PostgreSQL                            OpenTelemetry
+        state + audit +                         traces + metrics
+         migrations
                 |                                    |
                 +-----------------+------------------+
                                   v
@@ -70,15 +74,15 @@ The repository demonstrates **production-oriented engineering controls**. It is 
                   tests + SBOM + signed image + attestations
 ```
 
-## Month 7 platform
+## Enterprise hardening
 
-Location: `month-7-platform/`
+The production hardening contract is documented in [`month-7-platform/docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md).
 
-### Identity and authorization
+It covers identity, service authentication, secrets, policy gates, redaction, idempotency, audit integrity, reliability, observability, supply-chain verification, infrastructure controls, and recovery targets.
 
-OIDC authentication supports issuer discovery, JWKS key rotation/caching, signature verification, required JWT claims, issuer/audience checks, tenant extraction, and scopes. API-key authentication remains useful for controlled service/demo environments.
+### Production identity
 
-Production configuration uses:
+OIDC authentication supports issuer discovery, rotating JWKS validation/caching, JWT signature verification, required claims, issuer/audience checks, tenant extraction, and scopes.
 
 ```text
 FDE_OIDC_ISSUER=https://<identity-provider>
@@ -88,41 +92,17 @@ FDE_OIDC_JWKS_URL=<optional-explicit-jwks-url>
 
 Never commit tokens, signing keys, API keys, or provider secrets.
 
-### Persistence and audit
+### Mutation safety and high-impact actions
 
-Production deployments use PostgreSQL. The platform includes a centralized audit-event schema and repository with request ID, tenant/client, domain, action, outcome, status, duration, timestamp, and metadata.
+Production mutation requests require `X-Idempotency-Key`. Reusing a key with a different request fingerprint returns `409 Conflict`. High-impact actions can be blocked pending authorized human approval according to action, severity, confidence, amount, and client tier.
 
-### Migrations
+### Data and audit integrity
 
-The canonical runner is `persistence/migrations/runner.py`. It provides:
+PostgreSQL stores application and audit state. The migration runner provides version tracking, SHA-256 checksums, duplicate detection, drift detection, and transactional execution. Audit events are centrally persisted and a hash-chain utility provides tamper-evident event chaining for immutable archival pipelines.
 
-- numeric migration versions
-- durable version tracking
-- SHA-256 checksums
-- duplicate-version detection
-- checksum drift detection
-- transactional application
-- migration status inspection
+### AI security and evaluation
 
-Run:
-
-```bash
-python -m persistence.migrate
-```
-
-### Observability
-
-OpenTelemetry support lives under `month-7-platform/observability/` and supports API instrumentation plus OTLP export when enabled. Production deployments should send telemetry to an OpenTelemetry Collector and then to the organization's managed tracing/metrics backend.
-
-```text
-OTEL_ENABLED=true
-OTEL_SERVICE_NAME=fde-mastery-platform
-OTEL_EXPORTER_OTLP_ENDPOINT=https://<collector>
-```
-
-### AI security
-
-`security/redteam_cases.json` and `security/redteam.py` provide deterministic regression coverage for prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource-abuse scenarios.
+The red-team corpus covers prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource abuse. Statistical evaluation drift detection and scheduled CI evaluation are included alongside deterministic chaos and load-smoke tests.
 
 ---
 
@@ -143,37 +123,36 @@ Each domain remains independently testable while Month 7 provides the common int
 
 ## Security and release pipeline
 
-The repository separates quality validation from release attestation:
-
 ```text
 Pull request / main push
         |
-        v
-Platform Quality
-  pytest
-  six-domain smoke test
-  compileall
-  security/dependency checks
-  Docker build
+        +--> Platform Quality
+        |      pytest / six-domain smoke
+        |      security controls / chaos
+        |      Ruff / MyPy / Bandit / pip-audit
+        |      Terraform validate / SBOM / load smoke
+        |      Docker build
         |
-        v
-main success
+        +--> Static security
+        |      Semgrep
         |
-        v
-Release Attestation
-  immutable GHCR image
-  keyless Cosign signature
-  CycloneDX SBOM
-  SBOM attestation
+        +--> Scheduled Continuous Evaluation
+        |      red-team + evaluation drift gate
+        |
+        +--> Release Attestation
+               immutable GHCR image
+               keyless Cosign signature
+               CycloneDX SBOM
+               SBOM attestation
 ```
 
-The release workflow signs the immutable commit-tagged image rather than a mutable `latest` tag.
+Production admission should verify image signatures and provenance before deployment.
 
 ---
 
 ## Production reference
 
-See [`month-7-platform/docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) for the managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry requirements, and operational controls.
+See [`month-7-platform/docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) and [`month-7-platform/docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md) for managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry, identity, secrets, mutation safety, and operational controls.
 
 Minimum production configuration:
 
@@ -185,8 +164,11 @@ FDE_DATABASE_URL=<managed-postgresql-tls-url>
 FDE_REDIS_URL=<managed-redis-tls-url>
 FDE_OIDC_ISSUER=https://<identity-provider>
 FDE_OIDC_AUDIENCE=<audience>
+FDE_SECRETS_BACKEND=managed
 OTEL_ENABLED=true
 ```
+
+Production defaults fail closed if a managed secrets provider is not injected.
 
 ---
 
@@ -211,15 +193,16 @@ export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_m
 python -m persistence.migrate
 ```
 
-For production, use a secret manager and managed PostgreSQL/Redis rather than local development credentials.
+For production, inject a managed secrets provider and use managed PostgreSQL/Redis with TLS.
 
 ---
 
 ## Evidence and demonstrations
 
-- [`docs/DEMO.md`](month-7-platform/docs/DEMO.md) — five-minute interactive walkthrough
+- [`docs/DEMO.md`](month-7-platform/docs/DEMO.md) — interactive walkthrough
 - [`docs/CASE-STUDY.md`](month-7-platform/docs/CASE-STUDY.md) — synthetic customer-style case study template
 - [`docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) — production deployment reference
+- [`docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md) — production security/operations contract
 - [`security/ai-threat-model.md`](month-7-platform/security/ai-threat-model.md) — AI threat model
 
 Customer outcome numbers must only be added after a real deployment and measurement.
@@ -233,6 +216,7 @@ fde-mastery/
 ├── README.md
 ├── .github/workflows/
 │   ├── platform-tests.yml
+│   ├── evaluation.yml
 │   └── release-attestation.yml
 ├── month-1-cybersecurity/
 ├── month-2-finance/
@@ -246,6 +230,7 @@ fde-mastery/
     ├── security/
     ├── persistence/
     ├── observability/
+    ├── evaluation/
     ├── shared_orchestrator/
     ├── deployment/
     ├── scripts/
@@ -257,7 +242,7 @@ fde-mastery/
 
 ## Roadmap status
 
-### Implemented
+### Implemented engineering controls
 
 - [x] Common `DomainAgent` contract
 - [x] Six real domain adapters
@@ -266,27 +251,36 @@ fde-mastery/
 - [x] API-key authentication
 - [x] OIDC issuer discovery + JWKS JWT validation
 - [x] Tenant/scope/RBAC authorization
+- [x] Short-lived service authentication + mTLS identity contract
 - [x] PostgreSQL persistence boundary
-- [x] Centralized audit-event schema and PostgreSQL store
+- [x] Centralized audit-event schema/store
+- [x] Tamper-evident audit hash-chain utility
 - [x] Checksum-verified migration runner
+- [x] Idempotency contract and PostgreSQL schema
+- [x] Sensitive-data redaction boundary
+- [x] High-impact policy gate / human-approval contract
 - [x] Redis-compatible distributed rate limiting
-- [x] OpenTelemetry tracing/metrics integration
+- [x] OpenTelemetry integration and production Collector reference
 - [x] Executable AI red-team regression suite
+- [x] Statistical evaluation drift detector
+- [x] Deterministic chaos/resilience tests
+- [x] Staging load-smoke harness
+- [x] Terraform format/validation gate
 - [x] CycloneDX SBOM generation
 - [x] Keyless Cosign image signing and SBOM attestation workflow
 - [x] Managed PostgreSQL/Redis production reference
+- [x] Scheduled continuous-evaluation workflow
 - [x] Interactive demo walkthrough
 - [x] Customer-style case-study template
 - [x] CI quality/security/release gates
 
-### Evidence still requiring a real deployment
-
-These are intentionally **not** marked as production claims:
+### Evidence requiring real operational use
 
 - [ ] Real customer deployment and measured outcomes
 - [ ] External penetration test / independent security assessment
-- [ ] Production telemetry backend with real workload data
+- [ ] Production telemetry with real workload data
 - [ ] Customer-specific case study with verified metrics
+- [ ] Organization-specific managed secrets provider binding
 
 ---
 
