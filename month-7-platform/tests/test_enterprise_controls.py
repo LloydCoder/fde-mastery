@@ -40,7 +40,14 @@ def test_audit_chain_detects_tampering():
     first = chain_event("1", {"action": "login"})
     second = chain_event("2", {"action": "triage"}, first.event_hash)
     assert verify_chain([first, second])
-    tampered = chain_event("2", {"action": "tampered"}, first.event_hash)
+
+    # Simulate persisted event tampering: mutate the payload but retain its stored hash.
+    tampered = second.__class__(
+        event_id=second.event_id,
+        payload={"action": "tampered"},
+        previous_hash=second.previous_hash,
+        event_hash=second.event_hash,
+    )
     assert not verify_chain([first, tampered])
 
 
