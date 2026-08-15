@@ -1,5 +1,6 @@
 """FastAPI Gateway — Unified API for all domain agents."""
 
+import hashlib
 import json
 import sys
 import time
@@ -20,9 +21,12 @@ from observability import log_request, monotonic_ms, new_request_id
 from observability_metrics import metrics
 from persistence.audit import AuditEvent
 from persistence.factory import build_repository
+from persistence.idempotency import IdempotencyConflict, MemoryIdempotencyStore
 from persistence.models import ClientRecord
 from persistence.repository import PlatformRepository
 from schemas import Domain, TriageResponse
+from security.policy import evaluate_action
+from security.redaction import redact
 from shared_orchestrator.resilience import AgentTimeoutError, CircuitOpenError
 from shared_orchestrator.router import AgentRouter
 from deployment.api_gateway.auth import require_admin_api_key
@@ -33,10 +37,11 @@ from security.auth import Identity
 
 app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
 if settings.cors_origins:
-    app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"])
+    app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID", "X-Idempotency-Key"])
 
 REPOSITORY: PlatformRepository = build_repository()
 RATE_LIMITER = build_rate_limiter()
+IDEMPOTENCY = MemoryIdempotencyStore()
 _START_TIME = time.time()
 
 
@@ -118,6 +123,7 @@ def readiness():
             client.ping()
         except Exception:
             checks["rate_limiter"] = "unavailable"
+    checks["agents"] = "ok" if all(v.get("agent", {}).get("status") == "ready" for v in AGENT_ROUTER.health().values()) else "unavailable"
     ready = all(value == "ok" for value in checks.values())
     return {"status": "ready" if ready else "not_ready", "checks": checks}
 
@@ -149,8 +155,30 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
     if client is None:
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
     RATE_LIMITER(request, client_id)
+
+    idempotency_key = request.headers.get("X-Idempotency-Key", "").strip()
+    if settings.environment == "production" and not idempotency_key:
+        raise HTTPException(status_code=400, detail="X-Idempotency-Key is required for mutation requests.")
+    if idempotency_key:
+        fingerprint = hashlib.sha256(json.dumps({"client_id": client_id, "domain": domain.value, "payload": redact(payload)}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        try:
+            cached = IDEMPOTENCY.get(idempotency_key, fingerprint)
+        except IdempotencyConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if cached is not None:
+            return cached
+
     if domain.value not in client.domains:
         raise HTTPException(status_code=403, detail=f"Domain {domain.value} is not enabled for client {client_id}.")
+
+    severity = str(payload.get("severity", "low"))
+    action = str(payload.get("action", "triage"))
+    confidence_hint = float(payload.get("confidence", 1.0)) if payload.get("confidence") is not None else 1.0
+    decision = evaluate_action(action=action, confidence=confidence_hint, severity=severity)
+    if not decision.allowed:
+        elapsed_ms = (time.time() - start) * 1000
+        _audit_failure(request_id, client_id, domain, "HUMAN_APPROVAL_REQUIRED", 409, elapsed_ms)
+        return api_error(status_code=409, code="HUMAN_APPROVAL_REQUIRED", message=decision.reason, request_id=request_id, retryable=False)
 
     pref_path = _PLATFORM_ROOT / "preferences" / client_id / "rubric_overrides.json"
     rubric: dict[str, Any] = {}
@@ -185,8 +213,11 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
     REPOSITORY.increment_usage(client_id)
     elapsed_ms = (time.time() - start) * 1000
     audit_id = f"AUDIT-{request_id}"
-    REPOSITORY.record_audit_event(AuditEvent.create(event_id=audit_id, request_id=request_id, client_id=client_id, domain=domain.value, action="triage", outcome="success", status_code=200, duration_ms=elapsed_ms, metadata={"agent": domain.value}))
-    return TriageResponse(request_id=request_id, client_id=client_id, domain=domain.value, result=agent_result.result, confidence=agent_result.confidence, processing_time_ms=round(elapsed_ms, 2), audit_log_id=audit_id)
+    response = TriageResponse(request_id=request_id, client_id=client_id, domain=domain.value, result=redact(agent_result.result), confidence=agent_result.confidence, processing_time_ms=round(elapsed_ms, 2), audit_log_id=audit_id)
+    REPOSITORY.record_audit_event(AuditEvent.create(event_id=audit_id, request_id=request_id, client_id=client_id, domain=domain.value, action=action, outcome="success", status_code=200, duration_ms=elapsed_ms, metadata={"agent": domain.value}))
+    if idempotency_key:
+        IDEMPOTENCY.put(idempotency_key, fingerprint, response)
+    return response
 
 
 @app.get("/admin/audit/{event_id}", dependencies=[Depends(require_admin_api_key)])
