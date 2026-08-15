@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable
 
-from ..domain_agent import DomainAgentResult
-try:
-    from ...schemas import Domain
-except ImportError:
-    from schemas import Domain
+from domain_agent import DomainAgentResult
+from schemas import Domain
 
 
 def normalize_result(
@@ -36,7 +33,7 @@ def normalize_result(
         status="processed",
         result=payload,
         confidence=max(0.0, min(1.0, float(confidence))),
-        requires_human_review=True if requires_human_review else False,
+        requires_human_review=bool(requires_human_review),
         audit_metadata=metadata,
     )
 
