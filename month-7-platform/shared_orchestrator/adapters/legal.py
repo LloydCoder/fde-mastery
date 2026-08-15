@@ -31,15 +31,8 @@ class LegalDomainAdapter:
             self.domain,
             report,
             confidence=1.0,
-            requires_human_review=requires_review_from_steps(
-                report.mitigation_plan, "requires_counsel_approval"
-            ) or report.recommended_action.value in {"ESCALATE_LEGAL_COUNSEL", "REJECT_CONTRACT"},
-            audit_metadata={
-                "engine": "LegalAgent",
-                "source": "month-5-legal",
-                "confidence_semantics": "deterministic_rule_engine",
-                "legal_advice_disclaimer": True,
-            },
+            requires_human_review=requires_review_from_steps(report.mitigation_plan, "requires_counsel_approval") or report.recommended_action.value in {"ESCALATE_LEGAL_COUNSEL", "REJECT_CONTRACT"},
+            audit_metadata={"engine": "LegalAgent", "source": "month-5-legal", "confidence_semantics": "deterministic_rule_engine", "legal_advice_disclaimer": True},
         )
 
     def health(self) -> Dict[str, Any]:
@@ -51,4 +44,5 @@ class LegalDomainAdapter:
             "clause_analysis": True,
             "redline_generation": True,
             "counsel_escalation": True,
+            "human_in_the_loop": True,
         }
