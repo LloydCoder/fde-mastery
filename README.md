@@ -22,9 +22,12 @@ FDE Mastery contains six domain systems—Cybersecurity, Finance, HealthTech, Lo
 - Sensitive-data redaction at the audit/output boundary
 - Policy-as-code gate for high-impact actions and human-approval escalation
 - OpenTelemetry tracing/metrics integration with OTLP Collector references
-- Golden-dataset evaluation and statistical drift detection
+- Versioned six-domain golden-evaluation baseline (600 deterministic synthetic cases)
+- Statistical evaluation drift detection and shadow-mode recording
 - Executable prompt-injection/red-team regression cases
 - Deterministic resilience/chaos tests and staging load-smoke harness
+- Tenant-scoped production integration contract for ingestion and enrichment providers
+- Explicit eight-gate enterprise deployment readiness model
 - Ruff, MyPy, Bandit, pip-audit, pytest, compilation, Terraform validation, and Docker CI gates
 - CycloneDX SBOM generation
 - Keyless Cosign container signing and SBOM attestation in the release workflow
@@ -33,6 +36,23 @@ FDE Mastery contains six domain systems—Cybersecurity, Finance, HealthTech, Lo
 - Scheduled continuous-evaluation workflow
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
+
+---
+
+## Enterprise deployment gate
+
+Before a domain is promoted to customer production, the platform now requires explicit evidence for all eight gates:
+
+1. Golden dataset expansion
+2. Approved external-tool integration
+3. Enterprise ingestion
+4. Evaluation thresholds
+5. Staging deployment
+6. Shadow mode
+7. Human-in-the-loop production
+8. Controlled, reversible actions
+
+See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). The repository intentionally separates reusable platform controls from customer-specific credentials, data, compliance evidence, and operational validation.
 
 ---
 
@@ -76,7 +96,7 @@ The repository demonstrates **production-oriented engineering controls**. It is 
 
 ## Enterprise hardening
 
-The production hardening contract is documented in [`month-7-platform/docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md).
+The production hardening contract is documented in [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md).
 
 It covers identity, service authentication, secrets, policy gates, redaction, idempotency, audit integrity, reliability, observability, supply-chain verification, infrastructure controls, and recovery targets.
 
@@ -94,7 +114,7 @@ Never commit tokens, signing keys, API keys, or provider secrets.
 
 ### Mutation safety and high-impact actions
 
-Production mutation requests require `X-Idempotency-Key`. Reusing a key with a different request fingerprint returns `409 Conflict`. High-impact actions can be blocked pending authorized human approval according to action, severity, confidence, amount, and client tier.
+Production mutation requests require `X-Idempotency-Key`. Reusing a key with a different request fingerprint returns `409 Conflict`. High-impact actions are blocked pending authorized human approval according to action, severity, confidence, amount, and client tier.
 
 ### Data and audit integrity
 
@@ -102,7 +122,7 @@ PostgreSQL stores application and audit state. The migration runner provides ver
 
 ### AI security and evaluation
 
-The red-team corpus covers prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource abuse. Statistical evaluation drift detection and scheduled CI evaluation are included alongside deterministic chaos and load-smoke tests.
+The red-team corpus covers prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource abuse. Statistical evaluation drift detection, 600 deterministic synthetic baseline cases, shadow-mode comparison, and scheduled evaluation are included alongside deterministic chaos and load-smoke tests.
 
 ---
 
@@ -128,7 +148,8 @@ Pull request / main push
         |
         +--> Platform Quality
         |      pytest / six-domain smoke
-        |      security controls / chaos
+        |      enterprise gates / security / chaos
+        |      golden coverage / shadow / action guard
         |      Ruff / MyPy / Bandit / pip-audit
         |      Terraform validate / SBOM / load smoke
         |      Docker build
@@ -152,7 +173,7 @@ Production admission should verify image signatures and provenance before deploy
 
 ## Production reference
 
-See [`month-7-platform/docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) and [`month-7-platform/docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md) for managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry, identity, secrets, mutation safety, and operational controls.
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), and [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) for managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry, identity, secrets, mutation safety, and operational controls.
 
 Minimum production configuration:
 
@@ -199,11 +220,11 @@ For production, inject a managed secrets provider and use managed PostgreSQL/Red
 
 ## Evidence and demonstrations
 
-- [`docs/DEMO.md`](month-7-platform/docs/DEMO.md) — interactive walkthrough
-- [`docs/CASE-STUDY.md`](month-7-platform/docs/CASE-STUDY.md) — synthetic customer-style case study template
-- [`docs/PRODUCTION.md`](month-7-platform/docs/PRODUCTION.md) — production deployment reference
-- [`docs/ENTERPRISE-HARDENING.md`](month-7-platform/docs/ENTERPRISE-HARDENING.md) — production security/operations contract
-- [`security/ai-threat-model.md`](month-7-platform/security/ai-threat-model.md) — AI threat model
+- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — eight-gate enterprise promotion model
+- [`docs/DEMO.md`](./docs/DEMO.md) — interactive walkthrough
+- [`docs/CASE-STUDY.md`](./docs/CASE-STUDY.md) — synthetic customer-style case study template
+- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) — production security/operations contract
+- [`security/ai-threat-model.md`](./month-7-platform/security/ai-threat-model.md) — AI threat model
 
 Customer outcome numbers must only be added after a real deployment and measurement.
 
@@ -231,10 +252,10 @@ fde-mastery/
     ├── persistence/
     ├── observability/
     ├── evaluation/
+    ├── integrations/
     ├── shared_orchestrator/
     ├── deployment/
     ├── scripts/
-    ├── docs/
     └── tests/
 ```
 
@@ -261,10 +282,14 @@ fde-mastery/
 - [x] High-impact policy gate / human-approval contract
 - [x] Redis-compatible distributed rate limiting
 - [x] OpenTelemetry integration and production Collector reference
+- [x] Versioned six-domain golden-evaluation baseline
 - [x] Executable AI red-team regression suite
 - [x] Statistical evaluation drift detector
+- [x] Shadow-mode recording and analyst agreement measurement
 - [x] Deterministic chaos/resilience tests
 - [x] Staging load-smoke harness
+- [x] Tenant-scoped integration contract for ingestion/enrichment providers
+- [x] Eight-gate enterprise deployment readiness model
 - [x] Terraform format/validation gate
 - [x] CycloneDX SBOM generation
 - [x] Keyless Cosign image signing and SBOM attestation workflow
@@ -281,6 +306,8 @@ fde-mastery/
 - [ ] Production telemetry with real workload data
 - [ ] Customer-specific case study with verified metrics
 - [ ] Organization-specific managed secrets provider binding
+
+These are intentionally not represented as completed merely because repository tests pass.
 
 ---
 
