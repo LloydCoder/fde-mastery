@@ -17,7 +17,10 @@ def main() -> None:
         raise SystemExit("requests must be between 1 and 10000")
     latencies = []
     failures = 0
-    with httpx.Client(timeout=5) as client:
+    # CI runners may expose HTTP(S)_PROXY variables. The smoke target is a
+    # loopback service, so bypass ambient proxy configuration for deterministic
+    # local verification and to avoid false failures from proxy interception.
+    with httpx.Client(timeout=5, trust_env=False) as client:
         for _ in range(args.requests):
             started = time.perf_counter()
             try:
