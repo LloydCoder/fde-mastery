@@ -2,17 +2,23 @@
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class SlackBot:
     """Posts alerts to Slack channels for triage and escalation events."""
 
-    def __init__(self, webhook_url: str = None, channel: str = "#fde-alerts"):
+    def __init__(self, webhook_url: Optional[str] = None, channel: str = "#fde-alerts"):
         self.webhook_url = webhook_url or os.environ.get("SLACK_WEBHOOK_URL", "")
         self.channel = channel
 
-    def send_alert(self, title: str, message: str, severity: str = "info", fields: Dict[str, Any] = None) -> Dict[str, Any]:
+    def send_alert(
+        self,
+        title: str,
+        message: str,
+        severity: str = "info",
+        fields: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Send a formatted Slack message."""
         color_map = {
             "info": "#36a64f",
@@ -42,12 +48,12 @@ class SlackBot:
         if self.webhook_url:
             try:
                 import requests
+
                 resp = requests.post(self.webhook_url, json=payload, timeout=5)
                 return {"status": "sent", "code": resp.status_code}
             except Exception as e:
                 return {"status": "error", "error": str(e)}
 
-        # Mock mode — print to console
         print(f"[SLACK MOCK] Channel: {self.channel}")
         print(f"[SLACK MOCK] Title: {title}")
         print(f"[SLACK MOCK] Message: {message}")
