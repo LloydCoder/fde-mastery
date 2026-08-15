@@ -50,4 +50,5 @@ class HealthTechDomainAdapter:
             "clinical_triage": True,
             "deterministic_safeguards": True,
             "synthetic_data_only": True,
+            "human_in_the_loop": True,
         }
