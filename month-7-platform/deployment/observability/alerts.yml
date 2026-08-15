@@ -1,0 +1,38 @@
+groups:
+  - name: fde-platform
+    rules:
+      - alert: FDEHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: FDE API error rate is above 5%
+      - alert: FDEHighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: FDE API p95 latency is above one second
+      - alert: FDEAuthFailures
+        expr: sum(rate(auth_decisions_total{outcome="deny"}[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated authentication denials detected
+      - alert: FDEEvaluationDrift
+        expr: fde_evaluation_pass_rate < 0.90
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Evaluation pass rate has fallen below 90%
+      - alert: FDERateLimitPressure
+        expr: sum(rate(rate_limit_rejections_total[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated rate-limit rejection volume detected
