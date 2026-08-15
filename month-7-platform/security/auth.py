@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import ssl
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Mapping
-from urllib.request import Request, urlopen
 
 import jwt
+import requests
 from fastapi import HTTPException, Request as FastAPIRequest, status
 from jwt import PyJWKClient
 
@@ -49,13 +48,18 @@ def discover_jwks_url(issuer: str) -> str:
     """Resolve JWKS endpoint from OIDC discovery metadata."""
     issuer = issuer.rstrip("/")
     discovery_url = _https_url(f"{issuer}/.well-known/openid-configuration", "OIDC discovery URL")
-    request = Request(discovery_url, headers={"Accept": "application/json", "User-Agent": "fde-mastery/1.0"})
-    context = ssl.create_default_context()
     try:
-        with urlopen(request, timeout=5, context=context) as response:  # noqa: S310 - URL comes from trusted deployment config
-            metadata = json.load(response)
-    except Exception as exc:
+        response = requests.get(
+            discovery_url,
+            headers={"Accept": "application/json", "User-Agent": "fde-mastery/1.0"},
+            timeout=5,
+        )
+        response.raise_for_status()
+        metadata = response.json()
+    except requests.RequestException as exc:
         raise AuthenticationError("Unable to load OIDC discovery metadata") from exc
+    if not isinstance(metadata, dict):
+        raise AuthenticationError("OIDC discovery metadata is invalid")
     jwks_url = metadata.get("jwks_uri")
     if not isinstance(jwks_url, str) or not jwks_url:
         raise AuthenticationError("OIDC discovery metadata does not contain jwks_uri")
