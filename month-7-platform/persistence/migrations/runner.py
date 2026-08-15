@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sqlalchemy import Connection, text
 
+MIGRATIONS_DIR = Path(__file__).resolve().parent
 _MIGRATION = re.compile(r"^(?P<version>\d{3,4})_(?P<name>[a-z0-9_]+)\.sql$")
 
 
