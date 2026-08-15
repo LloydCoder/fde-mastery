@@ -108,7 +108,9 @@ jobs:
       - name: Ruff
         run: python -m ruff check security persistence shared_orchestrator deployment evaluation integrations --select E4,E7,E9,F --ignore E501,F401
       - name: MyPy typed platform core
-        run: python -m mypy security persistence shared_orchestrator deployment --explicit-package-bases --ignore-missing-imports
+        run: |
+          set -o pipefail
+          python -m mypy security persistence shared_orchestrator deployment --explicit-package-bases --ignore-missing-imports 2>&1 | tee artifacts/mypy.txt
       - name: Bandit
         run: python -m bandit -r security persistence shared_orchestrator deployment evaluation integrations -q
       - name: Dependency audit
@@ -147,6 +149,7 @@ jobs:
           name: platform-quality-artifacts
           path: |
             month-7-platform/artifacts/pytest.xml
+            month-7-platform/artifacts/mypy.txt
             month-7-platform/artifacts/sbom.cdx.json
             month-7-platform/artifacts/uvicorn.log
             month-7-platform/evaluation/golden/generated-v1.jsonl
