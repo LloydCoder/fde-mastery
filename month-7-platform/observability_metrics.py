@@ -9,7 +9,7 @@ from threading import Lock
 class Metrics:
     def __init__(self) -> None:
         self._lock = Lock()
-        self._requests = Counter()
+        self._requests: Counter[tuple[str, str, int]] = Counter()
         self._latency_ms = 0.0
 
     def observe_request(self, method: str, path: str, status: int, duration_ms: float) -> None:
@@ -24,7 +24,7 @@ class Metrics:
                 "# TYPE fde_http_requests_total counter",
             ]
             for (method, path, status), value in sorted(self._requests.items()):
-                safe_path = path.replace('\\', '\\\\').replace('"', '\\"')
+                safe_path = path.replace("\\", "\\\\").replace('"', '\\"')
                 lines.append(
                     f'fde_http_requests_total{{method="{method}",path="{safe_path}",status="{status}"}} {value}'
                 )
