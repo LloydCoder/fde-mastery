@@ -31,14 +31,8 @@ class LogisticsDomainAdapter:
             self.domain,
             report,
             confidence=1.0,
-            requires_human_review=requires_review_from_steps(
-                report.mitigation_plan, "requires_human_approval"
-            ),
-            audit_metadata={
-                "engine": "LogisticsAgent",
-                "source": "month-4-logistics",
-                "confidence_semantics": "deterministic_rule_engine",
-            },
+            requires_human_review=requires_review_from_steps(report.mitigation_plan, "requires_human_approval"),
+            audit_metadata={"engine": "LogisticsAgent", "source": "month-4-logistics", "confidence_semantics": "deterministic_rule_engine"},
         )
 
     def health(self) -> Dict[str, Any]:
@@ -50,4 +44,5 @@ class LogisticsDomainAdapter:
             "cold_chain_detection": True,
             "shipment_risk": True,
             "deterministic_fallback": True,
+            "human_in_the_loop": True,
         }
