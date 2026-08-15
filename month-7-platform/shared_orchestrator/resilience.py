@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import random
+import secrets
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeoutError
@@ -122,7 +122,7 @@ class ResilienceExecutor:
                         released = True
                         raise
                     delay = min(self.config.backoff_seconds * (2**attempt), self.config.max_backoff_seconds)
-                    time.sleep(delay * random.uniform(0.5, 1.5))
+                    time.sleep(delay * secrets.SystemRandom().uniform(0.5, 1.5))
                 else:
                     self._record_success()
                     self._semaphore.release()
