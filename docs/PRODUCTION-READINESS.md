@@ -1,6 +1,6 @@
 # Enterprise Production Readiness Gate
 
-This repository uses eight explicit gates before a domain is promoted from engineering to customer production. The gates are aligned with a risk-managed AI lifecycle: govern, map, measure and manage. NIST describes continuous AI risk management across the lifecycle, while OWASP's 2025 guidance highlights prompt injection, sensitive-information disclosure, improper output handling, excessive agency and unbounded consumption as material GenAI risks. citeturn0search4turn0search0
+This repository uses eight explicit gates before a domain is promoted from engineering to customer production. The gates are aligned with a risk-managed AI lifecycle: govern, map, measure and manage. The security baseline should be reviewed against current NIST AI RMF and OWASP GenAI guidance.
 
 ## The eight gates
 
@@ -30,7 +30,7 @@ A domain is **not production-ready** merely because the repository CI is green. 
 
 ## Security and governance baseline
 
-The platform follows least privilege, tenant isolation, structured auditability, signed release artifacts and fail-closed high-impact actions. AI-specific controls should be reviewed against the current OWASP GenAI risks, including prompt injection, sensitive information disclosure, improper output handling and excessive agency. citeturn0search0turn0search25
+The platform follows least privilege, tenant isolation, structured auditability, signed release artifacts and fail-closed high-impact actions. AI-specific controls should be reviewed against current OWASP GenAI risks, including prompt injection, sensitive information disclosure, improper output handling and excessive agency.
 
 ## Customer deployment evidence
 
