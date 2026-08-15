@@ -27,25 +27,22 @@ class FinanceDomainAdapter:
         module = load_domain_agent("month-2-finance")
         transaction = module.FinancialTransaction.model_validate(payload)
         report = self._get_agent().evaluate_transaction(transaction)
-        requires_review = report.recommended_action.value in {
-            "FLAG_FOR_REVIEW",
-            "FREEZE_ACCOUNT",
-            "AUTO_REJECT",
-        }
+        requires_review = report.recommended_action.value in {"FLAG_FOR_REVIEW", "FREEZE_ACCOUNT", "AUTO_REJECT"}
         return normalize_result(
             self.domain,
             report,
             confidence=report.confidence,
             requires_human_review=requires_review,
-            audit_metadata={
-                "engine": "FinancialRiskAgent",
-                "source": "month-2-finance",
-                "review_boundary": "risk_action_policy",
-            },
+            audit_metadata={"engine": "FinancialRiskAgent", "source": "month-2-finance", "review_boundary": "risk_action_policy"},
         )
 
     def health(self) -> Dict[str, Any]:
         return {"domain": self.domain.value, "status": "ready", "engine": "FinancialRiskAgent"}
 
     def capabilities(self) -> Dict[str, Any]:
-        return {"transaction_risk": True, "aml_policy": True, "deterministic_fallback": True}
+        return {
+            "transaction_risk": True,
+            "aml_policy": True,
+            "deterministic_fallback": True,
+            "human_in_the_loop": True,
+        }
