@@ -21,9 +21,7 @@ class CybersecurityDomainAdapter:
     def _get_agent(self):
         if self._agent is None:
             module = load_domain_agent("month-1-cybersecurity")
-            self._agent = module.SOCTriageAgent(
-                provider=os.getenv("CYBERSECURITY_LLM_PROVIDER", "openai")
-            )
+            self._agent = module.SOCTriageAgent(provider=os.getenv("CYBERSECURITY_LLM_PROVIDER", "openai"))
         return self._agent
 
     def evaluate(self, payload: Dict[str, Any]) -> DomainAgentResult:
@@ -34,9 +32,7 @@ class CybersecurityDomainAdapter:
             self.domain,
             report,
             confidence=report.confidence_score,
-            requires_human_review=requires_review_from_steps(
-                report.mitigation_plan, "requires_human_approval"
-            ),
+            requires_human_review=requires_review_from_steps(report.mitigation_plan, "requires_human_approval"),
             audit_metadata={"engine": "SOCTriageAgent", "source": "month-1-cybersecurity"},
         )
 
@@ -44,4 +40,9 @@ class CybersecurityDomainAdapter:
         return {"domain": self.domain.value, "status": "ready", "engine": "SOCTriageAgent"}
 
     def capabilities(self) -> Dict[str, Any]:
-        return {"triage": True, "providers": ["openai", "anthropic"], "mock_mode": True}
+        return {
+            "triage": True,
+            "providers": ["openai", "anthropic"],
+            "mock_mode": True,
+            "human_in_the_loop": True,
+        }
