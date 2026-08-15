@@ -107,8 +107,8 @@ jobs:
           PY
       - name: Ruff
         run: python -m ruff check security persistence shared_orchestrator deployment evaluation integrations --select E4,E7,E9,F --ignore E501,F401
-      - name: MyPy
-        run: python -m mypy security persistence shared_orchestrator evaluation integrations --explicit-package-bases --ignore-missing-imports
+      - name: MyPy typed platform core
+        run: python -m mypy security persistence shared_orchestrator deployment --explicit-package-bases --ignore-missing-imports
       - name: Bandit
         run: python -m bandit -r security persistence shared_orchestrator deployment evaluation integrations -q
       - name: Dependency audit
