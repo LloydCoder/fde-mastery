@@ -1,5 +1,10 @@
 """FastAPI Gateway — Unified API for all domain agents."""
 
+# The gateway adds the platform root to sys.path before importing the platform
+# modules so it can run directly as a deployment entrypoint. Ruff E402 is
+# therefore intentionally suppressed for this file only.
+# ruff: noqa: E402
+
 import hashlib
 import json
 import sys
