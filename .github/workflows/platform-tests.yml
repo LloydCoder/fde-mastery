@@ -17,7 +17,7 @@ jobs:
   test-quality:
     name: Test, Security and Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: month-7-platform
@@ -28,6 +28,7 @@ jobs:
       FDE_MONTH1_PROVIDER: mock
       MOCK_LLM: "true"
       FDE_ENVIRONMENT: test
+      FDE_SECRETS_BACKEND: environment
       OTEL_ENABLED: "false"
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
@@ -57,15 +58,13 @@ jobs:
           python - <<'PY'
           from shared_orchestrator.router import AgentRouter
           from schemas import Domain
-
           router = AgentRouter()
           try:
               router.register_defaults()
               expected = {d.value for d in Domain}
               actual = set(router.list_domains())
               assert actual == expected, (actual, expected)
-              health = router.health()
-              assert all(v["agent"]["status"] == "ready" for v in health.values())
+              assert all(v["agent"]["status"] == "ready" for v in router.health().values())
           finally:
               router.close()
           PY
@@ -74,22 +73,22 @@ jobs:
         run: |
           python - <<'PY'
           from security.redteam import load_corpus, run_benchmark
-
           def safe_responder(_prompt: str) -> str:
               return "Request rejected by policy. No protected information or privileged action was provided."
-
           result = run_benchmark(safe_responder, load_corpus())
           assert result["total"] >= 4, result
           assert result["failed"] == 0, result
           assert result["passed"] is True, result
           PY
 
+      - name: Validate enterprise security controls
+        run: python -m pytest -q tests/test_enterprise_controls.py tests/test_chaos_controls.py
+
       - name: Validate migration sequence
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-
           files = sorted(Path("persistence/migrations").glob("[0-9][0-9][0-9]_*.sql"))
           assert files, "No SQL migrations found"
           versions = [int(re.match(r"^(\d{3})_", f.name).group(1)) for f in files]
@@ -97,19 +96,26 @@ jobs:
           PY
 
       - name: Ruff
-        run: python -m ruff check security persistence shared_orchestrator deployment --select E4,E7,E9,F --ignore E501,F401
+        run: python -m ruff check security persistence shared_orchestrator deployment evaluation --select E4,E7,E9,F --ignore E501,F401
 
       - name: MyPy
-        run: python -m mypy security persistence shared_orchestrator --explicit-package-bases --ignore-missing-imports
+        run: python -m mypy security persistence shared_orchestrator evaluation --explicit-package-bases --ignore-missing-imports
 
       - name: Bandit
-        run: python -m bandit -r security persistence shared_orchestrator deployment -q
+        run: python -m bandit -r security persistence shared_orchestrator deployment evaluation -q
 
       - name: Dependency audit
         run: python -m pip_audit --skip-editable
 
       - name: Compile source tree
-        run: python -m compileall -q security persistence shared_orchestrator deployment
+        run: python -m compileall -q security persistence shared_orchestrator deployment evaluation
+
+      - name: Terraform format and validation
+        working-directory: month-7-platform/deployment/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate
 
       - name: Generate SBOM
         run: bash scripts/generate-sbom.sh
@@ -125,6 +131,14 @@ jobs:
           assert doc.get("components") is not None
           PY
 
+      - name: Start staging API for load smoke
+        run: |
+          nohup python -m uvicorn deployment.api_gateway.main:app --host 127.0.0.1 --port 8000 > artifacts/uvicorn.log 2>&1 &
+          for i in $(seq 1 20); do curl --fail --silent http://127.0.0.1:8000/health && break || sleep 1; done
+
+      - name: Load smoke
+        run: python scripts/load_smoke.py --url http://127.0.0.1:8000/health --requests 50
+
       - name: Upload diagnostics and SBOM
         if: always()
         uses: actions/upload-artifact@v4
@@ -133,7 +147,22 @@ jobs:
           path: |
             month-7-platform/artifacts/pytest.xml
             month-7-platform/artifacts/sbom.cdx.json
+            month-7-platform/artifacts/uvicorn.log
           if-no-files-found: warn
 
       - name: Production Docker build
         run: docker build --tag fde-mastery-platform:ci .
+
+  security-static:
+    name: Static security scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install Semgrep
+        run: python -m pip install --disable-pip-version-check semgrep
+      - name: Semgrep
+        run: semgrep scan --config p/python --config p/security-audit --error --metrics off month-7-platform/security month-7-platform/deployment
