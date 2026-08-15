@@ -1,0 +1,40 @@
+name: Continuous Evaluation
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: month-7-platform
+    env:
+      FDE_STORAGE_BACKEND: memory
+      FDE_RATE_LIMIT_BACKEND: memory
+      FDE_MONTH1_PROVIDER: mock
+      MOCK_LLM: "true"
+      FDE_ENVIRONMENT: test
+      OTEL_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install -e ".[test,quality]"
+      - name: Run evaluation and security benchmarks
+        run: python -m pytest -q tests/test_security_benchmarks.py tests/test_enterprise_controls.py
+      - name: Enforce statistical drift threshold
+        run: |
+          python - <<'PY'
+          from evaluation.drift import detect_drift
+          result = detect_drift(99, 100, 99, 100)
+          assert not result.drifted, result
+          print(result)
+          PY
