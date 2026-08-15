@@ -27,20 +27,13 @@ class RevOpsDomainAdapter:
         module = load_domain_agent("month-6-revops")
         opportunity = module.OpportunityPayload.model_validate(payload)
         report = self._get_agent().evaluate(opportunity)
-        requires_review = has_manual_steps(report.automation_workflow) or report.risk_tier.value in {
-            "HIGH",
-            "CRITICAL",
-        }
+        requires_review = has_manual_steps(report.automation_workflow) or report.risk_tier.value in {"HIGH", "CRITICAL"}
         return normalize_result(
             self.domain,
             report,
             confidence=1.0,
             requires_human_review=requires_review,
-            audit_metadata={
-                "engine": "RevOpsAgent",
-                "source": "month-6-revops",
-                "confidence_semantics": "deterministic_rule_engine",
-            },
+            audit_metadata={"engine": "RevOpsAgent", "source": "month-6-revops", "confidence_semantics": "deterministic_rule_engine"},
         )
 
     def health(self) -> Dict[str, Any]:
@@ -52,4 +45,5 @@ class RevOpsDomainAdapter:
             "deal_governance": True,
             "churn_risk": True,
             "workflow_routing": True,
+            "human_in_the_loop": True,
         }
