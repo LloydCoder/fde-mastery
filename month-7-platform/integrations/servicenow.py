@@ -7,7 +7,12 @@ from typing import Any, Dict, Optional
 class ServiceNowConnector:
     """Creates and updates ServiceNow incidents for escalated cases."""
 
-    def __init__(self, instance: str = None, username: str = None, password: str = None):
+    def __init__(
+        self,
+        instance: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ):
         self.instance = instance or os.environ.get("SERVICENOW_INSTANCE", "")
         self.username = username or os.environ.get("SERVICENOW_USER", "")
         self.password = password or os.environ.get("SERVICENOW_PASS", "")
