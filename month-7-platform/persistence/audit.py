@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from security.redaction import redact
+
 
 @dataclass(frozen=True)
 class AuditEvent:
@@ -31,6 +33,7 @@ class AuditEvent:
         duration_ms: float,
         metadata: dict[str, str] | None = None,
     ) -> "AuditEvent":
+        safe_metadata = redact(metadata or {})
         return cls(
             event_id=event_id,
             request_id=request_id,
@@ -41,5 +44,5 @@ class AuditEvent:
             status_code=status_code,
             duration_ms=round(duration_ms, 2),
             created_at=datetime.now(timezone.utc).isoformat(),
-            metadata=metadata or {},
+            metadata={str(k): str(v) for k, v in safe_metadata.items()},
         )
