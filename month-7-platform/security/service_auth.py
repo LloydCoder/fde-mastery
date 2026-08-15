@@ -1,13 +1,6 @@
-"""Short-lived service-to-service authentication primitives.
-
-For deployments that provide mTLS at the mesh/ingress layer, the presented
-service identity can be mapped to this contract. For environments without a
-mesh, this module provides an HMAC-signed, short-lived token fallback.
-"""
+"""Short-lived service-to-service authentication primitives."""
 from __future__ import annotations
 
-import hashlib
-import hmac
 import time
 from dataclasses import dataclass
 
