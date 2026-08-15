@@ -88,7 +88,13 @@ class ResilienceExecutor:
         finally:
             self._semaphore.release()
 
-    def execute(self, operation: Callable[[], T], *, retryable: Callable[[Exception], bool]) -> T:
+    def execute(
+        self,
+        operation: Callable[[], T],
+        *,
+        retryable: Callable[[Exception], bool] | None = None,
+    ) -> T:
+        """Execute an operation; retries require an explicit retry predicate."""
         if self._closed:
             raise RuntimeError("Resilience executor is closed")
         if not self._circuit_allows():
@@ -96,6 +102,7 @@ class ResilienceExecutor:
         if not self._semaphore.acquire(timeout=self.config.timeout_seconds):
             raise AgentTimeoutError("Agent concurrency capacity is exhausted")
 
+        is_retryable = retryable or (lambda _exc: False)
         released = False
         try:
             attempts = self.config.max_retries + 1
@@ -109,15 +116,12 @@ class ResilienceExecutor:
                     self._record_failure()
                     raise AgentTimeoutError("Agent execution exceeded the configured timeout") from exc
                 except Exception as exc:
-                    if attempt >= attempts - 1 or not retryable(exc):
+                    if attempt >= attempts - 1 or not is_retryable(exc):
                         self._record_failure()
                         self._semaphore.release()
                         released = True
                         raise
-                    delay = min(
-                        self.config.backoff_seconds * (2**attempt),
-                        self.config.max_backoff_seconds,
-                    )
+                    delay = min(self.config.backoff_seconds * (2**attempt), self.config.max_backoff_seconds)
                     time.sleep(delay * random.uniform(0.5, 1.5))
                 else:
                     self._record_success()
@@ -137,11 +141,7 @@ class ResilienceExecutor:
                 circuit = "half_open" if not self._half_open_probe else "probe_in_flight"
             else:
                 circuit = "open"
-            return {
-                "circuit": circuit,
-                "failures": self._failures,
-                "max_concurrency": self.config.max_concurrency,
-            }
+            return {"circuit": circuit, "failures": self._failures, "max_concurrency": self.config.max_concurrency}
 
     def close(self) -> None:
         with self._lock:
