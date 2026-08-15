@@ -19,7 +19,7 @@ def normalize_result(
     requires_human_review: bool = False,
     audit_metadata: Dict[str, Any] | None = None,
 ) -> DomainAgentResult:
-    """Wrap a domain-specific Pydantic result in the platform envelope."""
+    """Wrap a domain-specific result in the platform envelope with safe deployment metadata."""
     if hasattr(result, "model_dump"):
         payload = result.model_dump(mode="json")
     elif isinstance(result, dict):
@@ -27,13 +27,17 @@ def normalize_result(
     else:
         raise TypeError(f"Unsupported domain result type: {type(result)!r}")
 
+    metadata = dict(audit_metadata or {})
+    metadata.setdefault("deployment_mode", "human_in_the_loop")
+    metadata.setdefault("safety_policy", "v1")
+
     return DomainAgentResult(
         domain=domain,
         status="processed",
         result=payload,
-        confidence=confidence,
-        requires_human_review=requires_human_review,
-        audit_metadata=audit_metadata or {},
+        confidence=max(0.0, min(1.0, float(confidence))),
+        requires_human_review=True if requires_human_review else False,
+        audit_metadata=metadata,
     )
 
 
