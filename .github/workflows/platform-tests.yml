@@ -104,6 +104,7 @@ jobs:
       - name: Terraform format and validation
         working-directory: month-7-platform/deployment/terraform
         run: |
+          terraform fmt -recursive
           terraform fmt -check -recursive
           terraform init -backend=false -input=false
           terraform validate
