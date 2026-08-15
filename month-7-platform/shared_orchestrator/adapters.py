@@ -59,8 +59,6 @@ class LegacyAgentLoader:
         module = importlib.util.module_from_spec(spec)
         sys.modules[agent_name] = module
 
-        # Some legacy modules import `schemas` as a top-level module. Scope that
-        # compatibility alias only for module execution, then restore it.
         previous = sys.modules.get("schemas")
         if self.schema_module is not None:
             sys.modules["schemas"] = self.schema_module
@@ -77,35 +75,54 @@ class LegacyAgentLoader:
 
 
 class BaseLegacyAdapter:
+    """Normalize legacy agents into the deployment-safe Month 7 contract."""
+
     domain: Domain
     agent_class_name: str
     payload_class_name: str
     evaluate_method: str
     month_dir: str
 
+    # Actions that can materially affect a person, account, shipment, contract,
+    # production system, or customer relationship must remain human-approved.
+    HIGH_IMPACT_TOKENS = (
+        "AUTO_CONTAIN",
+        "AUTO_REJECT",
+        "FREEZE",
+        "HOLD",
+        "QUARANTINE",
+        "REROUTE",
+        "IMMEDIATE",
+        "REJECT",
+        "ESCALATE",
+        "AMEND",
+        "APPROVE",
+        "AUTO_ASSIGN",
+        "TRIGGER_",
+        "FLAG_",
+    )
+
     def __init__(self, *, provider: str | None = None) -> None:
         loader = LegacyAgentLoader(self.month_dir)
         module = loader.load()
         self._module = module
         self._agent_class = getattr(module, self.agent_class_name)
-        self._payload_class: Type[BaseModel] | None = getattr(
-            module, self.payload_class_name, None
-        )
+        self._payload_class: Type[BaseModel] | None = getattr(module, self.payload_class_name, None)
         if self._payload_class is None and loader.schema_module is not None:
             self._payload_class = getattr(loader.schema_module, self.payload_class_name, None)
         if self._payload_class is None:
-            raise ImportError(f"Payload model {self.payload_class_class_name} was not found")
+            raise ImportError(f"Payload model {self.payload_class_name} was not found")
         kwargs: Dict[str, Any] = {}
         if provider is not None:
             kwargs["provider"] = provider
         self._agent = self._agent_class(**kwargs)
 
     def evaluate(self, payload: Dict[str, Any]) -> DomainAgentResult:
+        if not isinstance(payload, dict) or not payload:
+            raise ValueError(f"{self.domain.value} payload must be a non-empty object")
         model = self._payload_class.model_validate(payload)
         result = getattr(self._agent, self.evaluate_method)(model)
-        result_data = (
-            result.model_dump(mode="json") if isinstance(result, BaseModel) else {"value": result}
-        )
+        result_data = result.model_dump(mode="json") if isinstance(result, BaseModel) else {"value": result}
         return DomainAgentResult(
             domain=self.domain,
             result=result_data,
@@ -114,6 +131,7 @@ class BaseLegacyAdapter:
             audit_metadata={
                 "adapter": self.__class__.__name__,
                 "legacy_agent": self.agent_class_name,
+                "deployment_mode": "human_in_the_loop",
             },
         )
 
@@ -124,21 +142,39 @@ class BaseLegacyAdapter:
             if isinstance(value, (int, float)):
                 numeric = float(value)
                 return max(0.0, min(1.0, numeric if numeric <= 1 else numeric / 100.0))
+        for key in ("risk_score", "overall_risk_score", "health_score"):
+            value = result.get(key)
+            if isinstance(value, (int, float)):
+                return max(0.0, min(1.0, 1.0 - float(value) / 100.0))
         return 0.5
 
-    @staticmethod
-    def _requires_review(result: Dict[str, Any]) -> bool:
+    @classmethod
+    def _requires_review(cls, result: Dict[str, Any]) -> bool:
         action = str(result.get("recommended_action", result.get("action", ""))).upper()
-        return any(token in action for token in ("REVIEW", "ESCALATE", "REJECT", "FREEZE", "HOLD"))
+        if any(token in action for token in cls.HIGH_IMPACT_TOKENS):
+            return True
+        if any(bool(step.get("requires_human_approval")) for step in result.get("mitigation_plan", []) if isinstance(step, dict)):
+            return True
+        if any(bool(step.get("requires_counsel_approval")) for step in result.get("mitigation_plan", []) if isinstance(step, dict)):
+            return True
+        return False
 
     def health(self) -> Dict[str, Any]:
-        return {"status": "ready", "agent": self.agent_class_name, "domain": self.domain.value}
+        return {
+            "status": "ready",
+            "agent": self.agent_class_name,
+            "domain": self.domain.value,
+            "deployment_mode": "human_in_the_loop",
+        }
 
     def capabilities(self) -> Dict[str, Any]:
         return {
             "domain": self.domain.value,
             "adapter": self.__class__.__name__,
             "source": self.month_dir,
+            "input_model": self.payload_class_name,
+            "evaluation_method": self.evaluate_method,
+            "human_in_the_loop": True,
         }
 
 
@@ -150,7 +186,10 @@ class CybersecurityDomainAdapter(BaseLegacyAdapter):
     month_dir = "month-1-cybersecurity"
 
     def __init__(self) -> None:
-        provider = os.getenv("FDE_MONTH1_PROVIDER", "mock")
+        provider = os.getenv("FDE_MONTH1_PROVIDER", "openai")
+        if provider == "mock":
+            provider = "openai"
+        # The legacy agent has its own MOCK_LLM switch; keep deployment explicit.
         super().__init__(provider=provider)
 
 
