@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.8.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -23,45 +24,45 @@ resource "aws_security_group" "data" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "PostgreSQL from application security group"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
+    description     = "PostgreSQL from application security group"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
     security_groups = [var.application_security_group_id]
   }
 
   ingress {
-    description = "Redis from application security group"
-    from_port   = 6379
-    to_port     = 6379
-    protocol    = "tcp"
+    description     = "Redis from application security group"
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
     security_groups = [var.application_security_group_id]
   }
 
   egress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier             = "fde-platform"
-  engine                 = "postgres"
-  engine_version         = var.postgres_version
-  instance_class         = var.postgres_instance_class
-  allocated_storage      = var.postgres_storage_gb
-  db_name                = var.database_name
-  username               = var.database_username
+  identifier                  = "fde-platform"
+  engine                      = "postgres"
+  engine_version              = var.postgres_version
+  instance_class              = var.postgres_instance_class
+  allocated_storage           = var.postgres_storage_gb
+  db_name                     = var.database_name
+  username                    = var.database_username
   manage_master_user_password = true
-  db_subnet_group_name   = aws_db_subnet_group.postgres.name
-  vpc_security_group_ids = [aws_security_group.data.id]
-  storage_encrypted      = true
-  backup_retention_period = 7
-  deletion_protection    = true
-  skip_final_snapshot    = false
-  publicly_accessible    = false
+  db_subnet_group_name        = aws_db_subnet_group.postgres.name
+  vpc_security_group_ids     = [aws_security_group.data.id]
+  storage_encrypted           = true
+  backup_retention_period     = 7
+  deletion_protection         = true
+  skip_final_snapshot         = false
+  publicly_accessible         = false
 }
 
 resource "aws_elasticache_subnet_group" "redis" {
