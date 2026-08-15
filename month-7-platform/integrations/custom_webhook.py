@@ -2,13 +2,13 @@
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class CustomWebhook:
     """Sends POST requests to custom webhook endpoints."""
 
-    def __init__(self, endpoint_url: str = None, headers: Dict[str, str] = None):
+    def __init__(self, endpoint_url: Optional[str] = None, headers: Optional[Dict[str, str]] = None):
         self.endpoint_url = endpoint_url or os.environ.get("CUSTOM_WEBHOOK_URL", "")
         self.headers = headers or {"Content-Type": "application/json"}
 
