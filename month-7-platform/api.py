@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from integrations.tinlance_contract import TinlanceAgentRequest, VALID_DOMAINS
 from observability.fastapi import instrument_app
 from observability.tracing import configure_tracing
-from schemas import Domain
 from security.dependencies import require_bearer_from_env
 from security.rbac import AuthorizationError, Principal, require_access
 from shared_orchestrator.router import AgentRouter
@@ -26,6 +25,14 @@ router.register_defaults()
 
 class AgentRequest(TinlanceAgentRequest):
     """Stable Tinlance-to-Mastery execution envelope."""
+
+
+def validate_domain(domain: str) -> str:
+    """Validate the integration route before performing authentication work."""
+    normalized = domain.strip().lower()
+    if normalized not in VALID_DOMAINS:
+        raise HTTPException(status_code=422, detail="Unknown domain")
+    return normalized
 
 
 @app.middleware("http")
@@ -59,8 +66,9 @@ def ready() -> dict:
 
 @app.post("/v1/{domain}/execute")
 def execute(
-    domain: Domain,
+    domain: str,
     request: AgentRequest,
+    validated_domain: str = Depends(validate_domain),
     identity=Depends(require_bearer_from_env()),
     x_request_id: str | None = Header(default=None, alias="x-request-id"),
 ):
@@ -70,13 +78,8 @@ def execute(
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail="Access denied") from exc
 
-    # Domain is an enum at the HTTP boundary; the explicit allowlist protects
-    # the Tinlance integration contract if domains are expanded elsewhere.
-    if domain.value not in VALID_DOMAINS:
-        raise HTTPException(status_code=422, detail="Unknown domain")
-
     try:
-        result = router.route(domain, request.payload)
+        result = router.route(validated_domain, request.payload)
     except Exception as exc:  # Keep internal agent failures out of the wire contract.
         request_id = x_request_id or getattr(request, "request_id", "")
         raise HTTPException(status_code=502, detail="Agent execution failed", headers={"x-request-id": request_id}) from exc
