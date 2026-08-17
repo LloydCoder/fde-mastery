@@ -5,9 +5,8 @@ from __future__ import annotations
 import os
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 
 from integrations.tinlance_contract import TinlanceAgentRequest, VALID_DOMAINS
 from observability.fastapi import instrument_app
