@@ -33,7 +33,12 @@ def test_ready_accepts_oidc_configuration(monkeypatch):
     assert response.json()["status"] == "ready"
 
 
-def test_execution_contract_rejects_unknown_domain():
+def test_execution_contract_rejects_unknown_domain(monkeypatch):
+    # Domain validation is intentionally independent from authentication so a
+    # malformed integration route is rejected deterministically before token
+    # validation. This also keeps the public contract testable without secrets.
+    monkeypatch.setenv("FDE_OIDC_ISSUER", "https://issuer.example.com")
+    monkeypatch.setenv("FDE_OIDC_AUDIENCE", "fde-mastery")
     response = TestClient(app).post(
         "/v1/not-a-domain/execute",
         json={"tenant_id": "tenant-a", "payload": {}},
