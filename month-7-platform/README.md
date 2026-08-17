@@ -88,7 +88,7 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 │  SHARED ORCHESTRATOR                                                        │
 │  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────────┐           │
 │  │ Agent       │  │ Context         │  │ Escalation          │           │
-│  │ Router       │  │ Manager         │  │ Matrix              │           │
+│  │ Router      │  │ Manager         │  │ Matrix              │           │
 │  │ (6 domains) │  │ (cross-domain)  │  │ (human handoff)     │           │
 │  └─────────────┘  └─────────────────┘  └─────────────────────┘           │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -153,7 +153,7 @@ month-7-platform/
 ├── README.md                              # This file
 ├── schemas.py                             # Unified platform schemas
 ├── main.py                                # Platform CLI (onboard / eval / simulate)
-├── eval_harness.py                         # Platform-level evaluation harness
+├── eval_harness.py                        # Platform-level evaluation harness
 │
 ├── client_onboarding/
 │   ├── schema_mapper.py                   # Auto-map client data → domain schemas
@@ -176,8 +176,8 @@ month-7-platform/
 │
 ├── integrations/
 │   ├── tinlance_contract.py               # Tinlance gateway/mastery HTTP contract
-│   ├── slack_bot.py                        # Slack alerting & notifications
-│   ├── servicenow.py                       # Incident/ticket creation
+│   ├── slack_bot.py                       # Slack alerting & notifications
+│   ├── servicenow.py                      # Incident/ticket creation
 │   └── custom_webhook.py                  # Generic downstream webhook
 │
 ├── observability/
@@ -221,7 +221,7 @@ month-7-platform/
 ### Integrations
 
 | Integration | Trigger | Target |
-|------------|---------|--------|
+|-------------|---------|--------|
 | **Slack Bot** | Every triage result | `#fde-alerts` channel with severity-colored attachments |
 | **ServiceNow** | Escalated cases | Auto-create incident with assignment group |
 | **Custom Webhook** | Configurable per client | POST triage payload to client-defined endpoint |
@@ -239,3 +239,60 @@ month-7-platform/
 ## Pricing Model
 
 | Tier | Domains | Calls/Month | Price/Month | Includes |
+|------|---------|-------------|-------------|----------|
+| **Starter** | 1 | 10,000 | $5,000 | API access, Slack bot, email support |
+| **Growth** | 2 | 50,000 | $15,000 | + Deal Desk integration, drift monitoring, Clearbit enrichment |
+| **Enterprise** | All 6 | Unlimited | $50,000 | + VPC deploy, 24/7 support, custom schema mapping, dedicated CSM |
+
+**Value proposition**: *Traditional consultants bill $300/hr and take 8 weeks to build. We deploy in 48 hours because the agent is already built — you pay for configuration, not creation.*
+
+---
+
+## Benchmark Evaluation Results
+
+The platform evaluation harness validates all infrastructure components:
+
+| Test | Component | Status |
+|------|-----------|--------|
+| Schema Mapper | Auto-infers 4/6 required cybersecurity fields from sample | ✅ PASS |
+| Preference Engine | Loads default rubric + applies client override | ✅ PASS |
+| Golden Generator | Creates 10-case dataset in <1s | ✅ PASS |
+| Agent Router | Registers and lists domain agents | ✅ PASS |
+| Escalation Matrix | Creates and resolves escalation records | ✅ PASS |
+| Drift Detector | Simulates 96.5% pass rate, no drift | ✅ PASS |
+| Confidence Tracker | Records 0.94 confidence, computes mean | ✅ PASS |
+| Billing Meter | 2 calls @ $0.03 = $0.06 billed | ✅ PASS |
+
+**Platform Pass Rate: 100% (8/8)**
+
+---
+
+## Sales Simulation
+
+Run the enterprise sales walkthrough to demonstrate zero-delay value to prospects:
+
+```bash
+python demo/enterprise_sales_simulation.py
+```
+
+Output includes:
+- **Discovery**: 5-minute pain mapping to pre-built agent
+- **Onboarding**: Live schema mapping + golden dataset generation
+- **Deployment**: API endpoint live within 10 minutes
+- **Value Proof**: Week 2 metrics showing 95%+ containment, 340 hrs/week saved
+
+---
+
+## License & Attribution
+
+Part of the **FDE Mastery** curriculum — a 6-month production engineering roadmap for deterministic, schema-guaranteed LLM agents.
+
+| Month | Domain | Tag |
+|-------|--------|-----|
+| 1 | Cybersecurity | `v1.0-soc-triage` |
+| 2 | Finance | `v1.1-finance-risk-engine` |
+| 3 | HealthTech | `v1.2-healthtech-hipaa-engine` |
+| 4 | Logistics | `v1.3-logistics-supply-chain` |
+| 5 | Legal | `v1.4-legal-contract-risk` |
+| 6 | RevOps | `v1.5-revops-enterprise-automation` |
+| 7 | **Platform** | `v2.0-platform-layer` |
