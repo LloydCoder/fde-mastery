@@ -6,10 +6,16 @@ FDE Mastery is a reusable enterprise AI platform with seven domain services—Cy
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
+## Enterprise architecture
+
+![FDE Mastery enterprise architecture](./docs/architecture-enterprise.svg)
+
+The platform uses a compatibility-first migration strategy: the new `domains/` namespace is the client-facing architectural vocabulary, while the original Month 1–6 paths remain intact until all references can be migrated safely. This avoids breaking existing FastAPI connections or integration contracts.
+
 ## What is in the platform
 
 - Seven domain adapters behind one `DomainAgent` contract
-- Canonical `domains/` facades while preserving the existing Month 1–6 implementations and API compatibility
+- Canonical `domains/` facades over the existing Month 1–6 implementations
 - Procurement as a first-class domain with supplier risk, quote comparison, spend thresholds, and human approval boundaries
 - Tenant-scoped Custom Agent framework for customer-specific workflows without modifying the core platform
 - Central `AgentRouter` with retries, jitter, circuit breaking, concurrency limits, and per-domain isolation
@@ -29,51 +35,6 @@ FDE Mastery is a reusable enterprise AI platform with seven domain services—Cy
 - Production deployment, disaster-recovery, rollback, security, and operational documentation
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
-
----
-
-## Enterprise architecture
-
-```text
-                         FDE MASTERY ENTERPRISE PLATFORM
-                                      |
-                         +------------v-------------+
-                         |       FastAPI API         |
-                         +------------+-------------+
-                                      |
-                    +-----------------+------------------+
-                    |                 |                  |
-             OIDC / service       Tenant/RBAC       Policy + HITL
-              identity/JWT        + scopes          + idempotency
-                    +-----------------+------------------+
-                                      |
-                             +--------v--------+
-                             |   AgentRouter   |
-                             | resilience      |
-                             +--------+--------+
-                                      |
-      +-----------+---------+---------+---------+---------+---------+-------------+
-      |           |         |         |         |         |             |
-      v           v         v         v         v         v             v
-    SOC        Finance    Health   Logistics   Legal     RevOps     Procurement
-      |           |         |         |         |         |             |
-      +-----------+---------+---------+---------+---------+-------------+
-                                      |
-                         +------------+-------------+
-                         |                          |
-                  Custom Agents              Integration Hub
-                  tenant-scoped              REST/Webhook/MCP
-                         |                          |
-                         +------------+-------------+
-                                      |
-                         Audit + Evaluation + OTel
-                                      |
-                         PostgreSQL / Redis / Models
-                                      |
-                    CI + SBOM + Cosign + Provenance
-```
-
-The platform uses a compatibility-first migration strategy: the new `domains/` namespace is the client-facing architectural vocabulary, while the original Month 1–6 paths remain intact until all references can be migrated safely. This avoids breaking existing FastAPI connections or integration contracts.
 
 ---
 
@@ -165,13 +126,9 @@ See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). Repository
 
 ---
 
-## Security and supply chain
+## Security, AI governance and supply chain
 
-The security baseline is aligned with current OWASP Top 10:2025 categories, including broken access control, security misconfiguration, software supply-chain failures, injection, authentication failures, data integrity, logging/alerting, and exceptional-condition handling. citeturn0search3
-
-The AI governance/evaluation approach is informed by NIST AI RMF and its Generative AI Profile, which provide a cross-sector framework for governing, mapping, measuring, and managing AI risks. citeturn0search0turn0search9
-
-The release pipeline includes:
+The security baseline follows the current OWASP Top 10:2025 risk categories. The AI governance/evaluation approach is informed by NIST AI RMF and the Generative AI Profile. The release pipeline adds signed artifacts, SBOMs, and provenance evidence.
 
 ```text
 Source
@@ -191,24 +148,11 @@ Registry
 Deployment verification
 ```
 
-SLSA provenance is the appropriate next-level supply-chain evidence because it records how an artifact was produced and its build inputs; signed provenance provides stronger tamper resistance than an unsigned artifact alone. citeturn0search2turn0search10
-
 ---
 
 ## Observability
 
-The platform uses OpenTelemetry with a Collector-oriented deployment model. OpenTelemetry recommends Collector deployment patterns for receiving, processing, and exporting telemetry to one or more backends. citeturn0search1turn0search6
-
-The observability contract covers:
-
-- Request correlation
-- Gateway/router/domain spans
-- Metrics and latency
-- Confidence/evaluation signals
-- Rate-limit events
-- Audit events
-- Drift detection
-- Provider failure/recovery signals
+The platform uses OpenTelemetry with a Collector-oriented deployment model. The observability contract covers request correlation, gateway/router/domain spans, metrics and latency, confidence/evaluation signals, rate-limit events, audit events, drift detection, and provider failure/recovery signals.
 
 Production backends remain configurable per customer environment.
 
@@ -243,13 +187,7 @@ A green workflow is a merge gate, not a substitute for customer-specific product
 
 ## Production reference
 
-See:
-
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md)
-- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md)
-- [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md)
-- [`docs/API.md`](./docs/API.md)
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md), [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md), and [`docs/API.md`](./docs/API.md).
 
 Minimum production configuration:
 
