@@ -7,10 +7,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-DOMAINS = ("cybersecurity", "finance", "healthtech", "logistics", "legal", "revops")
+DOMAINS = ("cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement")
 LABELS = ("benign", "suspicious", "malicious", "ambiguous")
 CASES_PER_DOMAIN = 100
-VERSION = "2026.08.15-v1"
+VERSION = "2026.08.18-v2"
 
 
 def build_case(domain: str, index: int) -> dict[str, object]:
@@ -20,11 +20,7 @@ def build_case(domain: str, index: int) -> dict[str, object]:
         "dataset_version": VERSION,
         "domain": domain,
         "label": label,
-        "input": {
-            "synthetic": True,
-            "event_index": index,
-            "scenario": f"{domain}-{label}",
-        },
+        "input": {"synthetic": True, "event_index": index, "scenario": f"{domain}-{label}"},
         "expected": {"disposition": label, "requires_human_review": label in {"malicious", "ambiguous"}},
     }
 
