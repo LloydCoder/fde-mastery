@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  attestations: write
   packages: write
 
 jobs:
@@ -37,7 +38,11 @@ jobs:
           IMAGE="ghcr.io/${OWNER}/fde-mastery-platform:${SHA}"
           docker build -t "$IMAGE" month-7-platform
           docker push "$IMAGE"
+          DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | sed 's/.*@//')"
+          test -n "$DIGEST"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=ghcr.io/${OWNER}/fde-mastery-platform" >> "$GITHUB_ENV"
+          echo "IMAGE_DIGEST=$DIGEST" >> "$GITHUB_ENV"
       - name: Keyless sign image
         run: cosign sign --yes "$IMAGE"
       - name: Generate SBOM and attest
@@ -45,3 +50,9 @@ jobs:
         run: |
           bash scripts/generate-sbom.sh
           cosign attest --yes --predicate artifacts/sbom.cdx.json --type cyclonedx "$IMAGE"
+      - name: Generate SLSA build provenance attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ env.IMAGE_DIGEST }}
+          push-to-registry: true
