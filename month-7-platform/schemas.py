@@ -1,4 +1,4 @@
-"""Unified platform schemas for Month 7."""
+"""Unified platform schemas for the enterprise domain platform."""
 
 from datetime import datetime
 from enum import Enum
@@ -15,6 +15,7 @@ class Domain(str, Enum):
     LOGISTICS = "logistics"
     LEGAL = "legal"
     REVOPS = "revops"
+    PROCUREMENT = "procurement"
 
 
 class ClientConfig(BaseModel):
