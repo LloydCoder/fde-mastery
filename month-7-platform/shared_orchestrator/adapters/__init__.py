@@ -1,4 +1,4 @@
-"""Adapters exposing Month 1-6 domain agents through the Month 7 contract."""
+"""Canonical domain adapters for the enterprise platform."""
 
 from ._legacy import BaseLegacyAdapter
 from .cybersecurity import CybersecurityDomainAdapter
@@ -7,6 +7,7 @@ from .healthtech import HealthTechDomainAdapter
 from .logistics import LogisticsDomainAdapter
 from .legal import LegalDomainAdapter
 from .revops import RevOpsDomainAdapter
+from .procurement import ProcurementDomainAdapter
 
 __all__ = [
     "BaseLegacyAdapter",
@@ -16,4 +17,5 @@ __all__ = [
     "LogisticsDomainAdapter",
     "LegalDomainAdapter",
     "RevOpsDomainAdapter",
+    "ProcurementDomainAdapter",
 ]
