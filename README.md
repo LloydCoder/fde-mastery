@@ -2,7 +2,7 @@
 
 **Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. A common FastAPI/platform layer provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed releases.
+FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. A common FastAPI/platform layer provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed/provenance-backed releases.
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
@@ -18,6 +18,7 @@ The platform uses a compatibility-first migration strategy: the new `domains/` n
 - Canonical `domains/` facades over the existing Month 1–6 implementations
 - Procurement as a first-class domain with supplier risk, quote comparison, spend thresholds, and human approval boundaries
 - Tenant-scoped Custom Agent framework for customer-specific workflows without modifying the core platform
+- Explicit Custom Agent tool gateway with tenant allowlists and fail-closed approval checks
 - Central `AgentRouter` with retries, jitter, circuit breaking, concurrency limits, and per-domain isolation
 - FastAPI API with typed request/response contracts and request correlation
 - API-key authentication plus production-oriented OIDC/JWKS JWT validation
@@ -27,11 +28,11 @@ The platform uses a compatibility-first migration strategy: the new `domains/` n
 - Tamper-evident audit hash-chain utility and sensitive-data redaction
 - Policy-as-code and human approval for high-impact actions
 - Redis-compatible distributed rate limiting and durable task-queue contract
-- OpenTelemetry tracing/metrics with Collector deployment references
+- OpenTelemetry tracing/metrics with Collector deployment references and semantic-convention guidance
 - Versioned evaluation, statistical drift detection, shadow-mode recording, and red-team regression tests
 - Chaos/resilience tests and load-smoke validation
 - Tenant-scoped integration contracts and integration adapters
-- Terraform validation, CycloneDX SBOM generation, keyless Cosign signing, and SBOM attestation
+- Terraform validation, CycloneDX SBOM generation, keyless Cosign signing, SBOM attestation, and SLSA-oriented build provenance
 - Production deployment, disaster-recovery, rollback, security, and operational documentation
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
@@ -94,8 +95,8 @@ Customers should not need a new hard-coded platform domain for every bespoke wor
 
 - Tenant-scoped agent registration
 - Versioned agent specifications
-- Tool allowlists
-- Explicit human-approval actions
+- Explicit tool allowlists
+- A secure tool execution gateway
 - Fail-closed high-impact policy boundaries
 - A registry isolated by tenant
 
@@ -105,7 +106,7 @@ Target workflow model:
 Trigger → Context → Agent → Approved tools → Policy → HITL → Action → Audit
 ```
 
-This is the foundation for customer-specific FDE implementations while keeping the core platform stable.
+The tool gateway refuses undeclared tools and requires explicit approval for mutating/high-impact actions. This is the foundation for customer-specific FDE implementations while keeping the core platform stable.
 
 ---
 
@@ -128,7 +129,7 @@ See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). Repository
 
 ## Security, AI governance and supply chain
 
-The security baseline follows the current OWASP Top 10:2025 risk categories. The AI governance/evaluation approach is informed by NIST AI RMF and the Generative AI Profile. The release pipeline adds signed artifacts, SBOMs, and provenance evidence.
+The security baseline is mapped to OWASP ASVS 5.0.0. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Observability follows OpenTelemetry semantic conventions. Release artifacts use signed images, SBOM attestations, and SLSA-oriented build provenance.
 
 ```text
 Source
@@ -141,12 +142,14 @@ CycloneDX SBOM
   ↓
 Keyless Cosign signature
   ↓
-SBOM / provenance attestation
+SBOM + provenance attestation
   ↓
 Registry
   ↓
 Deployment verification
 ```
+
+See [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md) for the engineering control map and customer evidence checklist.
 
 ---
 
@@ -154,7 +157,7 @@ Deployment verification
 
 The platform uses OpenTelemetry with a Collector-oriented deployment model. The observability contract covers request correlation, gateway/router/domain spans, metrics and latency, confidence/evaluation signals, rate-limit events, audit events, drift detection, and provider failure/recovery signals.
 
-Production backends remain configurable per customer environment.
+Production backends remain configurable per customer environment. Sensitive payloads are not required for correlation and should remain out of telemetry.
 
 ---
 
@@ -164,7 +167,7 @@ Every architectural change is expected to pass the repository quality pipeline b
 
 - pytest
 - seven-domain deployment smoke tests
-- Custom Agent tests
+- Custom Agent tests and secure tool-gateway tests
 - enterprise security controls
 - migration validation
 - red-team regression
@@ -179,7 +182,7 @@ Every architectural change is expected to pass the repository quality pipeline b
 - load smoke
 - production Docker build
 - Semgrep static security scan
-- release image signing and SBOM attestation
+- release image signing, SBOM attestation, and build provenance
 
 A green workflow is a merge gate, not a substitute for customer-specific production validation.
 
@@ -187,7 +190,7 @@ A green workflow is a merge gate, not a substitute for customer-specific product
 
 ## Production reference
 
-See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md), [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md), and [`docs/API.md`](./docs/API.md).
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md), [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md), [`docs/API.md`](./docs/API.md), and [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md).
 
 Minimum production configuration:
 
@@ -237,6 +240,7 @@ python -m persistence.migrate
 - [`docs/DEMO.md`](./docs/DEMO.md) — interactive walkthrough
 - [`docs/CASE-STUDY.md`](./docs/CASE-STUDY.md) — synthetic customer case-study template
 - [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) — security/operations contract
+- [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md) — standards and customer evidence map
 - [`month-7-platform/security/ai-threat-model.md`](./month-7-platform/security/ai-threat-model.md) — AI threat model
 
 Customer outcome numbers should only be added after a real deployment and measurement.
@@ -263,7 +267,7 @@ fde-mastery/
     │   ├── logistics/
     │   ├── legal/
     │   └── procurement/
-    ├── custom_agents/           # tenant-specific agent framework
+    ├── custom_agents/           # tenant-specific agent framework + tool gateway
     ├── shared_orchestrator/
     ├── integrations/
     ├── security/
