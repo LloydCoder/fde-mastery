@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+<title id="title">FDE Mastery enterprise architecture</title>
+<desc id="desc">Enterprise AI platform connecting customer systems to FastAPI, identity, policy, routing, seven domains, custom agents, integrations, audit, evaluation, observability, and release controls.</desc>
+<rect width="1200" height="760" fill="#fff"/>
+<g font-family="Arial,Helvetica,sans-serif" text-anchor="middle">
+<text x="600" y="42" font-size="28" font-weight="700">FDE Mastery — Enterprise AI Platform</text>
+<g stroke="#222" stroke-width="2" fill="#f5f5f5">
+<rect x="440" y="70" width="320" height="62" rx="10"/><rect x="420" y="165" width="360" height="70" rx="10"/><rect x="390" y="270" width="420" height="70" rx="10"/><rect x="350" y="375" width="500" height="70" rx="10"/>
+<rect x="45" y="490" width="145" height="62" rx="10"/><rect x="205" y="490" width="145" height="62" rx="10"/><rect x="365" y="490" width="145" height="62" rx="10"/><rect x="525" y="490" width="145" height="62" rx="10"/><rect x="685" y="490" width="145" height="62" rx="10"/><rect x="845" y="490" width="145" height="62" rx="10"/><rect x="1005" y="490" width="145" height="62" rx="10"/>
+<rect x="245" y="600" width="230" height="65" rx="10"/><rect x="725" y="600" width="230" height="65" rx="10"/><rect x="350" y="700" width="500" height="42" rx="10"/>
+</g>
+<g font-size="18">
+<text x="600" y="108">Customer Systems / APIs / Webhooks</text><text x="600" y="207">FastAPI Gateway + OIDC/JWT + Tenant/RBAC</text><text x="600" y="312">Policy + HITL + Idempotency + Redaction</text><text x="600" y="417">Agent Router + Resilience + Evaluation Context</text>
+<text x="117" y="527">Cybersecurity</text><text x="277" y="527">Finance</text><text x="437" y="527">HealthTech</text><text x="597" y="527">Logistics</text><text x="757" y="527">Legal</text><text x="917" y="527">RevOps</text><text x="1077" y="527">Procurement</text>
+<text x="360" y="627">Custom Agent Framework</text><text x="840" y="627">Integration Hub / MCP / REST</text><text x="600" y="727">PostgreSQL + Redis + Audit + OpenTelemetry + SBOM/Cosign/Provenance</text>
+</g>
+<g stroke="#444" stroke-width="2" fill="none">
+<path d="M600 132v33M600 235v35M600 340v35M600 445v45M117 552v48M277 552v48M437 552v48M597 552v48M757 552v48M917 552v48M1077 552v48M360 665v35M840 665v35"/>
+</g>
+</g></svg>
