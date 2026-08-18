@@ -1,8 +1,8 @@
-from shared_orchestrator.router import AgentRouter
 from schemas import Domain
+from shared_orchestrator.router import AgentRouter
 
 
-def test_all_monthly_agents_register_through_platform_router(monkeypatch):
+def test_all_domain_agents_register_through_platform_router(monkeypatch):
     monkeypatch.setenv("FDE_MONTH1_PROVIDER", "mock")
     router = AgentRouter()
     try:
@@ -11,7 +11,8 @@ def test_all_monthly_agents_register_through_platform_router(monkeypatch):
         health = router.health()
         capabilities = router.capabilities()
         assert all(health[domain.value]["agent"]["status"] == "ready" for domain in Domain)
-        assert all(capabilities[domain.value]["source"].startswith("month-") for domain in Domain)
         assert all(capabilities[domain.value]["domain"] == domain.value for domain in Domain)
+        assert capabilities[Domain.PROCUREMENT.value]["source"] == "domains/procurement"
+        assert capabilities[Domain.CYBERSECURITY.value]["source"].startswith("domains/")
     finally:
         router.close()
