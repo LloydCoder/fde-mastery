@@ -20,35 +20,28 @@ class SlackBot:
         fields: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Send a formatted Slack message."""
-        color_map = {
-            "info": "#36a64f",
-            "warning": "#ff9900",
-            "critical": "#ff0000",
-        }
-
-        payload = {
+        color_map = {"info": "#36a64f", "warning": "#ff9900", "critical": "#ff0000"}
+        field_values: list[dict[str, Any]] = [
+            {"title": k, "value": str(v), "short": True}
+            for k, v in (fields or {}).items()
+        ]
+        payload: dict[str, Any] = {
             "channel": self.channel,
             "username": "FDE-Mastery-Bot",
             "icon_emoji": ":robot_face:",
-            "attachments": [
-                {
-                    "color": color_map.get(severity, "#36a64f"),
-                    "title": title,
-                    "text": message,
-                    "fields": [
-                        {"title": k, "value": str(v), "short": True}
-                        for k, v in (fields or {}).items()
-                    ],
-                    "footer": "FDE Mastery Platform",
-                    "ts": int(__import__("time").time()),
-                }
-            ],
+            "attachments": [{
+                "color": color_map.get(severity, "#36a64f"),
+                "title": title,
+                "text": message,
+                "fields": field_values,
+                "footer": "FDE Mastery Platform",
+                "ts": int(__import__("time").time()),
+            }],
         }
 
         if self.webhook_url:
             try:
                 import requests
-
                 resp = requests.post(self.webhook_url, json=payload, timeout=5)
                 return {"status": "sent", "code": resp.status_code}
             except Exception as e:
