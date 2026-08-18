@@ -1,47 +1,156 @@
 # FDE Mastery
 
-**Production-oriented Forward Deployed Engineering portfolio for AI systems, AI security, and enterprise automation.**
+**Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery contains six domain systems—Cybersecurity, Finance, HealthTech, Logistics, Legal, and RevOps—integrated by a Month 7 platform capstone. The platform demonstrates typed agent contracts, orchestration, tenant/domain authorization, OIDC/JWT identity, PostgreSQL persistence, centralized audit events, Redis-compatible rate limiting, resilience controls, OpenTelemetry integration, AI security regression tests, enterprise mutation safety, and signed/SBOM-attested container releases.
+FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. A common FastAPI/platform layer provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed releases.
 
-> **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed business workflow.
+> **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
-## Current platform capabilities
+## What is in the platform
 
-- Six real Month 1–6 domain adapters behind one `DomainAgent` contract
-- Central `AgentRouter` with per-domain resilience, retries, jitter, circuit breaking, and concurrency limits
-- FastAPI API with typed domain results and request correlation
-- API-key authentication plus production-oriented OIDC discovery/JWKS validation
-- JWT issuer, audience, expiry, signature, and required-claim validation
+- Seven domain adapters behind one `DomainAgent` contract
+- Canonical `domains/` facades while preserving the existing Month 1–6 implementations and API compatibility
+- Procurement as a first-class domain with supplier risk, quote comparison, spend thresholds, and human approval boundaries
+- Tenant-scoped Custom Agent framework for customer-specific workflows without modifying the core platform
+- Central `AgentRouter` with retries, jitter, circuit breaking, concurrency limits, and per-domain isolation
+- FastAPI API with typed request/response contracts and request correlation
+- API-key authentication plus production-oriented OIDC/JWKS JWT validation
 - Tenant and scope/RBAC authorization
-- Short-lived service-to-service signed tokens and mTLS identity validation contract
-- Request-size and distributed rate-limit controls
-- PostgreSQL persistence boundary and formal checksum-verified migrations
-- Centralized audit events with tamper-evident hash-chain utility
-- Mutation idempotency contract with production PostgreSQL schema
-- Sensitive-data redaction at the audit/output boundary
-- Policy-as-code gate for high-impact actions and human-approval escalation
-- OpenTelemetry tracing/metrics integration with OTLP Collector references
-- Versioned six-domain golden-evaluation baseline (600 deterministic synthetic cases)
-- Statistical evaluation drift detection and shadow-mode recording
-- Executable prompt-injection/red-team regression cases
-- Deterministic resilience/chaos tests and staging load-smoke harness
-- Tenant-scoped production integration contract for ingestion and enrichment providers
-- Explicit eight-gate enterprise deployment readiness model
-- Ruff, MyPy, Bandit, pip-audit, pytest, compilation, Terraform validation, and Docker CI gates
-- CycloneDX SBOM generation
-- Keyless Cosign container signing and SBOM attestation in the release workflow
-- Managed PostgreSQL/Redis production infrastructure reference
-- Interactive demo walkthrough and synthetic customer case-study template
-- Scheduled continuous-evaluation workflow
+- Short-lived service identity and mTLS validation contract
+- PostgreSQL persistence, checksum-verified migrations, idempotency, and centralized audit events
+- Tamper-evident audit hash-chain utility and sensitive-data redaction
+- Policy-as-code and human approval for high-impact actions
+- Redis-compatible distributed rate limiting and durable task-queue contract
+- OpenTelemetry tracing/metrics with Collector deployment references
+- Versioned evaluation, statistical drift detection, shadow-mode recording, and red-team regression tests
+- Chaos/resilience tests and load-smoke validation
+- Tenant-scoped integration contracts and integration adapters
+- Terraform validation, CycloneDX SBOM generation, keyless Cosign signing, and SBOM attestation
+- Production deployment, disaster-recovery, rollback, security, and operational documentation
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
 
 ---
 
+## Enterprise architecture
+
+```text
+                         FDE MASTERY ENTERPRISE PLATFORM
+                                      |
+                         +------------v-------------+
+                         |       FastAPI API         |
+                         +------------+-------------+
+                                      |
+                    +-----------------+------------------+
+                    |                 |                  |
+             OIDC / service       Tenant/RBAC       Policy + HITL
+              identity/JWT        + scopes          + idempotency
+                    +-----------------+------------------+
+                                      |
+                             +--------v--------+
+                             |   AgentRouter   |
+                             | resilience      |
+                             +--------+--------+
+                                      |
+      +-----------+---------+---------+---------+---------+---------+-------------+
+      |           |         |         |         |         |             |
+      v           v         v         v         v         v             v
+    SOC        Finance    Health   Logistics   Legal     RevOps     Procurement
+      |           |         |         |         |         |             |
+      +-----------+---------+---------+---------+---------+-------------+
+                                      |
+                         +------------+-------------+
+                         |                          |
+                  Custom Agents              Integration Hub
+                  tenant-scoped              REST/Webhook/MCP
+                         |                          |
+                         +------------+-------------+
+                                      |
+                         Audit + Evaluation + OTel
+                                      |
+                         PostgreSQL / Redis / Models
+                                      |
+                    CI + SBOM + Cosign + Provenance
+```
+
+The platform uses a compatibility-first migration strategy: the new `domains/` namespace is the client-facing architectural vocabulary, while the original Month 1–6 paths remain intact until all references can be migrated safely. This avoids breaking existing FastAPI connections or integration contracts.
+
+---
+
+## Domain portfolio
+
+| Domain | Primary service | Example workflow |
+|---|---|---|
+| Cybersecurity | SOC Triage | SIEM alert enrichment and prioritization |
+| Finance | Transaction Risk | Transaction risk and governance |
+| HealthTech | Compliance & Triage | PHI-safe workflow support |
+| Logistics | Supply Chain Risk | Shipment and telemetry analysis |
+| Legal | Contract Risk | Clause and contract risk analysis |
+| RevOps | Revenue Operations | Pipeline and account operations |
+| Procurement | Procurement Intelligence | Supplier risk, quote comparison, spend approval routing |
+| Custom | Customer-specific agents | Tenant-defined workflows and policies |
+
+High-impact actions remain human-controlled. Examples include account disablement, endpoint isolation, clinical intervention, payment/purchase approval, supplier award, contract rejection, and customer notification.
+
+---
+
+## Procurement domain
+
+Procurement is a first-class deployment domain rather than a demo-only module.
+
+Current v1 capabilities:
+
+- Supplier risk scoring
+- Quote comparison signals
+- Spend/approval thresholds
+- Procurement prioritization
+- Human approval routing
+- Deterministic fallback behavior
+
+The first workflow is intentionally recommendation-only:
+
+```text
+Supplier / RFQ
+      ↓
+Normalize + validate
+      ↓
+Supplier risk + quote signals
+      ↓
+Spend threshold / policy
+      ↓
+Recommendation
+      ↓
+Human procurement approval
+```
+
+The platform does **not** autonomously award suppliers, create purchase orders, modify vendor master data, or approve spend.
+
+---
+
+## Custom Agent framework
+
+Customers should not need a new hard-coded platform domain for every bespoke workflow. The Custom Agent framework provides:
+
+- Tenant-scoped agent registration
+- Versioned agent specifications
+- Tool allowlists
+- Explicit human-approval actions
+- Fail-closed high-impact policy boundaries
+- A registry isolated by tenant
+
+Target workflow model:
+
+```text
+Trigger → Context → Agent → Approved tools → Policy → HITL → Action → Audit
+```
+
+This is the foundation for customer-specific FDE implementations while keeping the core platform stable.
+
+---
+
 ## Enterprise deployment gate
 
-Before a domain is promoted to customer production, the platform now requires explicit evidence for all eight gates:
+A domain is promoted to customer production only after evidence for all eight gates:
 
 1. Golden dataset expansion
 2. Approved external-tool integration
@@ -52,128 +161,95 @@ Before a domain is promoted to customer production, the platform now requires ex
 7. Human-in-the-loop production
 8. Controlled, reversible actions
 
-See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). The repository intentionally separates reusable platform controls from customer-specific credentials, data, compliance evidence, and operational validation.
+See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). Repository tests establish engineering readiness; customer-specific credentials, data, compliance evidence, and operational validation remain deployment responsibilities.
 
 ---
 
-## Architecture
+## Security and supply chain
+
+The security baseline is aligned with current OWASP Top 10:2025 categories, including broken access control, security misconfiguration, software supply-chain failures, injection, authentication failures, data integrity, logging/alerting, and exceptional-condition handling. citeturn0search3
+
+The AI governance/evaluation approach is informed by NIST AI RMF and its Generative AI Profile, which provide a cross-sector framework for governing, mapping, measuring, and managing AI risks. citeturn0search0turn0search9
+
+The release pipeline includes:
 
 ```text
-                         FDE MASTERY PLATFORM
-                                  |
-                         +--------v--------+
-                         |   FastAPI API   |
-                         +--------+--------+
-                                  |
-                +-----------------+------------------+
-                |                 |                  |
-          OIDC / API keys       RBAC            Policy + idempotency
-          service identity   tenant + scopes       redaction
-                +-----------------+------------------+
-                                  |
-                         +--------v--------+
-                         |   AgentRouter   |
-                         | resilience      |
-                         +--------+--------+
-                                  |
-       +------------+-------------+-------------+------------+------------+
-       |            |             |             |            |            |
-       v            v             v             v            v            v
-   Security      Finance      HealthTech    Logistics      Legal        RevOps
-   Month 1      Month 2        Month 3       Month 4      Month 5      Month 6
-                                  |
-                +-----------------+------------------+
-                |                                    |
-          PostgreSQL                            OpenTelemetry
-        state + audit +                         traces + metrics
-         migrations
-                |                                    |
-                +-----------------+------------------+
-                                  v
-                         CI / security / release
-                  tests + SBOM + signed image + attestations
+Source
+  ↓
+Quality + security gates
+  ↓
+Docker image
+  ↓
+CycloneDX SBOM
+  ↓
+Keyless Cosign signature
+  ↓
+SBOM / provenance attestation
+  ↓
+Registry
+  ↓
+Deployment verification
 ```
 
-## Enterprise hardening
-
-The production hardening contract is documented in [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md).
-
-It covers identity, service authentication, secrets, policy gates, redaction, idempotency, audit integrity, reliability, observability, supply-chain verification, infrastructure controls, and recovery targets.
-
-### Production identity
-
-OIDC authentication supports issuer discovery, rotating JWKS validation/caching, JWT signature verification, required claims, issuer/audience checks, tenant extraction, and scopes.
-
-```text
-FDE_OIDC_ISSUER=https://<identity-provider>
-FDE_OIDC_AUDIENCE=<audience>
-FDE_OIDC_JWKS_URL=<optional-explicit-jwks-url>
-```
-
-Never commit tokens, signing keys, API keys, or provider secrets.
-
-### Mutation safety and high-impact actions
-
-Production mutation requests require `X-Idempotency-Key`. Reusing a key with a different request fingerprint returns `409 Conflict`. High-impact actions are blocked pending authorized human approval according to action, severity, confidence, amount, and client tier.
-
-### Data and audit integrity
-
-PostgreSQL stores application and audit state. The migration runner provides version tracking, SHA-256 checksums, duplicate detection, drift detection, and transactional execution. Audit events are centrally persisted and a hash-chain utility provides tamper-evident event chaining for immutable archival pipelines.
-
-### AI security and evaluation
-
-The red-team corpus covers prompt injection, instruction override, secret extraction, tenant-boundary abuse, tool manipulation, malformed output, and resource abuse. Statistical evaluation drift detection, 600 deterministic synthetic baseline cases, shadow-mode comparison, and scheduled evaluation are included alongside deterministic chaos and load-smoke tests.
+SLSA provenance is the appropriate next-level supply-chain evidence because it records how an artifact was produced and its build inputs; signed provenance provides stronger tamper resistance than an unsigned artifact alone. citeturn0search2turn0search10
 
 ---
 
-## Six-domain FDE portfolio
+## Observability
 
-| Domain | System | Core problem |
-|---|---|---|
-| 01 — Cybersecurity | SOC Triage Agent | SIEM alert analysis and triage |
-| 02 — Finance | Transaction Risk & Governance Engine | Transaction risk and mitigation |
-| 03 — HealthTech | HealthTech Compliance & Triage Engine | PHI handling and clinical triage |
-| 04 — Logistics | Supply Chain Risk Engine | Shipment and telemetry risk |
-| 05 — Legal | Contract Risk Analysis Engine | Contract clause risk |
-| 06 — RevOps | Enterprise Automation Engine | Pipeline and account operations |
+The platform uses OpenTelemetry with a Collector-oriented deployment model. OpenTelemetry recommends Collector deployment patterns for receiving, processing, and exporting telemetry to one or more backends. citeturn0search1turn0search6
 
-Each domain remains independently testable while Month 7 provides the common integration layer.
+The observability contract covers:
+
+- Request correlation
+- Gateway/router/domain spans
+- Metrics and latency
+- Confidence/evaluation signals
+- Rate-limit events
+- Audit events
+- Drift detection
+- Provider failure/recovery signals
+
+Production backends remain configurable per customer environment.
 
 ---
 
-## Security and release pipeline
+## CI / release gates
 
-```text
-Pull request / main push
-        |
-        +--> Platform Quality
-        |      pytest / six-domain smoke
-        |      enterprise gates / security / chaos
-        |      golden coverage / shadow / action guard
-        |      Ruff / MyPy / Bandit / pip-audit
-        |      Terraform validate / SBOM / load smoke
-        |      Docker build
-        |
-        +--> Static security
-        |      Semgrep
-        |
-        +--> Scheduled Continuous Evaluation
-        |      red-team + evaluation drift gate
-        |
-        +--> Release Attestation
-               immutable GHCR image
-               keyless Cosign signature
-               CycloneDX SBOM
-               SBOM attestation
-```
+Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
 
-Production admission should verify image signatures and provenance before deployment.
+- pytest
+- seven-domain deployment smoke tests
+- Custom Agent tests
+- enterprise security controls
+- migration validation
+- red-team regression
+- Ruff
+- MyPy
+- Bandit
+- pip-audit
+- compileall
+- Terraform format/validation
+- SBOM generation/validation
+- staging API startup/readiness
+- load smoke
+- production Docker build
+- Semgrep static security scan
+- release image signing and SBOM attestation
+
+A green workflow is a merge gate, not a substitute for customer-specific production validation.
 
 ---
 
 ## Production reference
 
-See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), and [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) for managed PostgreSQL/Redis topology, deployment order, rollback model, telemetry, identity, secrets, mutation safety, and operational controls.
+See:
+
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md)
+- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md)
+- [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md)
+- [`docs/API.md`](./docs/API.md)
 
 Minimum production configuration:
 
@@ -214,19 +290,18 @@ export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_m
 python -m persistence.migrate
 ```
 
-For production, inject a managed secrets provider and use managed PostgreSQL/Redis with TLS.
-
 ---
 
-## Evidence and demonstrations
+## Evidence
 
-- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — eight-gate enterprise promotion model
+- [`month-1-cybersecurity/AUDIT.md`](./month-1-cybersecurity/AUDIT.md) — SOC operating map
+- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — eight-gate promotion model
 - [`docs/DEMO.md`](./docs/DEMO.md) — interactive walkthrough
-- [`docs/CASE-STUDY.md`](./docs/CASE-STUDY.md) — synthetic customer-style case study template
-- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) — production security/operations contract
-- [`security/ai-threat-model.md`](./month-7-platform/security/ai-threat-model.md) — AI threat model
+- [`docs/CASE-STUDY.md`](./docs/CASE-STUDY.md) — synthetic customer case-study template
+- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) — security/operations contract
+- [`month-7-platform/security/ai-threat-model.md`](./month-7-platform/security/ai-threat-model.md) — AI threat model
 
-Customer outcome numbers must only be added after a real deployment and measurement.
+Customer outcome numbers should only be added after a real deployment and measurement.
 
 ---
 
@@ -236,78 +311,30 @@ Customer outcome numbers must only be added after a real deployment and measurem
 fde-mastery/
 ├── README.md
 ├── .github/workflows/
-│   ├── platform-tests.yml
-│   ├── evaluation.yml
-│   └── release-attestation.yml
-├── month-1-cybersecurity/
-├── month-2-finance/
-├── month-3-healthtech/
-├── month-4-logistics/
-├── month-5-legal/
-├── month-6-revops/
+├── month-1-cybersecurity/     # compatibility-preserved source
+├── month-2-finance/            # compatibility-preserved source
+├── month-3-healthtech/         # compatibility-preserved source
+├── month-4-logistics/          # compatibility-preserved source
+├── month-5-legal/              # compatibility-preserved source
+├── month-6-revops/             # compatibility-preserved source
 └── month-7-platform/
-    ├── schemas.py
-    ├── pyproject.toml
+    ├── domains/                # canonical domain namespace
+    │   ├── cybersecurity/
+    │   ├── finance/
+    │   ├── healthtech/
+    │   ├── logistics/
+    │   ├── legal/
+    │   └── procurement/
+    ├── custom_agents/           # tenant-specific agent framework
+    ├── shared_orchestrator/
+    ├── integrations/
     ├── security/
     ├── persistence/
     ├── observability/
     ├── evaluation/
-    ├── integrations/
-    ├── shared_orchestrator/
     ├── deployment/
-    ├── scripts/
     └── tests/
 ```
-
----
-
-## Roadmap status
-
-### Implemented engineering controls
-
-- [x] Common `DomainAgent` contract
-- [x] Six real domain adapters
-- [x] Central router and resilience layer
-- [x] End-to-end adapter execution tests
-- [x] API-key authentication
-- [x] OIDC issuer discovery + JWKS JWT validation
-- [x] Tenant/scope/RBAC authorization
-- [x] Short-lived service authentication + mTLS identity contract
-- [x] PostgreSQL persistence boundary
-- [x] Centralized audit-event schema/store
-- [x] Tamper-evident audit hash-chain utility
-- [x] Checksum-verified migration runner
-- [x] Idempotency contract and PostgreSQL schema
-- [x] Sensitive-data redaction boundary
-- [x] High-impact policy gate / human-approval contract
-- [x] Redis-compatible distributed rate limiting
-- [x] OpenTelemetry integration and production Collector reference
-- [x] Versioned six-domain golden-evaluation baseline
-- [x] Executable AI red-team regression suite
-- [x] Statistical evaluation drift detector
-- [x] Shadow-mode recording and analyst agreement measurement
-- [x] Deterministic chaos/resilience tests
-- [x] Staging load-smoke harness
-- [x] Tenant-scoped integration contract for ingestion/enrichment providers
-- [x] Eight-gate enterprise deployment readiness model
-- [x] Terraform format/validation gate
-- [x] CycloneDX SBOM generation
-- [x] Keyless Cosign image signing and SBOM attestation workflow
-- [x] Managed PostgreSQL/Redis production reference
-- [x] Scheduled continuous-evaluation workflow
-- [x] Interactive demo walkthrough
-- [x] Customer-style case-study template
-- [x] CI quality/security/release gates
-
-### Evidence requiring real operational use
-
-- [ ] Real customer deployment and measured outcomes
-- [ ] External penetration test / independent security assessment
-- [ ] Production telemetry with real workload data
-- [ ] Customer-specific case study with verified metrics
-- [ ] Organization-specific managed secrets provider binding
-
-These are intentionally not represented as completed merely because repository tests pass.
 
 ---
 
@@ -321,7 +348,7 @@ High-impact workflows should retain authorized human review and appropriate doma
 
 **FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
 
-The emphasis is on the surrounding system—not merely an LLM call: **schemas, policy, evaluation, recovery, orchestration, security, governance, persistence, observability, and release evidence.**
+The emphasis is on the surrounding system—not merely an LLM call: **schemas, policy, evaluation, recovery, orchestration, security, governance, persistence, observability, integration, and release evidence.**
 
 ## License
 
