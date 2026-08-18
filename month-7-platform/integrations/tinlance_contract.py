@@ -17,6 +17,7 @@ VALID_DOMAINS = (
     "logistics",
     "legal",
     "revops",
+    "procurement",
 )
 
 
