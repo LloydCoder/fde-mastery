@@ -1,10 +1,10 @@
 # Enterprise Production Readiness Gate
 
-This repository uses eight explicit gates before a domain is promoted from engineering to customer production. The gates are aligned with a risk-managed AI lifecycle: govern, map, measure and manage. The security baseline should be reviewed against current NIST AI RMF and OWASP GenAI guidance.
+This repository uses eight explicit gates before a domain is promoted from engineering to customer production. The gates are aligned with a risk-managed AI lifecycle: govern, map, measure and manage.
 
 ## The eight gates
 
-1. **Golden dataset expansion** — each domain has a versioned synthetic baseline with 100 cases in v1. Customer datasets must remain outside Git and be evaluated in a controlled environment. The release gate requires reproducible evaluation results and explicit false-negative thresholds.
+1. **Golden dataset expansion** — each domain has a versioned synthetic baseline with 100 cases in the current repository baseline. Customer datasets must remain outside Git and be evaluated in a controlled environment. The release gate requires reproducible evaluation results and explicit false-negative thresholds.
 2. **Approved tool integration** — a tenant-scoped integration must implement the provider contract, authenticate successfully, expose health, ingestion and enrichment operations, and pass connector contract tests. The repository contains the provider-neutral contract; customer credentials are injected at deployment time.
 3. **Enterprise ingestion** — incoming events must carry tenant and request identifiers, pass schema validation, enforce size/rate limits and produce an auditable request record. Unsupported or malformed inputs fail closed.
 4. **Evaluation gate** — promotion requires passing domain-specific quality, safety, latency and cost thresholds. A green unit test suite alone is insufficient evidence for model quality.
@@ -13,7 +13,7 @@ This repository uses eight explicit gates before a domain is promoted from engin
 7. **Human-in-the-loop production** — high-impact actions require an identified human approver and an auditable approval event. The action guard is fail-closed and tenant-scoped.
 8. **Controlled actions** — only explicitly approved, reversible, low-risk actions may be automated initially. Destructive or high-impact operations require policy approval and remain disabled until customer-specific evidence supports promotion.
 
-## Six-domain deployment matrix
+## Seven-domain deployment matrix
 
 | Domain | Typical first integration | Initial safe mode | High-impact boundary |
 |---|---|---|---|
@@ -23,6 +23,7 @@ This repository uses eight explicit gates before a domain is promoted from engin
 | Logistics | TMS / WMS / carrier APIs | recommendation | rerouting / dispatch / shipment cancellation |
 | Legal | DMS / matter-management system | recommendation | filing / legal advice / contract execution |
 | RevOps | CRM / support / billing | recommendation | customer communication / pricing / account changes |
+| Procurement | ERP / sourcing / supplier-risk systems | recommendation | supplier award / PO / spend approval |
 
 ## Promotion rule
 
