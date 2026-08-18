@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, Iterable
 
 from domain_agent import DomainAgentResult
@@ -16,9 +17,11 @@ def normalize_result(
     requires_human_review: bool = False,
     audit_metadata: Dict[str, Any] | None = None,
 ) -> DomainAgentResult:
-    """Wrap a domain-specific result in the platform envelope with safe deployment metadata."""
+    """Wrap domain results in the platform envelope, including dataclass engines."""
     if hasattr(result, "model_dump"):
         payload = result.model_dump(mode="json")
+    elif is_dataclass(result) and not isinstance(result, type):
+        payload = asdict(result)
     elif isinstance(result, dict):
         payload = result
     else:
