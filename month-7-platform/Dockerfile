@@ -7,14 +7,16 @@ RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 
 COPY pyproject.toml ./
-COPY schemas.py domain_agent.py observability_metrics.py config.py ./
+COPY schemas.py domain_agent.py observability_metrics.py config.py api.py ./
 COPY observability ./observability
 COPY deployment ./deployment
 COPY persistence ./persistence
 COPY shared_orchestrator ./shared_orchestrator
 COPY integrations ./integrations
 COPY security ./security
-COPY api.py ./api.py
+COPY evaluation ./evaluation
+COPY domains ./domains
+COPY custom_agents ./custom_agents
 
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=83.0.0" \
     && pip install --no-cache-dir ".[redis,observability]"
