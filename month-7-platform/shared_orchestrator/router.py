@@ -12,13 +12,14 @@ except ImportError:
 from .resilience import ResilienceConfig, ResilienceExecutor
 
 
-_MONTH_SOURCES = {
-    Domain.CYBERSECURITY: "month-1-cybersecurity",
-    Domain.FINANCE: "month-2-finance",
-    Domain.HEALTHTECH: "month-3-healthtech",
-    Domain.LOGISTICS: "month-4-logistics",
-    Domain.LEGAL: "month-5-legal",
-    Domain.REVOPS: "month-6-revops",
+_DOMAIN_SOURCES = {
+    Domain.CYBERSECURITY: "domains/cybersecurity (legacy month-1 implementation)",
+    Domain.FINANCE: "domains/finance (legacy month-2 implementation)",
+    Domain.HEALTHTECH: "domains/healthtech (legacy month-3 implementation)",
+    Domain.LOGISTICS: "domains/logistics (legacy month-4 implementation)",
+    Domain.LEGAL: "domains/legal (legacy month-5 implementation)",
+    Domain.REVOPS: "domains/revops (legacy month-6 implementation)",
+    Domain.PROCUREMENT: "domains/procurement",
 }
 
 
@@ -42,7 +43,7 @@ class AgentRouter:
         if not isinstance(domain, Domain):
             raise TypeError("domain must be a Domain enum value")
         if not hasattr(agent_instance, "evaluate"):
-            raise TypeError(f"Agent for {domain.value} must expose evaluate(payload)")
+            raise TypeError(f"Agent for {domain} must expose evaluate(payload)")
         old = self._resilience.pop(domain, None)
         if old:
             old.close()
@@ -50,13 +51,14 @@ class AgentRouter:
         self._resilience[domain] = ResilienceExecutor(self._resilience_config)
 
     def register_defaults(self) -> None:
-        """Register all six Month 1-6 domain adapters."""
+        """Register all seven production domain adapters."""
         from .adapters import (
             CybersecurityDomainAdapter,
             FinanceDomainAdapter,
             HealthTechDomainAdapter,
             LegalDomainAdapter,
             LogisticsDomainAdapter,
+            ProcurementDomainAdapter,
             RevOpsDomainAdapter,
         )
         self.register_agent(Domain.CYBERSECURITY, CybersecurityDomainAdapter())
@@ -65,6 +67,7 @@ class AgentRouter:
         self.register_agent(Domain.LOGISTICS, LogisticsDomainAdapter())
         self.register_agent(Domain.LEGAL, LegalDomainAdapter())
         self.register_agent(Domain.REVOPS, RevOpsDomainAdapter())
+        self.register_agent(Domain.PROCUREMENT, ProcurementDomainAdapter())
 
     @staticmethod
     def _retryable(exc: Exception) -> bool:
@@ -96,7 +99,7 @@ class AgentRouter:
         for domain, agent in self._agents.items():
             capabilities = dict(agent.capabilities()) if hasattr(agent, "capabilities") else {}
             capabilities.setdefault("domain", domain.value)
-            capabilities.setdefault("source", _MONTH_SOURCES[domain])
+            capabilities.setdefault("source", _DOMAIN_SOURCES[domain])
             result[domain.value] = capabilities
         return result
 
