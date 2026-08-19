@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 from threading import RLock
-from typing import Callable, Iterable
+from typing import Callable
 from uuid import UUID
 
 from .models import EventEnvelope
@@ -22,7 +22,7 @@ class OutboxStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class OutboxRecord:
-    """Durable publication intent; status transitions are optimistic."""
+    """Durable publication intent; status transitions are lease-protected."""
 
     event: EventEnvelope
     sequence: int
@@ -35,7 +35,7 @@ class OutboxRecord:
 
 
 class OutboxConflict(RuntimeError):
-    """Raised when a stale outbox version attempts a state transition."""
+    """Raised when a stale worker attempts an invalid state transition."""
 
 
 class InMemoryOutbox:
@@ -55,14 +55,7 @@ class InMemoryOutbox:
             self._records[event.event_id] = record
             return record
 
-    def claim(
-        self,
-        *,
-        worker_id: str,
-        now: datetime,
-        limit: int = 100,
-        lease_seconds: int = 60,
-    ) -> list[OutboxRecord]:
+    def claim(self, *, worker_id: str, now: datetime, limit: int = 100, lease_seconds: int = 60) -> list[OutboxRecord]:
         if limit < 1 or lease_seconds < 1:
             raise ValueError("limit and lease_seconds must be positive")
         with self._lock:
@@ -74,7 +67,13 @@ class InMemoryOutbox:
                 reclaimable = record.status == OutboxStatus.PROCESSING and expired
                 if not (eligible or reclaimable) or len(claimed) >= limit:
                     continue
-                updated = replace(record, status=OutboxStatus.PROCESSING, attempts=record.attempts + 1, locked_by=worker_id, locked_at=now)
+                updated = replace(
+                    record,
+                    status=OutboxStatus.PROCESSING,
+                    attempts=record.attempts + 1,
+                    locked_by=worker_id,
+                    locked_at=now,
+                )
                 self._records[record.event.event_id] = updated
                 claimed.append(updated)
             return claimed
@@ -96,11 +95,20 @@ class InMemoryOutbox:
         retry_at: datetime,
         max_attempts: int,
     ) -> OutboxRecord:
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be positive")
         with self._lock:
             current = self._records[event_id]
             self._assert_owner(current, worker_id)
             status = OutboxStatus.DEAD_LETTERED if current.attempts >= max_attempts else OutboxStatus.FAILED
-            updated = replace(current, status=status, available_at=retry_at, last_error=error[:2000], locked_by=None, locked_at=None)
+            updated = replace(
+                current,
+                status=status,
+                available_at=retry_at,
+                last_error=error[:2000],
+                locked_by=None,
+                locked_at=None,
+            )
             self._records[event_id] = updated
             return updated
 
@@ -126,13 +134,13 @@ class OutboxPublisher:
         for record in claimed:
             try:
                 self._publish(record.event)
-            except Exception as exc:  # boundary: provider failure becomes durable state
+            except Exception as exc:  # provider failure becomes durable retry state
                 delay = min(3600, 2 ** max(0, record.attempts - 1))
                 self._outbox.mark_failed(
                     record.event.event_id,
                     worker_id=worker_id,
                     error=str(exc),
-                    retry_at=now.replace(microsecond=0) + __import__("datetime").timedelta(seconds=delay),
+                    retry_at=now.replace(microsecond=0) + timedelta(seconds=delay),
                     max_attempts=max_attempts,
                 )
             else:
