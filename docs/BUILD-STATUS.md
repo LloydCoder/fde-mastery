@@ -10,26 +10,25 @@
 | **6 — Tool Gateway** | **GREEN** | Tool registry, capability-scoped execution, tenant/request isolation, approval boundary, idempotency |
 | **7 — Model Gateway** | **GREEN** | Model registry, capability/data-class controls, policy gate, deterministic routing, retry-aware fallback, provider abstraction |
 | **8 — Event-Driven Platform** | **GREEN** | Versioned events, transactional outbox, idempotent inbox, leased publishing, retry/dead-letter semantics, tenant-isolated persistence |
-| **9 — AI Evaluation Plane** | **IN PROGRESS** | Golden, adversarial, safety, quality, cost and promotion gates |
-| 10 — Observability & FinOps | NOT STARTED | OTel traces, SLOs, cost and quality telemetry |
-| 11 — Enterprise Deployment & DR | NOT STARTED | Regional/dedicated deployment, residency, backup, failover, supply chain |
-| 12 — Platform Productization | NOT STARTED | CLI/SDK, registries, developer experience and final hardening |
+| **9 — AI Evaluation Plane** | **GREEN** | Golden, adversarial, safety, quality, cost and promotion gates |
+| **10 — Observability & AI FinOps** | **GREEN** | OTel-compatible telemetry, bounded dimensions, execution correlation, tenant cost ledger, fail-closed AI budgets |
+| **11 — Enterprise Deployment & DR** | **IN PROGRESS** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
+| 12 — Platform Productization | PLANNED | CLI/SDK, registries, developer experience and final hardening |
 
-## Build 9 exit criteria
+## Build 11 exit criteria
 
-- [x] Immutable evaluation cases and versioned datasets exist.
-- [x] SHA-256 case and dataset fingerprints exist.
-- [x] Golden and adversarial evaluation categories exist.
-- [x] Safety regression scorer fails closed on configured prohibited terms.
-- [x] Quality scorer contracts are explicit and bounded.
-- [x] Cost and latency are captured per evaluation result.
-- [x] Evaluation runs record model and dataset provenance.
-- [x] Explicit promotion thresholds produce PROMOTE/REJECT decisions.
-- [x] Evaluation content is treated as data, not executable code.
-- [x] Build 9 ADR and implementation documentation are recorded.
-- [x] Evaluation regression tests exist.
-- [ ] GitHub Actions Platform Quality workflow passes all jobs and checks on the Build 9 PR.
-- [ ] Build 9 PR is merged only after the complete CI gate is green.
+- [x] Enterprise deployment profiles are explicitly documented.
+- [x] Regional and dedicated residency boundaries are defined.
+- [x] RPO/RTO tiers are machine-readable.
+- [x] Recovery ordering requires writer fencing before state restoration.
+- [x] Backup encryption, retention and restore verification requirements are defined.
+- [x] Recovery validates identity, tenant isolation, RLS and policy gates before promotion.
+- [x] Workflow/event/tool/model side effects remain idempotent during recovery.
+- [x] SBOM, dependency audit and release provenance are production promotion requirements.
+- [x] Build 11 ADR and implementation documentation are recorded.
+- [x] DR policy contract tests exist.
+- [ ] GitHub Actions Platform Quality workflow passes all jobs and checks on the Build 11 PR.
+- [ ] Build 11 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
