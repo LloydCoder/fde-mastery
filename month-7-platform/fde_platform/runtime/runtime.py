@@ -117,6 +117,8 @@ class AgentRuntime:
 
         try:
             self._guard(run, cancellation, started)
+            if run.step_count >= run.budget.max_steps:
+                raise RunLimitExceeded("execution step budget exceeded")
             run.increment_step()
             result = agent(payload, context)
             self._guard(run, cancellation, started)
@@ -142,6 +144,13 @@ class AgentRuntime:
             self.store.save(run)
         return run
 
+    def execute_domain(self, run_id: UUID, agent: Any, payload: Mapping[str, Any]) -> AgentRun:
+        """Run an existing DomainAgent without coupling the runtime to domain implementations."""
+
+        if not callable(getattr(agent, "evaluate", None)):
+            raise TypeError("agent must expose evaluate(payload)")
+        return self.execute(run_id, lambda data, _context: agent.evaluate(dict(data)), payload)
+
     def _guard(self, run: AgentRun, cancellation: threading.Event, started: float) -> None:
         if cancellation.is_set():
             raise RunCancelled("execution cancelled")
@@ -163,6 +172,6 @@ class AgentRuntime:
         except (TypeError, ValueError) as exc:
             raise AgentRuntimeError("checkpoint state is not serializable") from exc
 
-    @classmethod
-    def _serialized_size(cls, value: Any) -> int:
+    @staticmethod
+    def _serialized_size(value: Any) -> int:
         return len(json.dumps(value, sort_keys=True, default=str).encode("utf-8"))
