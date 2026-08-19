@@ -1,6 +1,6 @@
 """Execution context shared by future workflow and agent runtimes."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Mapping
 
 
@@ -13,8 +13,4 @@ class ExecutionContext:
     environment: str = "development"
     trace_id: str | None = None
     deadline_ms: int | None = None
-    attributes: Mapping[str, str] = None
-
-    def __post_init__(self) -> None:
-        if self.attributes is None:
-            object.__setattr__(self, "attributes", {})
+    attributes: Mapping[str, str] = field(default_factory=dict)
