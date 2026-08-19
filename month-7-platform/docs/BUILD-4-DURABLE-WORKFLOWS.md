@@ -1,6 +1,6 @@
 # Build 4 — Durable Workflow Engine
 
-**Status: GREEN candidate — implementation complete pending CI.**
+**Status: GREEN — complete.**
 
 ## Objective
 
@@ -12,6 +12,7 @@ Turn the Build 3 agent execution boundary into a crash-recoverable workflow boun
 - First-class `WorkflowRun` projection with explicit terminal states.
 - Append-only ordered `WorkflowEvent` history for replay and audit.
 - Optimistic sequence checking to detect concurrent history writers.
+- Database-enforced immutable workflow history.
 - Leased task queue with explicit acknowledgement semantics.
 - Deterministic in-memory queue/store for unit and regression testing.
 - PostgreSQL durable workflow run/event persistence.
@@ -22,6 +23,7 @@ Turn the Build 3 agent execution boundary into a crash-recoverable workflow boun
 - Operator cancellation.
 - Crash recovery re-enqueue/reconciliation for non-terminal runs.
 - Tenant-scoped PostgreSQL RLS with `FORCE ROW LEVEL SECURITY`.
+- Composite tenant-to-workflow foreign-key binding.
 - Stable workflow/step/attempt idempotency keys.
 - Migration security contracts and runtime regression tests.
 
@@ -52,7 +54,7 @@ The `recover()` operation reconciles non-terminal workflow runs after process/wo
 
 ## Database isolation
 
-Workflow runs, events and tasks are tenant-owned. PostgreSQL RLS is enabled and forced, with restrictive `USING` and `WITH CHECK` policies based on the trusted transaction-scoped `fde.tenant_id` setting established in Build 2.
+Workflow runs, events and tasks are tenant-owned. PostgreSQL RLS is enabled and forced, with restrictive `USING` and `WITH CHECK` policies based on the trusted transaction-scoped `fde.tenant_id` setting established in Build 2. Workflow events are immutable at the database trigger boundary, and tasks/events use composite tenant-to-run foreign keys to prevent mismatched tenant ownership.
 
 ## Why this boundary
 
@@ -60,15 +62,31 @@ Build 4 deliberately does **not** introduce a distributed workflow vendor or mic
 
 ## Standards and research basis
 
-The design follows durable-execution principles used by modern workflow systems: durable state, explicit retries, signals, deterministic versioning, idempotent activities, and recoverability. PostgreSQL queue claiming uses row-level locking with `SKIP LOCKED`; tenant isolation builds on PostgreSQL RLS. OpenTelemetry's current GenAI guidance is compatible with the workflow boundary because workflow, agent, model and tool spans can be correlated without making raw AI content a required telemetry field.
+The design follows durable-execution principles used by modern workflow systems: durable state, explicit retries, signals, deterministic versioning, idempotent activities, and recoverability. PostgreSQL documents `SKIP LOCKED` as suitable for avoiding lock contention among multiple consumers accessing queue-like tables. urlPostgreSQL SELECT / SKIP LOCKED documentationhttps://www.postgresql.org/docs/current/sql-select.html
 
-References:
+The workflow boundary is intentionally vendor-neutral while preserving the same core durability concepts demonstrated by mature durable-execution platforms. urlTemporal workflow documentationhttps://docs.temporal.io/workflow-execution
 
-- PostgreSQL row-level security: https://www.postgresql.org/docs/current/ddl-rowsecurity.html
-- PostgreSQL locking / `SKIP LOCKED`: https://www.postgresql.org/docs/current/sql-select.html
-- Temporal durable execution concepts: https://docs.temporal.io/workflow-execution
-- OpenTelemetry GenAI semantic conventions: https://opentelemetry.io/docs/specs/semconv/gen-ai/
+## Verification
 
-## Verification requirements
+Build 4 passed the complete GitHub Actions **Platform Quality** workflow on PR #8, including:
 
-Build 4 is not complete until the repository quality workflow is green, including tests, architecture checks, security controls, migration validation, static analysis, SBOM/provenance gates, staging startup, load smoke and production container smoke.
+- full pytest suite
+- seven-domain adapter verification
+- enterprise deployment gates
+- 700-case golden dataset validation
+- AI security regression
+- enterprise security controls
+- migration sequence validation
+- Ruff
+- MyPy
+- Bandit
+- pip-audit
+- compileall
+- Terraform validation
+- SBOM generation and validation
+- staging API startup/readiness
+- load smoke
+- production Docker build/runtime smoke
+- Semgrep static security scan
+
+**Build 4 is complete and merged into `main`.**
