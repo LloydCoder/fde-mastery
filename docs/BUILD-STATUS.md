@@ -3,9 +3,9 @@
 | Build | Status | Scope |
 |---|---|---|
 | **1 — Architecture Foundation** | **GREEN** | Kernel contracts, ports, dependency boundaries, legacy isolation, executable architecture tests |
-| 2 — Identity & Multi-Tenancy | NOT STARTED | Tenant model, RBAC/ABAC, resource authorization, RLS, environments |
-| 3 — Agent Runtime | NOT STARTED | First-class AgentRun, lifecycle, state, checkpointing, budgets, cancellation |
-| 4 — Durable Workflows | NOT STARTED | Durable execution, replay, retries, HITL pauses, compensation |
+| **2 — Identity & Multi-Tenancy** | **GREEN** | Tenant model, identity context, fail-closed authorization, RLS, environments |
+| **3 — Agent Runtime** | **GREEN** | First-class AgentRun, lifecycle, state, checkpointing, budgets, cancellation |
+| **4 — Durable Workflows** | **GREEN** | Durable workflow state/history, leased queue, retries, waits/signals, recovery, replay, dead letters |
 | 5 — Trust & Policy Plane | NOT STARTED | PDP/PEP, risk tiers, policy-as-code, approval service |
 | 6 — Tool Gateway | NOT STARTED | Registry, capability tokens, isolation, idempotency, MCP boundary |
 | 7 — Model Gateway | NOT STARTED | Model registry, routing, fallback, budgets, provider abstraction |
@@ -15,17 +15,20 @@
 | 11 — Enterprise Deployment & DR | NOT STARTED | Regional/dedicated deployment, residency, backup, failover, supply chain |
 | 12 — Platform Productization | NOT STARTED | CLI/SDK, registries, developer experience and final hardening |
 
-## Build 1 exit criteria
+## Build 4 exit criteria
 
-- [x] Framework-neutral `fde_platform` kernel exists in the active Month 7 package.
-- [x] Agent/domain/execution contracts are defined.
-- [x] Agent/model/tool/repository/event-bus ports are defined.
-- [x] Kernel dependency restrictions are encoded as executable tests.
-- [x] Production code is prohibited from directly importing Month 1–6 curriculum modules.
-- [x] Legacy curriculum boundary is documented.
-- [x] Packaging includes the new kernel.
-- [x] Architecture ADR is recorded.
-- [x] Active Month 7 README records the current phase.
+- [x] Version-pinned workflow definitions and step contracts exist.
+- [x] First-class durable `WorkflowRun` lifecycle exists.
+- [x] Append-only ordered event history exists with optimistic sequence protection.
+- [x] Leased workflow queue has explicit acknowledgement semantics.
+- [x] PostgreSQL workflow/event persistence adapter exists.
+- [x] PostgreSQL queue adapter uses transactional row locking and `SKIP LOCKED`.
+- [x] Retry, dead-letter, wait/signal, cancellation and recovery semantics are implemented.
+- [x] Workflow state/history/task tables are tenant-isolated with forced RLS.
+- [x] Workflow/step/attempt idempotency keys are stable.
+- [x] Workflow regression and migration security contract tests exist.
+- [x] Build 4 ADR and architecture documentation are recorded.
+- [x] Active Month 7 README records Build 4 as the current completed phase.
 - [ ] CI verification — pending GitHub Actions run on this build branch/PR.
 
 ## Verification policy
