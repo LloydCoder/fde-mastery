@@ -13,7 +13,7 @@
 | **9 — AI Evaluation Plane** | **GREEN** | Golden, adversarial, safety, quality, cost and promotion gates |
 | **10 — Observability & AI FinOps** | **GREEN** | OTel-compatible telemetry, bounded dimensions, execution correlation, tenant cost ledger, fail-closed AI budgets |
 | **11 — Enterprise Deployment & DR** | **GREEN** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
-| **12 — Platform Productization** | **IN PROGRESS** | Stable developer CLI, machine-readable capability manifest, SDK boundary and final hardening |
+| **12 — Platform Productization** | **IN PROGRESS** | Stable developer CLI, machine-readable capability manifest, enterprise repository structure and final hardening |
 
 ## Build 11 verification
 
@@ -36,6 +36,11 @@
 - [x] Machine-readable platform capability manifest exists.
 - [x] Manifest completeness is covered by contract tests.
 - [x] Productization boundary cannot bypass identity, policy, tool or model gates.
+- [x] Production platform distribution is owned by `packages/platform-core`.
+- [x] Historical Months 1–6 curriculum is separated under `legacy/curriculum`.
+- [x] Repository ownership boundaries for apps, packages, domains, infrastructure and tests are documented.
+- [x] CI, evaluation and release-attestation workflows target the new platform package location.
+- [x] ADR-0013 records the repository structure decision.
 - [x] Build 12 architecture and security documentation are recorded.
 - [ ] Platform Quality workflow passes all jobs and checks on the Build 12 PR.
 - [ ] Build 12 PR is merged only after the complete CI gate is green.
