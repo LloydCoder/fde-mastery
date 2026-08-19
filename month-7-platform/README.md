@@ -14,25 +14,23 @@ The capstone layer that turns the domain agents into a governed enterprise AI pl
 | 6 | Tool Gateway | GREEN |
 | 7 | Model Gateway | GREEN |
 | 8 | Event-Driven Platform | GREEN |
-| 9 | AI Evaluation Plane | IN PROGRESS |
-| 10 | Observability & AI FinOps | NEXT |
-| 11 | Enterprise Deployment & DR | PLANNED |
+| 9 | AI Evaluation Plane | GREEN |
+| 10 | Observability & AI FinOps | IN PROGRESS |
+| 11 | Enterprise Deployment & DR | NEXT |
 | 12 | Platform Productization | PLANNED |
 
-## Build 9 — AI Evaluation Plane
+## Build 10 — Observability & AI FinOps
 
-Build 9 establishes evaluation as a first-class platform capability and release gate.
+Build 10 establishes production telemetry and tenant-scoped AI cost governance.
 
-- Immutable evaluation cases and versioned datasets
-- SHA-256 case and dataset fingerprints
-- Golden and adversarial evaluation categories
-- Safety regression scorer with fail-closed prohibited-output checks
-- Deterministic quality scoring contracts
-- Cost and latency measurement per result
-- Model and dataset provenance on every evaluation run
-- Explicit threshold-based `PROMOTE` / `REJECT` decisions
-- Evaluation inputs remain data and are never executed as code
-- Framework-neutral evaluation harness and scorers
+- Framework-neutral telemetry and metrics contracts
+- OpenTelemetry-compatible semantic mapping boundary
+- Bounded, low-cardinality metric dimensions
+- Agent/workflow/model/tool/messaging correlation model
+- Tenant-scoped AI cost records with model and run provenance
+- Explicit fail-closed cost budgets
+- Reference cost ledger with production adapter boundary
+- Privacy rule: GenAI content is opt-in, not baseline telemetry
 - Regression/security coverage
 
 **Status: IN PROGRESS — implementation complete; awaiting full CI verification.**
@@ -53,29 +51,36 @@ Model Providers     SaaS / DB / RPC / MCP
 Durable Workflow / Agent Runtime
             ↓
 Domain Agents / Infrastructure
-            ↓
-      Evaluation Plane
-   ↙      ↓       ↘
-Golden  Safety  Adversarial
-   \      |       /
-    Quality + Cost
-          ↓
-    Promotion Gate
-      ↙        ↘
-  PROMOTE     REJECT
+       ↙             ↘
+Evaluation Plane   Observability
+       ↓              ↓
+Promotion Gate   Traces / Metrics / Events
+                      ↓
+                 AI FinOps Ledger
+                      ↓
+                Tenant Budget Gate
 ```
 
 The repository remains a modular monolith while these boundaries stabilize. Extraction into separate services is deferred until contracts, operational requirements and failure domains justify it.
 
-## Evaluation Security Rules
+## Observability Security Rules
 
-1. Dataset versions and fingerprints must make silent test-set mutation detectable.
-2. Evaluation cases are untrusted data and must never be interpreted as executable code.
-3. Safety failures are independent of aggregate quality and cannot be hidden by a high mean score.
-4. Every evaluation run records the tested model reference and dataset fingerprint.
-5. Promotion thresholds are explicit and version-controlled.
-6. Agentic evaluations must record relevant tools, budgets and harness configuration before being used as capability evidence.
-7. Evaluation reports must consider validity hazards such as reward hacking, contamination, shortcutting and evaluation awareness.
+1. Prefer established OpenTelemetry semantic conventions over custom duplicate attributes.
+2. Baseline telemetry uses bounded, low-cardinality dimensions.
+3. Prompt, completion and tool content are never required for baseline observability.
+4. Sensitive GenAI content requires explicit opt-in and appropriate access/retention controls.
+5. Execution identifiers correlate agent, workflow, model, tool and messaging operations.
+6. Telemetry errors must not leak credentials, tokens or sensitive payloads.
+
+## AI FinOps Rules
+
+1. Cost records are tenant-scoped.
+2. Every record identifies execution run and model.
+3. Token counts and costs are non-negative and validated.
+4. Budgets cannot be applied across tenants.
+5. Budget breaches fail closed.
+6. Production cost persistence must use idempotent correlation keys.
+7. Provider pricing is configuration; internal estimates require reconciliation before invoice-level claims.
 
 ## Project Structure
 
@@ -89,12 +94,13 @@ month-7-platform/
 │   ├── workflow/              # Durable workflows and queues
 │   ├── tools/                 # Tool gateway
 │   ├── models/                # Model gateway and provider boundary
-│   └── evaluation/            # Evaluation contracts, harness and scorers
+│   ├── evaluation/            # Evaluation contracts, harness and scorers
+│   └── observability/         # Telemetry, metrics and AI FinOps contracts
 ├── custom_agents/             # Compatibility/domain-facing agent tooling
 ├── persistence/               # PostgreSQL adapters and migrations
 ├── integrations/              # External system adapters
 ├── evaluation/                # Existing datasets/evaluation compatibility layer
-├── observability/             # Telemetry
+├── observability/             # Existing telemetry compatibility layer
 ├── deployment/                # Container/Terraform deployment
 └── tests/                     # Regression/security/architecture tests
 ```
@@ -103,4 +109,4 @@ month-7-platform/
 
 A build is not complete until the repository quality workflow is green. The gate includes pytest, domain deployment smoke tests, enterprise security controls, migration validation, red-team regression, Ruff, MyPy, Bandit, dependency audit, compileall, Terraform validation, SBOM generation/validation, staging API/load smoke, production Docker runtime smoke, and Semgrep.
 
-See [`docs/build-9-ai-evaluation-plane.md`](../docs/build-9-ai-evaluation-plane.md) and [`docs/adr/0009-ai-evaluation-plane.md`](../docs/adr/0009-ai-evaluation-plane.md).
+See [`docs/build-10-observability-ai-finops.md`](../docs/build-10-observability-ai-finops.md) and [`docs/adr/0010-observability-and-ai-finops.md`](../docs/adr/0010-observability-and-ai-finops.md).
