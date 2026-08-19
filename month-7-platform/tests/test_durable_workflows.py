@@ -123,8 +123,13 @@ def test_wait_signal_resumes_same_step():
     run = start(engine, definition)
     first = engine.run_once()
     assert first is not None and first.status == WorkflowStatus.WAITING
+    waiting_replay = engine.replay(run.workflow_run_id)
+    assert waiting_replay.status == WorkflowStatus.WAITING
+    assert waiting_replay.current_step == 0
 
     engine.signal(run.workflow_run_id, signal_name="approval", payload={"approved_by": "user-1"})
+    running_replay = engine.replay(run.workflow_run_id)
+    assert running_replay.status == WorkflowStatus.RUNNING
     engine.run_once()
     final = engine.run_once()
     assert final is not None and final.status == WorkflowStatus.COMPLETED
