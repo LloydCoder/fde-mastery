@@ -1,9 +1,8 @@
--- Build 4: durable workflow state, append-only history, and queued work.
+-- Build 4: durable workflow state and append-only history.
 --
 -- Workflow runs and history are tenant-owned. RLS is intentionally FORCE-enabled
--- so the table owner cannot accidentally bypass tenant isolation in normal access.
--- Side-effecting activities remain at-least-once; durable identifiers are used for
--- idempotency and history sequencing.
+-- so table ownership cannot accidentally bypass tenant isolation. Workflow history
+-- is immutable at the database boundary as well as in the application contract.
 
 CREATE TABLE IF NOT EXISTS fde_workflow_runs (
     workflow_run_id VARCHAR(36) PRIMARY KEY,
@@ -25,7 +24,8 @@ CREATE TABLE IF NOT EXISTS fde_workflow_runs (
     error_message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    completed_at TIMESTAMPTZ
+    completed_at TIMESTAMPTZ,
+    UNIQUE (workflow_run_id, tenant_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fde_workflow_runs_tenant_status
@@ -35,14 +35,18 @@ CREATE INDEX IF NOT EXISTS idx_fde_workflow_runs_request
 
 CREATE TABLE IF NOT EXISTS fde_workflow_events (
     event_id VARCHAR(36) PRIMARY KEY,
-    workflow_run_id VARCHAR(36) NOT NULL REFERENCES fde_workflow_runs(workflow_run_id) ON DELETE CASCADE,
-    tenant_id VARCHAR(63) NOT NULL REFERENCES fde_tenants(tenant_id) ON DELETE CASCADE,
+    workflow_run_id VARCHAR(36) NOT NULL,
+    tenant_id VARCHAR(63) NOT NULL,
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
     event_type VARCHAR(128) NOT NULL,
     step_id VARCHAR(128),
     payload_json TEXT NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (workflow_run_id, sequence)
+    UNIQUE (workflow_run_id, sequence),
+    CONSTRAINT fk_fde_workflow_events_run_tenant
+        FOREIGN KEY (workflow_run_id, tenant_id)
+        REFERENCES fde_workflow_runs(workflow_run_id, tenant_id)
+        ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_fde_workflow_events_run_sequence
@@ -67,6 +71,21 @@ CREATE POLICY fde_workflow_events_tenant_isolation
     FOR ALL
     USING (tenant_id = fde_current_tenant_id())
     WITH CHECK (tenant_id = fde_current_tenant_id());
+
+CREATE OR REPLACE FUNCTION fde_prevent_workflow_event_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'fde_workflow_events is append-only';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_fde_workflow_events_immutable ON fde_workflow_events;
+CREATE TRIGGER trg_fde_workflow_events_immutable
+BEFORE UPDATE OR DELETE ON fde_workflow_events
+FOR EACH ROW
+EXECUTE FUNCTION fde_prevent_workflow_event_mutation();
 
 COMMENT ON TABLE fde_workflow_events IS
     'Append-only durable workflow history. Consumers reconstruct execution state from ordered facts.';
