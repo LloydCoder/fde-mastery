@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from typing import Any, Mapping
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class AgentRunStatus(StrEnum):
+class AgentRunStatus(str, Enum):
     """Explicit lifecycle for a single agent execution."""
 
     CREATED = "created"
