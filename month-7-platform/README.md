@@ -1,12 +1,12 @@
 # Month 7: Platform Layer — Unified Client Onboarding, Deployment & Delivery
 
-The capstone infrastructure layer that transforms domain-specific agents into a governed enterprise AI platform. This platform provides client onboarding, schema auto-mapping, preference configuration, containerized deployment, unified API gateway, multi-system integrations, observability, billing, identity, multi-tenancy, and first-class agent execution.
+The capstone infrastructure layer that transforms domain-specific agents into a governed enterprise AI platform. This platform provides client onboarding, schema auto-mapping, preference configuration, containerized deployment, unified API gateway, multi-system integrations, observability, billing, identity, multi-tenancy, first-class agent execution, and durable workflows.
 
 ---
 
-## Enterprise Architecture Migration — Build 3 COMPLETE
+## Enterprise Architecture Migration — Build 4 COMPLETE
 
-The enterprise-grade architecture migration is active. The platform now has a framework-neutral kernel, canonical identity/multi-tenancy primitives, and a first-class agent execution runtime.
+The enterprise-grade architecture migration is active. The platform now has a framework-neutral kernel, canonical identity/multi-tenancy primitives, a first-class agent execution runtime, and a durable workflow boundary for long-running work.
 
 ### Build 1 — Architecture Foundation
 
@@ -45,6 +45,24 @@ The enterprise-grade architecture migration is active. The platform now has a fr
 
 **Build 3 status: GREEN — complete.**
 
+### Build 4 — Durable Workflow Engine
+
+- Version-pinned declarative workflow definitions and steps
+- Durable `WorkflowRun` projection and explicit lifecycle
+- Append-only ordered workflow event history with optimistic sequence protection
+- Leased task queue with explicit acknowledgement semantics
+- PostgreSQL durable workflow/run/event persistence
+- PostgreSQL queue claims using transactional row locking and `SKIP LOCKED`
+- Bounded exponential retries and dead-letter handling
+- Durable external wait/signal semantics
+- Operator cancellation
+- Crash recovery/re-enqueue reconciliation
+- Stable workflow/step/attempt idempotency keys
+- Tenant-scoped `FORCE ROW LEVEL SECURITY` for workflow state, history, and tasks
+- Regression tests for success, replay, retries, dead letters, waits/signals, cancellation, leases, and migration security
+
+**Build 4 status: GREEN — complete.**
+
 ### Current migration rule
 
 ```text
@@ -54,6 +72,8 @@ Application / API / Workers
             ↓
        Agent Runtime
             ↓
+    Durable Workflows
+            ↓
      Platform contracts
             ↓
        Domain plugins
@@ -61,9 +81,9 @@ Application / API / Workers
 Infrastructure adapters
 ```
 
-The repository remains a modular monolith during this phase. Future workflow, policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
+The repository remains a modular monolith during this phase. Future policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
 
-See [`docs/BUILD-3-AGENT-RUNTIME.md`](docs/BUILD-3-AGENT-RUNTIME.md), [`docs/adr/0004-agent-runtime.md`](docs/adr/0004-agent-runtime.md), and [`fde_platform/README.md`](fde_platform/README.md).
+See [`docs/BUILD-4-DURABLE-WORKFLOWS.md`](docs/BUILD-4-DURABLE-WORKFLOWS.md), [`docs/adr/0005-durable-workflow-engine.md`](docs/adr/0005-durable-workflow-engine.md), and [`fde_platform/README.md`](fde_platform/README.md).
 
 ---
 
@@ -129,7 +149,7 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 
 ## Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  CLIENT ONBOARDING                                                          │
 │  Schema Mapper → Preferences → Golden Dataset → Deployment Plan             │
@@ -143,6 +163,11 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  AGENT RUNTIME                                                               │
 │  AgentRun → Budget → Cancellation → Checkpoint → Domain Agent → Result      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DURABLE WORKFLOW ENGINE                                                     │
+│  WorkflowRun → Event History → Leased Queue → Retry/Wait → Recovery/Replay  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -210,25 +235,32 @@ month-7-platform/
 │   ├── authorization/                     # Fail-closed authorization boundary
 │   ├── ports/                             # Hexagonal architecture ports
 │   ├── runtime/                           # First-class agent execution runtime
+│   ├── workflow/                          # Durable workflow engine + queue contracts
 │   └── architecture.py                    # Executable boundary policy
 ├── schemas.py
 ├── main.py
 ├── eval_harness.py
 ├── client_onboarding/
 ├── deployment/
+├── persistence/
+│   ├── migrations/                        # Versioned tenant/workflow persistence
+│   ├── workflow_store.py                  # PostgreSQL workflow adapter
+│   └── workflow_queue.py                  # PostgreSQL leased queue adapter
 ├── shared_orchestrator/
 ├── integrations/
 ├── observability/
 ├── evaluation/
 └── tests/
-    └── test_agent_runtime.py              # Build 3 runtime invariants
+    ├── test_agent_runtime.py
+    ├── test_durable_workflows.py
+    └── test_workflow_migration_contract.py
 ```
 
 ---
 
 ## Agent Runtime Contract
 
-Every execution is represented by an `AgentRun` rather than being an anonymous function call:
+Every execution is represented by an `AgentRun` rather than being an anonymous function call. Build 4 adds a durable workflow above the runtime for multi-step work:
 
 ```text
 CREATED
@@ -239,18 +271,21 @@ RUNNING
 COMPLETED       FAILED / CANCELLED / TIMED_OUT / LIMIT_EXCEEDED
 ```
 
-Runtime safety controls include:
+Workflow execution adds:
 
-- bounded step count
-- bounded elapsed time
-- bounded serialized output
-- cooperative cancellation
-- monotonically sequenced checkpoints
-- SHA-256 checkpoint fingerprints
-- bounded error metadata
-- tenant/request/agent execution context
+```text
+WorkflowRun
+   ↓
+StepStarted
+   ↓
+Activity
+   ├── success → StepCompleted → next step
+   ├── retry   → scheduled retry
+   ├── wait    → WAITING → external signal
+   └── failure → DEAD_LETTERED
+```
 
-The runtime is intentionally synchronous in Build 3. Durable workers, distributed cancellation, workflow recovery, queues, replay, and dead-letter handling are Build 4 concerns.
+The durable boundary is intentionally **at-least-once** for activities. External side-effect adapters must use stable idempotency keys. Worker leases, acknowledgements, event history, and `recover()` provide crash recovery without claiming impossible exactly-once external mutation semantics.
 
 ---
 
@@ -258,7 +293,7 @@ The runtime is intentionally synchronous in Build 3. Durable workers, distribute
 
 The platform security baseline is mapped to OWASP ASVS 5.0. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Identity architecture follows zero-trust principles and treats software/AI agents as explicit execution identities. Observability follows OpenTelemetry semantic-convention guidance, with sensitive AI content excluded by default.
 
-High-impact actions remain human-controlled. Examples include account disablement, endpoint isolation, clinical intervention, payment/purchase approval, supplier award, contract rejection, and customer notification.
+Workflow state, events, and tasks are tenant-scoped and protected by PostgreSQL `FORCE ROW LEVEL SECURITY`. High-impact actions remain human-controlled. Build 5 will introduce the dedicated policy, risk, and approval plane above this durable execution layer.
 
 ---
 
@@ -271,6 +306,7 @@ Every architectural change is expected to pass the repository quality pipeline b
 - Custom Agent tests and secure tool-gateway tests
 - enterprise security controls
 - identity/multi-tenancy and runtime regression tests
+- durable workflow and migration security regression tests
 - migration validation
 - red-team regression
 - Ruff
@@ -299,4 +335,4 @@ Part of the **FDE Mastery** curriculum — a production-oriented Forward Deploye
 | 1 | Architecture Foundation | GREEN |
 | 2 | Identity & Multi-Tenancy | GREEN |
 | 3 | Agent Runtime | GREEN |
-| 4 | Durable Workflow Engine | NEXT |
+| 4 | Durable Workflow Engine | GREEN |
