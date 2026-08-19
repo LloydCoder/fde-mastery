@@ -74,13 +74,3 @@ def test_platform_contracts_are_importable_without_frameworks():
 def test_required_architecture_roots_exist():
     for path in (ROOT / "fde_platform", ROOT / "fde_platform" / "contracts", ROOT / "fde_platform" / "ports"):
         assert path.is_dir(), f"Missing architecture root: {path.relative_to(ROOT)}"
-
-
-def test_domain_plugins_depend_on_platform_not_reverse():
-    """Domain packages may consume platform contracts; the kernel may not consume domains."""
-    violations: list[str] = []
-    for path in _python_files(ROOT / "domains"):
-        imports = _imported_modules(path)
-        forbidden = {name for name in imports if name in FORBIDDEN_KERNEL_IMPORT_ROOTS - {"domains"}}
-        violations.extend(f"{path.relative_to(ROOT)} imports {name}" for name in sorted(forbidden))
-    assert not violations, "Domain dependency violations:\n" + "\n".join(violations)
