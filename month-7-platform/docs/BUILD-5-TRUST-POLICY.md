@@ -58,3 +58,5 @@ References:
 - OWASP Access Control guidance: https://owasp.org/www-community/Access_Control
 - NIST AI RMF: https://www.nist.gov/itl/ai-risk-management-framework
 - NIST Generative AI Profile: https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence
+
+CI gate: Platform Quality must pass before Build 5 is merged.
