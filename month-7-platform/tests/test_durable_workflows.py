@@ -93,7 +93,7 @@ def test_retry_is_bounded_and_dead_letters_after_max_attempts():
         definitions={(definition.workflow_id, definition.version): definition},
         activities={"fail": failing},
     )
-    run = engine.start(
+    engine.start(
         definition,
         request_id="req-2",
         tenant_id="tenant-a",
@@ -131,12 +131,14 @@ def test_wait_signal_resumes_same_step():
     assert final.state["approved"] is True
 
 
-def test_cancel_is_terminal():
+def test_cancel_is_terminal_and_queued_work_is_ignored():
     engine, definition = build_engine({"first": lambda r, s, st: st, "second": lambda r, s, st: st})
     run = start(engine, definition, instance="cancel-1")
     cancelled = engine.cancel(run.workflow_run_id, reason="operator stop")
     assert cancelled.status == WorkflowStatus.CANCELLED
-    assert engine.run_once() is None
+    processed = engine.run_once()
+    assert processed is not None
+    assert processed.status == WorkflowStatus.CANCELLED
 
 
 def test_queue_lease_can_expire_and_be_reclaimed():
