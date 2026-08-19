@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import DateTime, Integer, String, create_engine, select, text, update
+from sqlalchemy import DateTime, Integer, String, create_engine, delete, select, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 from fde_platform.workflow.queue import WorkflowQueue, WorkflowTask
@@ -61,12 +62,17 @@ class PostgreSQLWorkflowQueue(WorkflowQueue):
             )
             try:
                 session.commit()
-            except Exception as exc:
+            except IntegrityError:
                 session.rollback()
-                # Duplicate idempotency is an intentional no-op.
-                if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
-                    return
-                raise
+                # A duplicate idempotency key means the durable task already exists.
+                with session.begin():
+                    existing = session.scalar(
+                        select(WorkflowTaskRow.task_id).where(
+                            WorkflowTaskRow.idempotency_key == task.idempotency_key
+                        )
+                    )
+                if existing is None:
+                    raise
 
     def claim(self, *, now: datetime | None = None, lease_seconds: float = 60.0) -> WorkflowTask | None:
         current = now or datetime.now(timezone.utc)
@@ -83,7 +89,7 @@ class PostgreSQLWorkflowQueue(WorkflowQueue):
             ).first()
             if row is None:
                 return None
-            lease_until = current.replace(microsecond=current.microsecond) + __import__("datetime").timedelta(seconds=lease_seconds)
+            lease_until = current + timedelta(seconds=lease_seconds)
             row.lease_until = lease_until
             session.commit()
             return WorkflowTask(
@@ -98,7 +104,7 @@ class PostgreSQLWorkflowQueue(WorkflowQueue):
 
     def ack(self, task_id: UUID) -> None:
         with self._session() as session:
-            session.query(WorkflowTaskRow).filter(WorkflowTaskRow.task_id == str(task_id)).delete(synchronize_session=False)
+            session.execute(delete(WorkflowTaskRow).where(WorkflowTaskRow.task_id == str(task_id)))
             session.commit()
 
     def release(self, task_id: UUID, *, available_at: datetime) -> None:
