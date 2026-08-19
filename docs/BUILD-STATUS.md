@@ -6,7 +6,7 @@
 | **2 — Identity & Multi-Tenancy** | **GREEN** | Tenant model, identity context, fail-closed authorization, RLS, environments |
 | **3 — Agent Runtime** | **GREEN** | First-class AgentRun, lifecycle, state, checkpointing, budgets, cancellation |
 | **4 — Durable Workflows** | **GREEN** | Durable workflow state/history, leased queue, retries, waits/signals, recovery, replay, dead letters |
-| 5 — Trust & Policy Plane | NOT STARTED | PDP/PEP, risk tiers, policy-as-code, approval service |
+| **5 — Trust & Policy Plane** | **GREEN** | Fail-closed PDP, versioned policy rules, risk tiers, human approval boundary, tamper-evident authorization audit |
 | 6 — Tool Gateway | NOT STARTED | Registry, capability tokens, isolation, idempotency, MCP boundary |
 | 7 — Model Gateway | NOT STARTED | Model registry, routing, fallback, budgets, provider abstraction |
 | 8 — Event-Driven Platform | NOT STARTED | Events, outbox/inbox, event bus, replay, DLQ |
@@ -15,22 +15,20 @@
 | 11 — Enterprise Deployment & DR | NOT STARTED | Regional/dedicated deployment, residency, backup, failover, supply chain |
 | 12 — Platform Productization | NOT STARTED | CLI/SDK, registries, developer experience and final hardening |
 
-## Build 4 exit criteria
+## Build 5 exit criteria
 
-- [x] Version-pinned workflow definitions and step contracts exist.
-- [x] First-class durable `WorkflowRun` lifecycle exists.
-- [x] Append-only ordered event history exists with optimistic sequence protection.
-- [x] Leased workflow queue has explicit acknowledgement semantics.
-- [x] PostgreSQL workflow/event persistence adapter exists.
-- [x] PostgreSQL queue adapter uses transactional row locking and `SKIP LOCKED`.
-- [x] Retry, dead-letter, wait/signal, cancellation and recovery semantics are implemented.
-- [x] Workflow state/history/task tables are tenant-isolated with forced RLS.
-- [x] Workflow/step/attempt idempotency keys are stable.
-- [x] Workflow regression and migration security contract tests exist.
-- [x] Build 4 ADR and architecture documentation are recorded.
-- [x] Active Month 7 README records Build 4 as the current completed phase.
-- [x] GitHub Actions Platform Quality workflow passed all jobs and checks on the Build 4 PR.
+- [x] Deterministic, fail-closed Policy Decision Point exists.
+- [x] Versioned immutable policy rules exist.
+- [x] Tenant isolation is enforced before policy evaluation.
+- [x] Request-level and policy-level roles/scopes are enforced.
+- [x] Risk tiers and risk-based approval requirements exist.
+- [x] Expiring single-use human approval boundary exists.
+- [x] Tamper-evident authorization audit events exist.
+- [x] Trust/policy regression tests exist.
+- [x] Build 5 ADR and architecture documentation are recorded.
+- [x] Active Month 7 documentation records Build 5 as the current completed phase.
+- [x] GitHub Actions Platform Quality workflow passed all jobs and checks on the Build 5 PR.
 
 ## Verification policy
 
-A build is only declared **GREEN** after the repository CI pipeline passes. The Build 4 PR passed the complete Platform Quality workflow, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
+A build is only declared **GREEN** after the repository CI pipeline passes. Build 5's PR must pass the complete Platform Quality workflow, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
