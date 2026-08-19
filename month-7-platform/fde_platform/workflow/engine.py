@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from .models import WorkflowDefinition, WorkflowEvent, WorkflowRun, WorkflowStatus
 from .queue import WorkflowQueue, WorkflowTask
@@ -24,11 +24,11 @@ class WorkflowWait(Exception):
 
 
 class DurableWorkflowEngine:
-    """Small durable-execution kernel suitable for later queue/DB adapters.
+    """Durable-execution kernel with leases, replayable history and retries.
 
-    Workflow decisions are reconstructed from committed events. Activities are
-    intentionally at-least-once: callers must make external side effects
-    idempotent using the supplied workflow/step identity.
+    Activities are intentionally at-least-once. External side effects must use
+    workflow/step/attempt identifiers as idempotency keys. A worker crash before
+    acknowledgement leaves the leased task recoverable after lease expiry.
     """
 
     def __init__(
@@ -72,17 +72,20 @@ class DurableWorkflowEngine:
         self._enqueue_current(run, attempt=1)
         return run
 
-    def run_once(self, *, now: datetime | None = None) -> WorkflowRun | None:
-        task = self.queue.claim(now=now)
+    def run_once(self, *, now: datetime | None = None, lease_seconds: float = 60.0) -> WorkflowRun | None:
+        task = self.queue.claim(now=now, lease_seconds=lease_seconds)
         if task is None:
             return None
         run = self.store.get_run(task.workflow_run_id)
         if run is None or run.terminal:
+            self.queue.ack(task.task_id)
             return run
         definition = self._definition(run)
         step = next((item for item in definition.steps if item.step_id == task.step_id), None)
         if step is None:
-            return self._fail(run, "WorkflowDefinitionError", "queued step is not in pinned definition")
+            failed = self._fail(run, "WorkflowDefinitionError", "queued step is not in pinned definition")
+            self.queue.ack(task.task_id)
+            return failed
         if run.status == WorkflowStatus.WAITING:
             run.transition(WorkflowStatus.RUNNING)
         if run.status == WorkflowStatus.CREATED:
@@ -91,10 +94,13 @@ class DurableWorkflowEngine:
         self.store.save_run(run)
         activity = self.activities.get(step.activity)
         if activity is None:
-            return self._fail(run, "ActivityNotFound", f"activity not registered: {step.activity}")
+            failed = self._fail(run, "ActivityNotFound", f"activity not registered: {step.activity}")
+            self.queue.ack(task.task_id)
+            return failed
         try:
             result = activity(run.model_copy(deep=True), step.step_id, dict(run.state))
         except WorkflowWait as exc:
+            run.step_attempt = task.attempt
             run.transition(WorkflowStatus.WAITING)
             self._append(
                 run,
@@ -102,8 +108,9 @@ class DurableWorkflowEngine:
                 step_id=step.step_id,
                 payload={"signal_name": exc.signal_name, "reason": exc.reason, "attempt": task.attempt},
             )
-            self.store.save_run(run)
-            return run
+            saved = self.store.save_run(run)
+            self.queue.ack(task.task_id)
+            return saved
         except Exception as exc:  # activity boundary deliberately captures worker failures
             if task.attempt < step.retry_policy.max_attempts:
                 delay = step.retry_policy.delay_for_attempt(task.attempt)
@@ -124,9 +131,12 @@ class DurableWorkflowEngine:
                         idempotency_key=f"{run.workflow_run_id}:{step.step_id}:{task.attempt + 1}",
                     )
                 )
+                self.queue.ack(task.task_id)
                 return run
             self.dead_letters.append(task)
-            return self._fail(run, type(exc).__name__, str(exc), dead_lettered=True)
+            failed = self._fail(run, type(exc).__name__, str(exc), dead_lettered=True)
+            self.queue.ack(task.task_id)
+            return failed
 
         run.state = dict(result) if isinstance(result, Mapping) else dict(run.state)
         self._append(run, "StepCompleted", step_id=step.step_id, payload={"attempt": task.attempt, "result": result})
@@ -136,10 +146,13 @@ class DurableWorkflowEngine:
             run.result = result
             run.transition(WorkflowStatus.COMPLETED)
             self._append(run, "WorkflowCompleted", payload={"result": result})
-            return self.store.save_run(run)
-        self.store.save_run(run)
+            saved = self.store.save_run(run)
+            self.queue.ack(task.task_id)
+            return saved
+        saved = self.store.save_run(run)
         self._enqueue_current(run, attempt=1)
-        return run
+        self.queue.ack(task.task_id)
+        return saved
 
     def cancel(self, workflow_run_id: UUID, *, reason: str = "cancelled by operator") -> WorkflowRun:
         run = self._require_run(workflow_run_id)
@@ -163,7 +176,7 @@ class DurableWorkflowEngine:
         return run
 
     def replay(self, workflow_run_id: UUID) -> WorkflowRun:
-        """Reconstruct the durable projection from its immutable event history."""
+        """Reconstruct the durable projection from immutable ordered history."""
         run = self._require_run(workflow_run_id)
         events = self.store.list_events(workflow_run_id)
         if not events:
@@ -202,7 +215,7 @@ class DurableWorkflowEngine:
                 step_id=step.step_id,
                 attempt=attempt,
                 available_at=datetime.now(timezone.utc),
-                idempotency_key=f"{run.workflow_run_id}:{step.step_id}:{attempt}:{uuid4()}",
+                idempotency_key=f"{run.workflow_run_id}:{step.step_id}:{attempt}",
             )
         )
 
