@@ -2,7 +2,7 @@
 
 **Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. A common FastAPI/platform layer provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed/provenance-backed releases.
+FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. The platform provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed/provenance-backed releases.
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
@@ -10,20 +10,35 @@ FDE Mastery is a reusable enterprise AI platform with seven domain services—Cy
 
 ![FDE Mastery enterprise architecture](./docs/architecture-enterprise.svg)
 
-The platform uses a compatibility-first migration strategy: the new `domains/` namespace is the client-facing architectural vocabulary, while the original Month 1–6 paths remain intact until all references can be migrated safely. This avoids breaking existing FastAPI connections or integration contracts.
+The repository now uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform package remains internally cohesive so packaging, imports, deployment and CI can migrate without a risky all-at-once extraction.
+
+## Repository structure
+
+```text
+fde-mastery/
+├── apps/                         # deployable application ownership
+├── packages/
+│   └── platform-core/           # canonical production platform distribution
+├── domains/                     # future first-class domain package ownership
+├── infrastructure/              # repository-level infrastructure ownership
+├── tests/                       # repository-level architecture/contract tests
+├── legacy/
+│   └── curriculum/              # historical Months 1–6, isolated from production
+├── docs/                        # architecture, ADRs, operations and evidence
+└── .github/workflows/           # CI/CD and release attestations
+```
+
+`packages/platform-core` currently contains the cohesive runtime package, including its domain adapters, security, persistence, evaluation, observability and deployment surfaces. Future extractions must be contract-driven and green in CI.
 
 ## What is in the platform
 
 - Seven domain adapters behind one `DomainAgent` contract
-- Canonical `domains/` facades over the existing Month 1–6 implementations
 - Procurement as a first-class domain with supplier risk, quote comparison, spend thresholds, and human approval boundaries
 - Tenant-scoped Custom Agent framework for customer-specific workflows without modifying the core platform
 - Explicit Custom Agent tool gateway with tenant allowlists and fail-closed approval checks
 - Central `AgentRouter` with retries, jitter, circuit breaking, concurrency limits, and per-domain isolation
 - FastAPI API with typed request/response contracts and request correlation
-- API-key authentication plus production-oriented OIDC/JWKS JWT validation
 - Tenant and scope/RBAC authorization
-- Short-lived service identity and mTLS validation contract
 - PostgreSQL persistence, checksum-verified migrations, idempotency, and centralized audit events
 - Tamper-evident audit hash-chain utility and sensitive-data redaction
 - Policy-as-code and human approval for high-impact actions
@@ -36,8 +51,6 @@ The platform uses a compatibility-first migration strategy: the new `domains/` n
 - Production deployment, disaster-recovery, rollback, security, and operational documentation
 
 The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
-
----
 
 ## Domain portfolio
 
@@ -53,8 +66,6 @@ The repository demonstrates **production-oriented engineering controls**. It is 
 | Custom | Customer-specific agents | Tenant-defined workflows and policies |
 
 High-impact actions remain human-controlled. Examples include account disablement, endpoint isolation, clinical intervention, payment/purchase approval, supplier award, contract rejection, and customer notification.
-
----
 
 ## Procurement domain
 
@@ -87,28 +98,15 @@ Human procurement approval
 
 The platform does **not** autonomously award suppliers, create purchase orders, modify vendor master data, or approve spend.
 
----
-
 ## Custom Agent framework
 
-Customers should not need a new hard-coded platform domain for every bespoke workflow. The Custom Agent framework provides:
-
-- Tenant-scoped agent registration
-- Versioned agent specifications
-- Explicit tool allowlists
-- A secure tool execution gateway
-- Fail-closed high-impact policy boundaries
-- A registry isolated by tenant
+Customers should not need a new hard-coded platform domain for every bespoke workflow. The Custom Agent framework provides tenant-scoped agent registration, versioned specifications, explicit tool allowlists, secure tool execution, fail-closed high-impact policy boundaries, and tenant-isolated registries.
 
 Target workflow model:
 
 ```text
 Trigger → Context → Agent → Approved tools → Policy → HITL → Action → Audit
 ```
-
-The tool gateway refuses undeclared tools and requires explicit approval for mutating/high-impact actions. This is the foundation for customer-specific FDE implementations while keeping the core platform stable.
-
----
 
 ## Enterprise deployment gate
 
@@ -123,9 +121,7 @@ A domain is promoted to customer production only after evidence for all eight ga
 7. Human-in-the-loop production
 8. Controlled, reversible actions
 
-See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md). Repository tests establish engineering readiness; customer-specific credentials, data, compliance evidence, and operational validation remain deployment responsibilities.
-
----
+See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md).
 
 ## Security, AI governance and supply chain
 
@@ -149,17 +145,11 @@ Registry
 Deployment verification
 ```
 
-See [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md) for the engineering control map and customer evidence checklist.
-
----
-
 ## Observability
 
 The platform uses OpenTelemetry with a Collector-oriented deployment model. The observability contract covers request correlation, gateway/router/domain spans, metrics and latency, confidence/evaluation signals, rate-limit events, audit events, drift detection, and provider failure/recovery signals.
 
-Production backends remain configurable per customer environment. Sensitive payloads are not required for correlation and should remain out of telemetry.
-
----
+Sensitive payloads are not required for correlation and should remain out of telemetry. OpenTelemetry's GenAI conventions are currently maintained as a dedicated, development-stage convention set, so the platform treats the schema as an explicit compatibility boundary rather than assuming permanent attribute stability. citeturn0search0turn0search10
 
 ## CI / release gates
 
@@ -186,34 +176,10 @@ Every architectural change is expected to pass the repository quality pipeline b
 
 A green workflow is a merge gate, not a substitute for customer-specific production validation.
 
----
-
-## Production reference
-
-See [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md), [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md), [`docs/DR-RUNBOOK.md`](./docs/DR-RUNBOOK.md), [`docs/API.md`](./docs/API.md), and [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md).
-
-Minimum production configuration:
-
-```text
-FDE_ENVIRONMENT=production
-FDE_STORAGE_BACKEND=postgres
-FDE_RATE_LIMIT_BACKEND=redis
-FDE_DATABASE_URL=<managed-postgresql-tls-url>
-FDE_REDIS_URL=<managed-redis-tls-url>
-FDE_OIDC_ISSUER=https://<identity-provider>
-FDE_OIDC_AUDIENCE=<audience>
-FDE_SECRETS_BACKEND=managed
-OTEL_ENABLED=true
-```
-
-Production defaults fail closed if a managed secrets provider is not injected.
-
----
-
 ## Quick start
 
 ```bash
-cd month-7-platform
+cd packages/platform-core
 python -m pip install -e ".[test,quality,security,observability,sbom]"
 export FDE_STORAGE_BACKEND=memory
 export FDE_RATE_LIMIT_BACKEND=memory
@@ -226,59 +192,21 @@ python -m pytest -q
 For PostgreSQL:
 
 ```bash
+cd packages/platform-core
 export FDE_STORAGE_BACKEND=postgres
 export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_mastery"
 python -m persistence.migrate
 ```
 
----
-
 ## Evidence
 
-- [`month-1-cybersecurity/AUDIT.md`](./month-1-cybersecurity/AUDIT.md) — SOC operating map
-- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — eight-gate promotion model
-- [`docs/DEMO.md`](./docs/DEMO.md) — interactive walkthrough
-- [`docs/CASE-STUDY.md`](./docs/CASE-STUDY.md) — synthetic customer case-study template
-- [`docs/ENTERPRISE-HARDENING.md`](./docs/ENTERPRISE-HARDENING.md) — security/operations contract
-- [`docs/SECURITY-STANDARDS-MAP.md`](./docs/SECURITY-STANDARDS-MAP.md) — standards and customer evidence map
-- [`month-7-platform/security/ai-threat-model.md`](./month-7-platform/security/ai-threat-model.md) — AI threat model
+- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — promotion model
+- [`docs/BUILD-STATUS.md`](./docs/BUILD-STATUS.md) — enterprise build ledger
+- [`docs/adr/0013-enterprise-repository-structure.md`](./docs/adr/0013-enterprise-repository-structure.md) — repository structure decision
+- [`legacy/curriculum/`](./legacy/curriculum/) — historical learning material
+- [`packages/platform-core/security/ai-threat-model.md`](./packages/platform-core/security/ai-threat-model.md) — AI threat model
 
 Customer outcome numbers should only be added after a real deployment and measurement.
-
----
-
-## Repository structure
-
-```text
-fde-mastery/
-├── README.md
-├── .github/workflows/
-├── month-1-cybersecurity/     # compatibility-preserved source
-├── month-2-finance/            # compatibility-preserved source
-├── month-3-healthtech/         # compatibility-preserved source
-├── month-4-logistics/          # compatibility-preserved source
-├── month-5-legal/              # compatibility-preserved source
-├── month-6-revops/             # compatibility-preserved source
-└── month-7-platform/
-    ├── domains/                # canonical domain namespace
-    │   ├── cybersecurity/
-    │   ├── finance/
-    │   ├── healthtech/
-    │   ├── logistics/
-    │   ├── legal/
-    │   └── procurement/
-    ├── custom_agents/           # tenant-specific agent framework + tool gateway
-    ├── shared_orchestrator/
-    ├── integrations/
-    ├── security/
-    ├── persistence/
-    ├── observability/
-    ├── evaluation/
-    ├── deployment/
-    └── tests/
-```
-
----
 
 ## Responsible use
 
@@ -289,8 +217,6 @@ High-impact workflows should retain authorized human review and appropriate doma
 ## About
 
 **FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
-
-The emphasis is on the surrounding system—not merely an LLM call: **schemas, policy, evaluation, recovery, orchestration, security, governance, persistence, observability, integration, and release evidence.**
 
 ## License
 

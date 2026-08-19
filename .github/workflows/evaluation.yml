@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: month-7-platform
+        working-directory: packages/platform-core
     env:
       FDE_STORAGE_BACKEND: memory
       FDE_RATE_LIMIT_BACKEND: memory

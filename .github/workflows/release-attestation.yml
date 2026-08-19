@@ -36,7 +36,7 @@ jobs:
         run: |
           OWNER="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           IMAGE="ghcr.io/${OWNER}/fde-mastery-platform:${SHA}"
-          docker build -t "$IMAGE" month-7-platform
+          docker build -t "$IMAGE" packages/platform-core
           docker push "$IMAGE"
           DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" | sed 's/.*@//')"
           test -n "$DIGEST"
@@ -46,7 +46,7 @@ jobs:
       - name: Keyless sign image
         run: cosign sign --yes "$IMAGE"
       - name: Generate SBOM and attest
-        working-directory: month-7-platform
+        working-directory: packages/platform-core
         run: |
           bash scripts/generate-sbom.sh
           cosign attest --yes --predicate artifacts/sbom.cdx.json --type cyclonedx "$IMAGE"

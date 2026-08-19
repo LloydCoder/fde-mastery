@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 35
     defaults:
       run:
-        working-directory: month-7-platform
+        working-directory: packages/platform-core
     env:
       PYTHONUNBUFFERED: "1"
       FDE_STORAGE_BACKEND: memory
@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: month-7-platform/pyproject.toml
+          cache-dependency-path: packages/platform-core/pyproject.toml
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -118,7 +118,7 @@ jobs:
       - name: Compile source tree
         run: python -m compileall -q security persistence shared_orchestrator deployment evaluation integrations domains custom_agents fde_platform
       - name: Terraform format and validation
-        working-directory: month-7-platform/deployment/terraform
+        working-directory: packages/platform-core/deployment/terraform
         run: |
           terraform fmt -recursive
           terraform fmt -check -recursive
@@ -148,11 +148,11 @@ jobs:
         with:
           name: platform-quality-artifacts
           path: |
-            month-7-platform/artifacts/pytest.xml
-            month-7-platform/artifacts/mypy.txt
-            month-7-platform/artifacts/sbom.cdx.json
-            month-7-platform/artifacts/uvicorn.log
-            month-7-platform/evaluation/golden/generated-v1.jsonl
+            packages/platform-core/artifacts/pytest.xml
+            packages/platform-core/artifacts/mypy.txt
+            packages/platform-core/artifacts/sbom.cdx.json
+            packages/platform-core/artifacts/uvicorn.log
+            packages/platform-core/evaluation/golden/generated-v1.jsonl
           if-no-files-found: warn
       - name: Production Docker build and runtime smoke
         run: |
@@ -182,4 +182,4 @@ jobs:
       - name: Install Semgrep
         run: python -m pip install --disable-pip-version-check semgrep
       - name: Semgrep
-        run: semgrep scan --config p/python --config p/security-audit --error --metrics off month-7-platform/security month-7-platform/deployment month-7-platform/integrations month-7-platform/domains month-7-platform/custom_agents month-7-platform/fde_platform
+        run: semgrep scan --config p/python --config p/security-audit --error --metrics off packages/platform-core/security packages/platform-core/deployment packages/platform-core/integrations packages/platform-core/domains packages/platform-core/custom_agents packages/platform-core/fde_platform

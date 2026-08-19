@@ -17,7 +17,8 @@ from types import ModuleType
 
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[2]
-REPO_ROOT = PLATFORM_ROOT.parent
+REPO_ROOT = PLATFORM_ROOT.parent.parent
+LEGACY_CURRICULUM_ROOT = REPO_ROOT / "legacy" / "curriculum"
 
 
 @contextmanager
@@ -34,8 +35,8 @@ def _schema_alias(schema_module: ModuleType):
 
 
 def load_domain_agent(domain_dir: str) -> ModuleType:
-    """Load a standalone domain ``agent.py`` under an isolated module name."""
-    domain_path = REPO_ROOT / domain_dir
+    """Load a standalone legacy domain ``agent.py`` in an isolated namespace."""
+    domain_path = LEGACY_CURRICULUM_ROOT / domain_dir
     schema_path = domain_path / "schemas.py"
     agent_path = domain_path / "agent.py"
 
