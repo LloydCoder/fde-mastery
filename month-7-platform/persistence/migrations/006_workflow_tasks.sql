@@ -4,14 +4,18 @@
 
 CREATE TABLE IF NOT EXISTS fde_workflow_tasks (
     task_id VARCHAR(36) PRIMARY KEY,
-    workflow_run_id VARCHAR(36) NOT NULL REFERENCES fde_workflow_runs(workflow_run_id) ON DELETE CASCADE,
-    tenant_id VARCHAR(63) NOT NULL REFERENCES fde_tenants(tenant_id) ON DELETE CASCADE,
+    workflow_run_id VARCHAR(36) NOT NULL,
+    tenant_id VARCHAR(63) NOT NULL,
     step_id VARCHAR(128) NOT NULL,
     attempt INTEGER NOT NULL CHECK (attempt >= 1),
     idempotency_key VARCHAR(512) NOT NULL UNIQUE,
     available_at TIMESTAMPTZ NOT NULL,
     lease_until TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_fde_workflow_tasks_run_tenant
+        FOREIGN KEY (workflow_run_id, tenant_id)
+        REFERENCES fde_workflow_runs(workflow_run_id, tenant_id)
+        ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_fde_workflow_tasks_claim
