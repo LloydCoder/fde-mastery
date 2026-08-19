@@ -55,7 +55,13 @@ def test_gateway_requires_approval_before_high_impact_tool() -> None:
         return ToolResult(True, {"ok": True})
 
     gateway.register(
-        ToolDefinition("delete", "1.0.0", "delete", frozenset({ToolCapability.DELETE}), True),
+        ToolDefinition(
+            "delete",
+            "1.0.0",
+            "delete",
+            frozenset({ToolCapability.DELETE}),
+            requires_approval=True,
+        ),
         handler,
     )
     denied = gateway.invoke(
