@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Mapping
 
@@ -22,7 +22,7 @@ class Principal:
     principal_type: PrincipalType
     roles: frozenset[str] = frozenset()
     scopes: frozenset[str] = frozenset()
-    claims: Mapping[str, Any] = frozenset()
+    claims: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.subject.strip():
