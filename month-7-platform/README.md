@@ -11,8 +11,8 @@ The capstone layer that turns the domain agents into a governed enterprise AI pl
 | 3 | Agent Runtime | GREEN |
 | 4 | Durable Workflow Engine | GREEN |
 | 5 | Trust & Policy Plane | GREEN |
-| 6 | Tool Gateway | IN PROGRESS |
-| 7 | Model Gateway | NEXT |
+| 6 | Tool Gateway | GREEN |
+| 7 | Model Gateway | IN PROGRESS |
 | 8 | Event-Driven Platform | PLANNED |
 | 9 | AI Evaluation Plane | PLANNED |
 | 10 | Observability & AI FinOps | PLANNED |
@@ -72,19 +72,35 @@ The capstone layer that turns the domain agents into a governed enterprise AI pl
 
 ### Build 6 — Tool Gateway
 
-Build 6 establishes the mandatory platform boundary for agent-to-tool execution.
-
 - Immutable, versioned `ToolDefinition`
 - Explicit capabilities: `read`, `write`, `delete`, `external_network`, `sensitive_data`
-- Explicit tool registration and fail-closed lookup
+- Explicit registration and fail-closed lookup
 - Tenant + request-context binding
 - Approval boundary for high-impact tools
 - Idempotency keyed by tenant/tool/idempotency key
 - Explicit `ToolResult` envelope
-- Framework-neutral `ToolGateway` port
-- Deterministic in-memory reference implementation
-- Security regression coverage for unknown tools, excessive capabilities, cross-tenant execution, approval bypass, and duplicate delivery
-- ADR-0006 and Build 6 implementation guide
+- Framework-neutral `ToolGateway` boundary
+- Deterministic reference implementation
+- Security regression coverage
+
+**Status: GREEN — complete.**
+
+### Build 7 — Model Gateway
+
+Build 7 establishes the mandatory platform boundary for model invocation and routing.
+
+- Immutable, versioned `ModelDefinition`
+- Explicit model capabilities and data-class allowlists
+- Provider-neutral `ModelProvider` adapter boundary
+- Central `ModelRegistry` with explicit model/version registration
+- Deterministic named routing with ordered fallback candidates
+- Fail-closed unknown-model behavior
+- Policy decision hook before provider invocation
+- Retry-aware fallback: only retryable provider failures may move to another candidate
+- Request-level output-token and model capability enforcement
+- Explicit `ModelResponse` error envelope
+- Framework-neutral provider adapters; provider SDKs remain outside the kernel
+- Regression coverage for authorization, data classification, capability, routing, fallback and policy enforcement
 
 **Status: IN PROGRESS — implementation complete; awaiting full CI verification.**
 
@@ -96,36 +112,34 @@ Application / API / Workers
 Identity + RequestContext
             ↓
 Trust & Policy Plane
-            ↓
-Agent Runtime
-            ↓
-Durable Workflow Engine
-            ↓
-Tool Gateway
-     ↙      ↓       ↘
- SaaS     DB/RPC    MCP adapters
+       ↙            ↘
+Model Gateway     Tool Gateway
+      ↓                ↓
+Model Providers     SaaS / DB / RPC / MCP
+      ↓
+Durable Workflow / Agent Runtime
             ↓
 Domain Agents / Infrastructure
 ```
 
 The repository remains a modular monolith while these boundaries stabilize. Extraction into separate services is deferred until contracts, operational requirements and failure domains justify it.
 
-## Tool Gateway Security Rules
+## Model Gateway Security Rules
 
-1. Tools must be explicitly registered.
-2. Tool definitions are immutable and versioned.
-3. A caller cannot grant itself capabilities that the registered tool does not have.
-4. Every invocation is bound to the authenticated tenant and request context.
-5. High-impact tools can require human approval.
-6. Repeated delivery with the same idempotency key is safe in the reference gateway.
-7. Unknown tools and policy violations fail closed.
-8. Downstream systems must enforce their own authorization; the gateway is not a substitute for complete mediation downstream.
-9. Open-ended primitives such as arbitrary shell execution or unrestricted URL fetching should not be exposed when a narrower capability can satisfy the task.
-10. MCP is an integration protocol, not an authorization bypass.
+1. Models must be explicitly registered and versioned.
+2. Provider SDKs must remain behind provider adapters; agents cannot call providers directly.
+3. A request cannot grant itself capabilities absent from the registered model definition.
+4. Data classification is checked before a provider is invoked.
+5. The policy boundary is evaluated before provider execution.
+6. Routing aliases contain only registered model versions.
+7. Fallback is allowed only for explicitly retryable failures; policy, authorization and invalid-request failures must not fail over.
+8. Output-token limits are enforced by the gateway and model definition.
+9. Model output must be treated as untrusted data and validated before downstream tool or workflow execution.
+10. Production deployments should maintain a controlled model inventory, provenance, provider allowlist and telemetry for model usage and failures.
 
-## MCP Integration Boundary
+## Model Supply-Chain Boundary
 
-When MCP adapters are introduced, they must preserve the platform principal, tenant, environment, policy decision, capability and audit context. HTTP-based MCP deployments must also implement the applicable OAuth authorization requirements, validate token audience/resource binding, use short-lived credentials, and avoid token passthrough.
+Models and provider integrations are treated as production dependencies rather than implicit trust anchors. Production adapters should record model/provider identity, version and provenance and enforce the approved model inventory. This supports centralized model governance and reduces model-supply-chain risk.
 
 ## Project Structure
 
@@ -137,7 +151,8 @@ month-7-platform/
 │   ├── authorization/         # Trust & policy boundary
 │   ├── runtime/               # Agent execution runtime
 │   ├── workflow/              # Durable workflows and queues
-│   └── tools/                 # Build 6 tool gateway contracts/adapters
+│   ├── tools/                 # Tool gateway
+│   └── models/                # Model gateway and provider boundary
 ├── custom_agents/             # Compatibility/domain-facing agent tooling
 ├── persistence/               # PostgreSQL adapters and migrations
 ├── integrations/              # External system adapters
@@ -151,4 +166,4 @@ month-7-platform/
 
 A build is not complete until the repository quality workflow is green. The gate includes pytest, domain deployment smoke tests, enterprise security controls, migration validation, red-team regression, Ruff, MyPy, Bandit, dependency audit, compileall, Terraform validation, SBOM generation/validation, staging API/load smoke, production Docker runtime smoke, and Semgrep.
 
-See [`docs/BUILD-6-TOOL-GATEWAY.md`](docs/build-6-tool-gateway.md) and [`docs/ADR-0006-tool-gateway.md`](docs/ADR-0006-tool-gateway.md).
+See [`docs/build-7-model-gateway.md`](docs/build-7-model-gateway.md) and [`docs/ADR-0007-model-gateway.md`](docs/ADR-0007-model-gateway.md).
