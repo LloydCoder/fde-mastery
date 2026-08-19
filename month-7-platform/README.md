@@ -12,7 +12,7 @@ The capstone layer that turns the domain agents into a governed enterprise AI pl
 | 4 | Durable Workflow Engine | GREEN |
 | 5 | Trust & Policy Plane | GREEN |
 | 6 | Tool Gateway | GREEN |
-| 7 | Model Gateway | IN PROGRESS |
+| 7 | Model Gateway | GREEN |
 | 8 | Event-Driven Platform | PLANNED |
 | 9 | AI Evaluation Plane | PLANNED |
 | 10 | Observability & AI FinOps | PLANNED |
@@ -102,7 +102,7 @@ Build 7 establishes the mandatory platform boundary for model invocation and rou
 - Framework-neutral provider adapters; provider SDKs remain outside the kernel
 - Regression coverage for authorization, data classification, capability, routing, fallback and policy enforcement
 
-**Status: IN PROGRESS — implementation complete; awaiting full CI verification.**
+**Status: GREEN — complete.**
 
 ## Architecture
 
