@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-MIGRATION = Path(__file__).parents[1] / "persistence" / "migrations" / "002_identity_multitenancy.sql"
+MIGRATION = Path(__file__).parents[1] / "persistence" / "migrations" / "004_identity_multitenancy.sql"
 
 
 def test_identity_migration_has_default_deny_rls_primitives() -> None:
