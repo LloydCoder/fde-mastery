@@ -10,7 +10,7 @@ FDE Mastery is a reusable enterprise AI platform with seven domain services—Cy
 
 ![FDE Mastery enterprise architecture](./docs/architecture-enterprise.svg)
 
-The repository now uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform package remains internally cohesive so packaging, imports, deployment and CI can migrate without a risky all-at-once extraction.
+The repository uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform package remains internally cohesive so packaging, imports, deployment and CI can migrate without a risky all-at-once extraction.
 
 ## Repository structure
 
@@ -24,11 +24,17 @@ fde-mastery/
 ├── tests/                       # repository-level architecture/contract tests
 ├── legacy/
 │   └── curriculum/              # historical Months 1–6, isolated from production
-├── docs/                        # architecture, ADRs, operations and evidence
-└── .github/workflows/           # CI/CD and release attestations
+├── docs/                         # architecture, ADRs, operations and evidence
+└── .github/workflows/            # CI/CD and release attestations
 ```
 
 `packages/platform-core` currently contains the cohesive runtime package, including its domain adapters, security, persistence, evaluation, observability and deployment surfaces. Future extractions must be contract-driven and green in CI.
+
+## Enterprise verification status
+
+Build 12 is considered complete only when the final canonical repository structure passes the complete Platform Quality workflow on the exact merge candidate. A prior workflow run failed during the structural migration because a legacy curriculum loader still referenced the pre-migration path; that defect was corrected before final verification. No failed or superseded workflow is counted as evidence of completion.
+
+The repository's enterprise claims are evidence-based engineering claims, not claims of security certification, regulatory compliance, or a real customer deployment.
 
 ## What is in the platform
 
@@ -49,8 +55,6 @@ fde-mastery/
 - Tenant-scoped integration contracts and integration adapters
 - Terraform validation, CycloneDX SBOM generation, keyless Cosign signing, SBOM attestation, and SLSA-oriented build provenance
 - Production deployment, disaster-recovery, rollback, security, and operational documentation
-
-The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
 
 ## Domain portfolio
 
@@ -149,7 +153,7 @@ Deployment verification
 
 The platform uses OpenTelemetry with a Collector-oriented deployment model. The observability contract covers request correlation, gateway/router/domain spans, metrics and latency, confidence/evaluation signals, rate-limit events, audit events, drift detection, and provider failure/recovery signals.
 
-Sensitive payloads are not required for correlation and should remain out of telemetry. OpenTelemetry's GenAI conventions are currently maintained as a dedicated, development-stage convention set, so the platform treats the schema as an explicit compatibility boundary rather than assuming permanent attribute stability. citeturn0search0turn0search10
+Sensitive payloads are not required for correlation and should remain out of telemetry. GenAI semantic conventions are treated as a compatibility boundary so telemetry schemas can evolve without coupling core authorization or business logic to unstable attributes.
 
 ## CI / release gates
 
@@ -170,7 +174,7 @@ Every architectural change is expected to pass the repository quality pipeline b
 - SBOM generation/validation
 - staging API startup/readiness
 - load smoke
-- production Docker build
+- production Docker build/runtime smoke
 - Semgrep static security scan
 - release image signing, SBOM attestation, and build provenance
 
