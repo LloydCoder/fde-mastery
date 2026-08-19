@@ -12,10 +12,10 @@
 | **8 — Event-Driven Platform** | **GREEN** | Versioned events, transactional outbox, idempotent inbox, leased publishing, retry/dead-letter semantics, tenant-isolated persistence |
 | **9 — AI Evaluation Plane** | **GREEN** | Golden, adversarial, safety, quality, cost and promotion gates |
 | **10 — Observability & AI FinOps** | **GREEN** | OTel-compatible telemetry, bounded dimensions, execution correlation, tenant cost ledger, fail-closed AI budgets |
-| **11 — Enterprise Deployment & DR** | **IN PROGRESS** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
-| 12 — Platform Productization | PLANNED | CLI/SDK, registries, developer experience and final hardening |
+| **11 — Enterprise Deployment & DR** | **GREEN** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
+| **12 — Platform Productization** | **IN PROGRESS** | Stable developer CLI, machine-readable capability manifest, SDK boundary and final hardening |
 
-## Build 11 exit criteria
+## Build 11 verification
 
 - [x] Enterprise deployment profiles are explicitly documented.
 - [x] Regional and dedicated residency boundaries are defined.
@@ -27,8 +27,18 @@
 - [x] SBOM, dependency audit and release provenance are production promotion requirements.
 - [x] Build 11 ADR and implementation documentation are recorded.
 - [x] DR policy contract tests exist.
-- [ ] GitHub Actions Platform Quality workflow passes all jobs and checks on the Build 11 PR.
-- [ ] Build 11 PR is merged only after the complete CI gate is green.
+- [x] Platform Quality run #368 passed all jobs and checks.
+- [x] Build 11 PR was merged only after the complete CI gate was green.
+
+## Build 12 exit criteria
+
+- [x] Provider-neutral `platformctl` developer entry point exists.
+- [x] Machine-readable platform capability manifest exists.
+- [x] Manifest completeness is covered by contract tests.
+- [x] Productization boundary cannot bypass identity, policy, tool or model gates.
+- [x] Build 12 architecture and security documentation are recorded.
+- [ ] Platform Quality workflow passes all jobs and checks on the Build 12 PR.
+- [ ] Build 12 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
