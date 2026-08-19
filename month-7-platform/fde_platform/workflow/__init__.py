@@ -1,6 +1,6 @@
 """Durable workflow primitives for long-running agent orchestration."""
 
-from .engine import DurableWorkflowEngine
+from .engine import DurableWorkflowEngine, WorkflowWait
 from .models import (
     RetryPolicy,
     WorkflowDefinition,
@@ -27,4 +27,5 @@ __all__ = [
     "WorkflowStepStatus",
     "WorkflowStore",
     "WorkflowTask",
+    "WorkflowWait",
 ]
