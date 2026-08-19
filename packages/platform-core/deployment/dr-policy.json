@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "fde-mastery-enterprise-dr",
+  "default_tier": "business",
+  "tiers": {
+    "standard": {"rpo_minutes": 60, "rto_minutes": 240},
+    "business": {"rpo_minutes": 15, "rto_minutes": 60},
+    "critical": {"rpo_minutes": 5, "rto_minutes": 30}
+  },
+  "required_controls": [
+    "encrypted_backup",
+    "restore_verification",
+    "writer_fencing",
+    "tenant_residency_validation",
+    "rls_validation",
+    "policy_validation",
+    "workflow_idempotency_validation",
+    "sbom_validation",
+    "release_provenance"
+  ],
+  "recovery_order": [
+    "fence_primary",
+    "verify_identity_and_policy",
+    "restore_database",
+    "verify_schema",
+    "restore_queue_and_event_state",
+    "verify_tool_and_model_gates",
+    "run_integrity_smoke",
+    "promote_recovery_region",
+    "reconcile_state"
+  ],
+  "security_invariants": {
+    "fail_closed_identity": true,
+    "tenant_context_required": true,
+    "postgres_rls_required": true,
+    "policy_fail_closed": true,
+    "external_side_effects_idempotent": true,
+    "sensitive_telemetry_opt_in": true
+  }
+}

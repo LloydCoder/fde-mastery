@@ -1,0 +1,66 @@
+[
+  {
+    "input_log": {
+      "log_id": "LOG-99201",
+      "timestamp": "2026-08-13T10:00:00Z",
+      "source_ip": "192.168.1.104",
+      "destination_ip": "185.220.101.5",
+      "user_id": "user_dev_04",
+      "event_type": "LARGE_OUTBOUND_TRANSFER",
+      "payload_summary": "User user_dev_04 initiated an unencrypted outbound TCP transfer of 14.2 GB to external IP 185.220.101.5 over port 443 during off-hours (02:14 AM local)."
+    },
+    "expected_output": {
+      "severity": "CRITICAL",
+      "category": "DATA_EXFILTRATION",
+      "recommended_action": "AUTO_CONTAIN"
+    }
+  },
+  {
+    "input_log": {
+      "log_id": "LOG-99202",
+      "timestamp": "2026-08-13T11:30:00Z",
+      "source_ip": "10.0.0.55",
+      "destination_ip": null,
+      "user_id": "admin_root",
+      "event_type": "UNAUTHORIZED_SSH_ATTEMPT",
+      "payload_summary": "200 failed SSH login attempts to admin_root from 10.0.0.55 within 5 minutes using password spray pattern."
+    },
+    "expected_output": {
+      "severity": "HIGH",
+      "category": "AUTHENTICATION",
+      "recommended_action": "ESCALATE_TO_SOC"
+    }
+  },
+  {
+    "input_log": {
+      "log_id": "LOG-99203",
+      "timestamp": "2026-08-13T12:15:00Z",
+      "source_ip": "172.16.4.22",
+      "destination_ip": "172.16.4.45",
+      "user_id": "svc_scanner",
+      "event_type": "PORT_SCAN_INTERNAL",
+      "payload_summary": "Service account svc_scanner performed a full TCP port sweep (ports 1-65535) across the 172.16.4.0/24 subnet from host 172.16.4.22."
+    },
+    "expected_output": {
+      "severity": "MEDIUM",
+      "category": "RECONNAISSANCE",
+      "recommended_action": "MONITOR"
+    }
+  },
+  {
+    "input_log": {
+      "log_id": "LOG-99204",
+      "timestamp": "2026-08-13T13:45:00Z",
+      "source_ip": "192.168.50.12",
+      "destination_ip": "192.168.50.12",
+      "user_id": "jdoe",
+      "event_type": "RANSOMWARE_FILE_EXTENSION",
+      "payload_summary": "User jdoe's workstation encrypted 12,400 files with .locked extension and dropped README_DECRYPT.txt on network shares."
+    },
+    "expected_output": {
+      "severity": "CRITICAL",
+      "category": "MALWARE",
+      "recommended_action": "AUTO_CONTAIN"
+    }
+  }
+]

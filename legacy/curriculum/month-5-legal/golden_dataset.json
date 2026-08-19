@@ -1,0 +1,138 @@
+[
+  {
+    "case_id": "LEG-2026-C01",
+    "description": "Standard SaaS Master Services Agreement with reciprocal liability cap and mutual indemnity",
+    "payload": {
+      "contract_id": "CTR-8810-MSA",
+      "title": "Master Services Agreement",
+      "counterparty": "Apex Cloud Systems Inc.",
+      "governing_jurisdiction": "Delaware, USA",
+      "annual_contract_value_usd": 150000.0,
+      "clauses": [
+        {
+          "clause_id": "SEC-8.1",
+          "clause_type": "LIABILITY_CAP",
+          "section_title": "Limitation of Liability",
+          "text": "Neither party's total aggregate liability under this Agreement shall exceed the total amounts paid or payable by Customer in the twelve (12) months preceding the event giving rise to liability."
+        },
+        {
+          "clause_id": "SEC-9.2",
+          "clause_type": "INDEMNIFICATION",
+          "section_title": "Mutual Indemnification",
+          "text": "Each party shall defend and indemnify the other party against third-party claims arising out of gross negligence or willful misconduct."
+        },
+        {
+          "clause_id": "SEC-12.4",
+          "clause_type": "GOVERNING_LAW",
+          "section_title": "Governing Law and Forum",
+          "text": "This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware."
+        }
+      ]
+    },
+    "expected_result": {
+      "risk_tier": "LOW",
+      "action": "APPROVE_STANDARD",
+      "exception_flags": []
+    }
+  },
+  {
+    "case_id": "LEG-2026-C02",
+    "description": "Enterprise SOW with non-standard jurisdiction and missing limitation of liability cap",
+    "payload": {
+      "contract_id": "CTR-9942-SOW",
+      "title": "Statement of Work - Custom Integration",
+      "counterparty": "Global Logistics Corp",
+      "governing_jurisdiction": "Cayman Islands",
+      "annual_contract_value_usd": 450000.0,
+      "clauses": [
+        {
+          "clause_id": "SEC-6.1",
+          "clause_type": "LIABILITY_CAP",
+          "section_title": "Limitation of Liability",
+          "text": "Vendor agrees to assume unlimited liability for any direct, indirect, consequential, or incidental damages resulting from software delivery delays."
+        },
+        {
+          "clause_id": "SEC-11.1",
+          "clause_type": "GOVERNING_LAW",
+          "section_title": "Jurisdiction",
+          "text": "This contract shall be governed by the laws of the Cayman Islands without regard to conflict of law principles."
+        }
+      ]
+    },
+    "expected_result": {
+      "risk_tier": "HIGH",
+      "action": "AMEND_CLAUSE",
+      "exception_flags": [
+        "UNLIMITED_LIABILITY_EXPOSURE",
+        "NON_STANDARD_JURISDICTION"
+      ]
+    }
+  },
+  {
+    "case_id": "LEG-2026-C03",
+    "description": "High-risk vendor agreement containing pre-existing IP expropriation and unilateral indemnification",
+    "payload": {
+      "contract_id": "CTR-3301-DEV",
+      "title": "Software Development Services Agreement",
+      "counterparty": "Vanguard Tech Solutions",
+      "governing_jurisdiction": "New York, USA",
+      "annual_contract_value_usd": 750000.0,
+      "clauses": [
+        {
+          "clause_id": "SEC-4.2",
+          "clause_type": "IP_ASSIGNMENT",
+          "section_title": "Intellectual Property Ownership",
+          "text": "Customer hereby transfers and assigns all rights, title, interest, and pre-existing background IP owned prior to this Agreement unconditionally to Vendor."
+        },
+        {
+          "clause_id": "SEC-7.3",
+          "clause_type": "INDEMNIFICATION",
+          "section_title": "Unilateral Indemnity",
+          "text": "Customer agrees to indemnify, defend, and hold harmless Vendor against any and all claims, without limitation, arising from any system downtime."
+        }
+      ]
+    },
+    "expected_result": {
+      "risk_tier": "CRITICAL",
+      "action": "ESCALATE_LEGAL_COUNSEL",
+      "exception_flags": [
+        "BACKGROUND_IP_EXPROPRIATION_RISK",
+        "UNILATERAL_UNLIMITED_INDEMNITY"
+      ]
+    }
+  },
+  {
+    "case_id": "LEG-2026-C04",
+    "description": "Unilateral immediate termination and non-compliant GDPR cross-border data transfer clause",
+    "payload": {
+      "contract_id": "CTR-1109-DPA",
+      "title": "Data Processing Addendum",
+      "counterparty": "DataFlow Analytics Ltd",
+      "governing_jurisdiction": "Unknown / Unspecified",
+      "annual_contract_value_usd": 220000.0,
+      "clauses": [
+        {
+          "clause_id": "SEC-3.1",
+          "clause_type": "TERMINATION",
+          "section_title": "Termination for Convenience",
+          "text": "Vendor reserves the right to terminate this agreement immediately within 24 hours without prior notice or opportunity to cure."
+        },
+        {
+          "clause_id": "SEC-10.4",
+          "clause_type": "DATA_PRIVACY_GDPR",
+          "section_title": "International Data Transfer",
+          "text": "Personal data collected in the EU may be freely transferred and stored in non-adequate jurisdictions without Standard Contractual Clauses (SCCs) or legal safeguards."
+        }
+      ]
+    },
+    "expected_result": {
+      "risk_tier": "CRITICAL",
+      "action": "REJECT_CONTRACT",
+      "exception_flags": [
+        "NON_STANDARD_JURISDICTION",
+        "UNILATERAL_IMMEDIATE_TERMINATION",
+        "GDPR_DATA_TRANSFER_VIOLATION"
+      ]
+    }
+  }
+]

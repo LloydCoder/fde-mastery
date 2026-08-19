@@ -1,0 +1,151 @@
+"""Bounded resilience primitives for domain-agent execution."""
+
+from __future__ import annotations
+
+import secrets
+import threading
+import time
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Optional, TypeVar
+
+T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class ResilienceConfig:
+    timeout_seconds: float = 30.0
+    max_retries: int = 2
+    backoff_seconds: float = 0.25
+    max_backoff_seconds: float = 2.0
+    circuit_failure_threshold: int = 5
+    circuit_recovery_seconds: float = 30.0
+    max_concurrency: int = 32
+
+
+class AgentTimeoutError(TimeoutError):
+    """Raised when an agent call exceeds the execution deadline."""
+
+
+class CircuitOpenError(RuntimeError):
+    """Raised when execution is blocked by an open circuit."""
+
+
+class ResilienceExecutor:
+    """Execute an agent call with bounded timeout, retry and circuit isolation."""
+
+    def __init__(self, config: Optional[ResilienceConfig] = None) -> None:
+        self.config = config or ResilienceConfig()
+        if self.config.timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+        if self.config.max_retries < 0:
+            raise ValueError("max_retries cannot be negative")
+        if self.config.circuit_failure_threshold < 1:
+            raise ValueError("circuit_failure_threshold must be positive")
+        if self.config.circuit_recovery_seconds <= 0:
+            raise ValueError("circuit_recovery_seconds must be positive")
+        if self.config.max_concurrency < 1:
+            raise ValueError("max_concurrency must be positive")
+
+        self._semaphore = threading.BoundedSemaphore(self.config.max_concurrency)
+        self._lock = threading.Lock()
+        self._failures = 0
+        self._opened_at: Optional[float] = None
+        self._half_open_probe = False
+        self._executor = ThreadPoolExecutor(max_workers=self.config.max_concurrency)
+        self._closed = False
+
+    def _circuit_allows(self) -> bool:
+        with self._lock:
+            if self._opened_at is None:
+                return True
+            elapsed = time.monotonic() - self._opened_at
+            if elapsed < self.config.circuit_recovery_seconds:
+                return False
+            if self._half_open_probe:
+                return False
+            self._half_open_probe = True
+            return True
+
+    def _record_success(self) -> None:
+        with self._lock:
+            self._failures = 0
+            self._opened_at = None
+            self._half_open_probe = False
+
+    def _record_failure(self) -> None:
+        with self._lock:
+            self._failures += 1
+            self._half_open_probe = False
+            if self._failures >= self.config.circuit_failure_threshold:
+                self._opened_at = time.monotonic()
+
+    def _release_when_done(self, future: Future[Any]) -> None:
+        try:
+            future.result()
+        except BaseException:
+            pass
+        finally:
+            self._semaphore.release()
+
+    def execute(
+        self,
+        operation: Callable[[], T],
+        *,
+        retryable: Callable[[Exception], bool] | None = None,
+    ) -> T:
+        """Execute an operation; retries require an explicit retry predicate."""
+        if self._closed:
+            raise RuntimeError("Resilience executor is closed")
+        if not self._circuit_allows():
+            raise CircuitOpenError("Agent circuit is open; execution temporarily blocked")
+        if not self._semaphore.acquire(timeout=self.config.timeout_seconds):
+            raise AgentTimeoutError("Agent concurrency capacity is exhausted")
+
+        is_retryable = retryable or (lambda _exc: False)
+        released = False
+        try:
+            attempts = self.config.max_retries + 1
+            for attempt in range(attempts):
+                future = self._executor.submit(operation)
+                try:
+                    result = future.result(timeout=self.config.timeout_seconds)
+                except FutureTimeoutError as exc:
+                    future.add_done_callback(self._release_when_done)
+                    released = True
+                    self._record_failure()
+                    raise AgentTimeoutError("Agent execution exceeded the configured timeout") from exc
+                except Exception as exc:
+                    if attempt >= attempts - 1 or not is_retryable(exc):
+                        self._record_failure()
+                        self._semaphore.release()
+                        released = True
+                        raise
+                    delay = min(self.config.backoff_seconds * (2**attempt), self.config.max_backoff_seconds)
+                    time.sleep(delay * secrets.SystemRandom().uniform(0.5, 1.5))
+                else:
+                    self._record_success()
+                    self._semaphore.release()
+                    released = True
+                    return result
+            raise RuntimeError("Unreachable resilience state")
+        finally:
+            if not released:
+                self._semaphore.release()
+
+    def health(self) -> Dict[str, Any]:
+        with self._lock:
+            if self._opened_at is None:
+                circuit = "closed"
+            elif time.monotonic() - self._opened_at >= self.config.circuit_recovery_seconds:
+                circuit = "half_open" if not self._half_open_probe else "probe_in_flight"
+            else:
+                circuit = "open"
+            return {"circuit": circuit, "failures": self._failures, "max_concurrency": self.config.max_concurrency}
+
+    def close(self) -> None:
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        self._executor.shutdown(wait=False, cancel_futures=True)

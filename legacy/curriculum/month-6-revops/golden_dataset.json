@@ -1,0 +1,102 @@
+[
+  {
+    "case_id": "REV-2026-R01",
+    "description": "High-intent Product Qualified Lead (PQL) enterprise expansion with high seat utilization",
+    "payload": {
+      "opportunity_id": "OPP-9901-PQL",
+      "account_name": "Acme Fintech Global",
+      "annual_recurring_revenue_usd": 120000.0,
+      "lead_source": "PRODUCT_QUALIFIED_PQL",
+      "deal_stage": "QUALIFICATION",
+      "discount_requested_pct": 5.0,
+      "has_exec_sponsor": true,
+      "telemetry": {
+        "monthly_active_users": 450,
+        "weekly_usage_growth_pct": 18.5,
+        "license_utilization_pct": 92.0
+      }
+    },
+    "expected_result": {
+      "risk_tier": "LOW",
+      "action": "AUTO_ASSIGN_ENTERPRISE_AE",
+      "exception_flags": []
+    }
+  },
+  {
+    "case_id": "REV-2026-R02",
+    "description": "Late-stage enterprise deal requesting excessive non-standard discount above governance threshold",
+    "payload": {
+      "opportunity_id": "OPP-4402-DD",
+      "account_name": "Omni Health Systems",
+      "annual_recurring_revenue_usd": 280000.0,
+      "lead_source": "INBOUND_DEMO",
+      "deal_stage": "PROPOSAL_NEGOTIATION",
+      "discount_requested_pct": 35.0,
+      "has_exec_sponsor": false,
+      "telemetry": {
+        "monthly_active_users": 120,
+        "weekly_usage_growth_pct": 2.0,
+        "license_utilization_pct": 55.0
+      }
+    },
+    "expected_result": {
+      "risk_tier": "HIGH",
+      "action": "ESCALATE_DEAL_DESK",
+      "exception_flags": [
+        "EXCESSIVE_DISCOUNT_THRESHOLD_BREACH",
+        "MISSING_EXEC_SPONSORSHIP"
+      ]
+    }
+  },
+  {
+    "case_id": "REV-2026-R03",
+    "description": "High ARR enterprise account undergoing severe telemetry usage degradation and churn risk",
+    "payload": {
+      "opportunity_id": "OPP-7703-CHURN",
+      "account_name": "Titan Logistics Software",
+      "annual_recurring_revenue_usd": 450000.0,
+      "lead_source": "OUTBOUND_EXEC_OUTREACH",
+      "deal_stage": "TECHNICAL_EVALUATION",
+      "discount_requested_pct": 10.0,
+      "has_exec_sponsor": true,
+      "telemetry": {
+        "monthly_active_users": 35,
+        "weekly_usage_growth_pct": -45.0,
+        "license_utilization_pct": 18.0
+      }
+    },
+    "expected_result": {
+      "risk_tier": "CRITICAL",
+      "action": "FLAG_CHURN_RISK",
+      "exception_flags": [
+        "SEVERE_TELEMETRY_USAGE_DROP",
+        "CRITICAL_LICENSE_UNDERUTILIZATION"
+      ]
+    }
+  },
+  {
+    "case_id": "REV-2026-R04",
+    "description": "Low ARR organic inbound lead requiring firmographic enrichment and automated nurture sequence",
+    "payload": {
+      "opportunity_id": "OPP-1104-NURTURE",
+      "account_name": "Startup Tech Labs",
+      "annual_recurring_revenue_usd": 15000.0,
+      "lead_source": "ORGANIC_SEARCH",
+      "deal_stage": "QUALIFICATION",
+      "discount_requested_pct": 0.0,
+      "has_exec_sponsor": false,
+      "telemetry": {
+        "monthly_active_users": 5,
+        "weekly_usage_growth_pct": 0.0,
+        "license_utilization_pct": 20.0
+      }
+    },
+    "expected_result": {
+      "risk_tier": "MEDIUM",
+      "action": "TRIGGER_ENRICHMENT_NURTURE",
+      "exception_flags": [
+        "BELOW_MINIMUM_ARR_THRESHOLD"
+      ]
+    }
+  }
+]
