@@ -1,15 +1,16 @@
 """Enterprise event-driven platform primitives."""
 
+from .consumer import InboxDecision, InMemoryInbox
 from .models import CloudEvent, EventEnvelope
-from .outbox import InMemoryOutbox, OutboxRecord, OutboxStatus
-from .consumer import InMemoryInbox, InboxDecision
+from .outbox import InMemoryOutbox, OutboxPublisher, OutboxRecord, OutboxStatus
 
 __all__ = [
     "CloudEvent",
     "EventEnvelope",
+    "InboxDecision",
     "InMemoryInbox",
     "InMemoryOutbox",
-    "InboxDecision",
+    "OutboxPublisher",
     "OutboxRecord",
     "OutboxStatus",
 ]
