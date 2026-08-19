@@ -41,16 +41,22 @@ class ToolDefinition:
 
 @dataclass(frozen=True, slots=True)
 class ToolCall:
-    """A single invocation bound to the authenticated request context."""
+    """A single invocation explicitly bound to tenant and request context."""
 
     tool_name: str
     arguments: Mapping[str, Any]
+    tenant_id: str
     request_id: str
     idempotency_key: str
     capabilities: frozenset[ToolCapability] = field(default_factory=frozenset)
 
     def __post_init__(self) -> None:
-        for value, label in ((self.tool_name, "tool_name"), (self.request_id, "request_id"), (self.idempotency_key, "idempotency_key")):
+        for value, label in (
+            (self.tool_name, "tool_name"),
+            (self.tenant_id, "tenant_id"),
+            (self.request_id, "request_id"),
+            (self.idempotency_key, "idempotency_key"),
+        ):
             if not value.strip():
                 raise ValueError(f"{label} is required")
 
