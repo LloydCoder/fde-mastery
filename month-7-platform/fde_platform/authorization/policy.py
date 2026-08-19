@@ -7,13 +7,13 @@ policy implementation without changing callers or the identity contract.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from typing import Protocol
 
 from ..identity import RequestContext
 
 
-class AuthorizationDecision(StrEnum):
+class AuthorizationDecision(str, Enum):
     ALLOW = "allow"
     DENY = "deny"
 
