@@ -1,338 +1,154 @@
-# Month 7: Platform Layer — Unified Client Onboarding, Deployment & Delivery
+# Month 7: Platform Layer — Enterprise FDE Platform
 
-The capstone infrastructure layer that transforms domain-specific agents into a governed enterprise AI platform. This platform provides client onboarding, schema auto-mapping, preference configuration, containerized deployment, unified API gateway, multi-system integrations, observability, billing, identity, multi-tenancy, first-class agent execution, and durable workflows.
+The capstone layer that turns the domain agents into a governed enterprise AI platform. The migration is deliberately incremental: each build establishes a stable boundary, proves it with CI, and only then becomes the foundation for the next build.
 
----
+## Enterprise Architecture Migration
 
-## Enterprise Architecture Migration — Build 4 COMPLETE
-
-The enterprise-grade architecture migration is active. The platform now has a framework-neutral kernel, canonical identity/multi-tenancy primitives, a first-class agent execution runtime, and a durable workflow boundary for long-running work.
+| Build | Capability | Status |
+|---:|---|---|
+| 1 | Architecture Foundation | GREEN |
+| 2 | Identity & Multi-Tenancy | GREEN |
+| 3 | Agent Runtime | GREEN |
+| 4 | Durable Workflow Engine | GREEN |
+| 5 | Trust & Policy Plane | GREEN |
+| 6 | Tool Gateway | IN PROGRESS |
+| 7 | Model Gateway | NEXT |
+| 8 | Event-Driven Platform | PLANNED |
+| 9 | AI Evaluation Plane | PLANNED |
+| 10 | Observability & AI FinOps | PLANNED |
+| 11 | Enterprise Deployment & DR | PLANNED |
+| 12 | Platform Productization | PLANNED |
 
 ### Build 1 — Architecture Foundation
 
-- Stable agent, domain, execution, model, tool, repository, and event-bus contracts
+- Framework-neutral kernel and stable contracts/ports
 - Hexagonal/ports-and-adapters dependency direction
-- Kernel isolation from FastAPI, database drivers, model-provider SDKs, and infrastructure adapters
+- Legacy curriculum isolation
 - Executable architecture-boundary tests
-- No direct production imports of Month 1–6 curriculum modules
-- Legacy curriculum explicitly isolated as compatibility/history material
-- Packaging configured so `fde_platform` ships with the platform distribution
 
-**Build 1 status: GREEN — complete.**
+**Status: GREEN — complete.**
 
 ### Build 2 — Identity & Multi-Tenancy
 
-- Provider-neutral principal model for users, services, and agents
-- Canonical tenant/environment primitives
-- Immutable request context binding identity to tenant and environment
-- Fail-closed tenant, role, and scope authorization
-- PostgreSQL tenant/environment/membership schema
-- PostgreSQL `FORCE ROW LEVEL SECURITY` with restrictive `USING` and `WITH CHECK` isolation
-- Cross-tenant authorization and migration security regression tests
+- Provider-neutral principals for users, services and agents
+- Canonical tenant/environment model
+- Immutable `RequestContext`
+- Fail-closed authorization and PostgreSQL `FORCE ROW LEVEL SECURITY`
+- Cross-tenant regression coverage
 
-**Build 2 status: GREEN — complete.**
+**Status: GREEN — complete.**
 
 ### Build 3 — Agent Runtime
 
-- First-class `AgentRun` execution record
-- Explicit lifecycle and terminal-state semantics
-- Execution budgets for steps, elapsed time, and serialized output
+- First-class `AgentRun`
+- Explicit lifecycle and terminal states
+- Step/time/output budgets
 - Cooperative cancellation
-- Versioned checkpoints with SHA-256 state fingerprints
-- `RunStore` persistence port with thread-safe in-memory reference adapter
-- Compatibility adapter for existing `DomainAgent` implementations
-- Runtime regression coverage for success, failure, cancellation, limits, checkpoints, and domain compatibility
+- Versioned checkpoints with integrity fingerprints
+- `RunStore` port and deterministic reference adapter
 
-**Build 3 status: GREEN — complete.**
+**Status: GREEN — complete.**
 
 ### Build 4 — Durable Workflow Engine
 
-- Version-pinned declarative workflow definitions and steps
-- Durable `WorkflowRun` projection and explicit lifecycle
-- Append-only ordered workflow event history with optimistic sequence protection
-- Leased task queue with explicit acknowledgement semantics
-- PostgreSQL durable workflow/run/event persistence
-- PostgreSQL queue claims using transactional row locking and `SKIP LOCKED`
-- Bounded exponential retries and dead-letter handling
-- Durable external wait/signal semantics
-- Operator cancellation
-- Crash recovery/re-enqueue reconciliation
+- Version-pinned workflow definitions
+- Durable workflow state and append-only event history
+- Leased task queue using transactional locking / `SKIP LOCKED`
+- Bounded retries, dead letters, waits/signals and crash recovery
 - Stable workflow/step/attempt idempotency keys
-- Tenant-scoped `FORCE ROW LEVEL SECURITY` for workflow state, history, and tasks
-- Regression tests for success, replay, retries, dead letters, waits/signals, cancellation, leases, and migration security
+- Tenant-scoped RLS
 
-**Build 4 status: GREEN — complete.**
+**Status: GREEN — complete.**
 
-### Current migration rule
+### Build 5 — Trust & Policy Plane
+
+- Fail-closed policy decision point
+- Versioned policy rules and risk tiers
+- Human approval boundary
+- Tamper-evident authorization audit events
+- Least-privilege and cross-tenant authorization regression coverage
+
+**Status: GREEN — complete.**
+
+### Build 6 — Tool Gateway
+
+Build 6 establishes the mandatory platform boundary for agent-to-tool execution.
+
+- Immutable, versioned `ToolDefinition`
+- Explicit capabilities: `read`, `write`, `delete`, `external_network`, `sensitive_data`
+- Explicit tool registration and fail-closed lookup
+- Tenant + request-context binding
+- Approval boundary for high-impact tools
+- Idempotency keyed by tenant/tool/idempotency key
+- Explicit `ToolResult` envelope
+- Framework-neutral `ToolGateway` port
+- Deterministic in-memory reference implementation
+- Security regression coverage for unknown tools, excessive capabilities, cross-tenant execution, approval bypass, and duplicate delivery
+- ADR-0006 and Build 6 implementation guide
+
+**Status: IN PROGRESS — implementation complete; awaiting full CI verification.**
+
+## Architecture
 
 ```text
 Application / API / Workers
             ↓
-     Identity + Context
+Identity + RequestContext
             ↓
-       Agent Runtime
+Trust & Policy Plane
             ↓
-    Durable Workflows
+Agent Runtime
             ↓
-     Platform contracts
+Durable Workflow Engine
             ↓
-       Domain plugins
+Tool Gateway
+     ↙      ↓       ↘
+ SaaS     DB/RPC    MCP adapters
             ↓
-Infrastructure adapters
+Domain Agents / Infrastructure
 ```
 
-The repository remains a modular monolith during this phase. Future policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
+The repository remains a modular monolith while these boundaries stabilize. Extraction into separate services is deferred until contracts, operational requirements and failure domains justify it.
 
-See [`docs/BUILD-4-DURABLE-WORKFLOWS.md`](docs/BUILD-4-DURABLE-WORKFLOWS.md), [`docs/adr/0005-durable-workflow-engine.md`](docs/adr/0005-durable-workflow-engine.md), and [`fde_platform/README.md`](fde_platform/README.md).
+## Tool Gateway Security Rules
 
----
+1. Tools must be explicitly registered.
+2. Tool definitions are immutable and versioned.
+3. A caller cannot grant itself capabilities that the registered tool does not have.
+4. Every invocation is bound to the authenticated tenant and request context.
+5. High-impact tools can require human approval.
+6. Repeated delivery with the same idempotency key is safe in the reference gateway.
+7. Unknown tools and policy violations fail closed.
+8. Downstream systems must enforce their own authorization; the gateway is not a substitute for complete mediation downstream.
+9. Open-ended primitives such as arbitrary shell execution or unrestricted URL fetching should not be exposed when a narrower capability can satisfy the task.
+10. MCP is an integration protocol, not an authorization bypass.
 
-## Tinlance Gateway Integration
+## MCP Integration Boundary
 
-The production Tinlance gateway calls this service through the stable contract:
-
-```text
-POST /v1/{domain}/execute
-Authorization: Bearer <OIDC access token>
-x-request-id: <correlation id>
-```
-
-Request body:
-
-```json
-{
-  "tenant_id": "tinlance",
-  "payload": {
-    "task": "triage this alert",
-    "organization_id": "org_123",
-    "metadata": {"source": "tinlance"}
-  }
-}
-```
-
-Supported domains are exactly:
-
-`cybersecurity`, `finance`, `healthtech`, `logistics`, `legal`, `revops`.
-
-### Required production configuration
-
-The Mastery API validates OIDC bearer tokens using these environment variables:
-
-```text
-FDE_OIDC_ISSUER=https://<issuer>
-FDE_OIDC_AUDIENCE=<mastery-api-audience>
-FDE_OIDC_JWKS_URL=<optional-explicit-jwks-url>
-FDE_OIDC_ALGORITHMS=RS256
-```
-
-The token issued to the Tinlance gateway must contain:
-
-- `iss` matching `FDE_OIDC_ISSUER`
-- `aud` containing `FDE_OIDC_AUDIENCE`
-- `sub`
-- `exp` and `iat`
-- `tenant_id: tinlance`
-- `scope` containing `agents:execute`
-
-The token issuer/client-credentials endpoint is external to this repository. The Tinlance gateway obtains the token and presents it to this API; this service is responsible for cryptographic JWT validation and authorization.
-
-### Health and readiness
-
-- `GET /health` is a liveness endpoint and is public.
-- `GET /ready` returns `503` until OIDC issuer/audience configuration and all six domain routes are present.
-- Execution responses preserve `x-request-id` for end-to-end correlation.
-- Agent failures are returned as a generic `502 Agent execution failed`; internal exceptions are not exposed over the API.
-
-The contract is covered by API tests and the domain enum/allowlist is intentionally duplicated at the integration boundary so a future domain expansion cannot silently change the Tinlance contract.
-
----
-
-## Architecture Overview
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  CLIENT ONBOARDING                                                          │
-│  Schema Mapper → Preferences → Golden Dataset → Deployment Plan             │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  IDENTITY & MULTI-TENANCY                                                    │
-│  Principal → RequestContext → Tenant/Environment → Authorization → RLS      │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  AGENT RUNTIME                                                               │
-│  AgentRun → Budget → Cancellation → Checkpoint → Domain Agent → Result      │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  DURABLE WORKFLOW ENGINE                                                     │
-│  WorkflowRun → Event History → Leased Queue → Retry/Wait → Recovery/Replay  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  DOMAIN PLUGINS                                                              │
-│  Cybersecurity │ Finance │ HealthTech │ Logistics │ Legal │ RevOps │ ...    │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  INFRASTRUCTURE & OBSERVABILITY                                              │
-│  PostgreSQL │ Redis │ Integrations │ OpenTelemetry │ Evaluation │ Releases   │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## The "Zero-Delay" Client Journey
-
-| Phase | Timeline | Action | Output |
-|-------|----------|--------|--------|
-| **Discovery** | 30 min | Map pain to pre-built domain agent | SOW with template pricing |
-| **Onboarding** | 2 hours | Upload sample data → auto-map → generate golden dataset | 50-case benchmark |
-| **Deployment** | 4 hours | Docker container + API endpoint + integrations | Live client endpoint |
-| **Value Proof** | Week 2 | Drift detection + confidence tracking + billing | Business review with metrics |
-
----
-
-## Quick Start
-
-### 1. Onboard a New Client
-
-```bash
-cd month-7-platform
-python main.py onboard --client-id retailer-corp --client-name "RetailCo Global" --domains cybersecurity,finance --sample-dir ./sample_data/retailer-corp --tier growth
-```
-
-### 2. Run Platform Evaluation
-
-```bash
-python main.py eval
-```
-
-### 3. Run Sales Simulation
-
-```bash
-python main.py simulate --scenario all
-```
-
-### 4. Start API Gateway (Docker)
-
-```bash
-cd deployment/docker
-docker-compose up --build
-```
-
----
+When MCP adapters are introduced, they must preserve the platform principal, tenant, environment, policy decision, capability and audit context. HTTP-based MCP deployments must also implement the applicable OAuth authorization requirements, validate token audience/resource binding, use short-lived credentials, and avoid token passthrough.
 
 ## Project Structure
 
 ```text
 month-7-platform/
-├── README.md
 ├── fde_platform/
-│   ├── contracts/                         # Stable cross-boundary contracts
-│   ├── identity/                          # Principal, tenant and request context
-│   ├── authorization/                     # Fail-closed authorization boundary
-│   ├── ports/                             # Hexagonal architecture ports
-│   ├── runtime/                           # First-class agent execution runtime
-│   ├── workflow/                          # Durable workflow engine + queue contracts
-│   └── architecture.py                    # Executable boundary policy
-├── schemas.py
-├── main.py
-├── eval_harness.py
-├── client_onboarding/
-├── deployment/
-├── persistence/
-│   ├── migrations/                        # Versioned tenant/workflow persistence
-│   ├── workflow_store.py                  # PostgreSQL workflow adapter
-│   └── workflow_queue.py                  # PostgreSQL leased queue adapter
-├── shared_orchestrator/
-├── integrations/
-├── observability/
-├── evaluation/
-└── tests/
-    ├── test_agent_runtime.py
-    ├── test_durable_workflows.py
-    └── test_workflow_migration_contract.py
+│   ├── contracts/             # Stable cross-boundary contracts
+│   ├── identity/              # Principal, tenant, request context
+│   ├── authorization/         # Trust & policy boundary
+│   ├── runtime/               # Agent execution runtime
+│   ├── workflow/              # Durable workflows and queues
+│   └── tools/                 # Build 6 tool gateway contracts/adapters
+├── custom_agents/             # Compatibility/domain-facing agent tooling
+├── persistence/               # PostgreSQL adapters and migrations
+├── integrations/              # External system adapters
+├── evaluation/                # Evaluation and golden datasets
+├── observability/             # Telemetry
+├── deployment/                # Container/Terraform deployment
+└── tests/                     # Regression/security/architecture tests
 ```
 
----
+## Quality Gate
 
-## Agent Runtime Contract
+A build is not complete until the repository quality workflow is green. The gate includes pytest, domain deployment smoke tests, enterprise security controls, migration validation, red-team regression, Ruff, MyPy, Bandit, dependency audit, compileall, Terraform validation, SBOM generation/validation, staging API/load smoke, production Docker runtime smoke, and Semgrep.
 
-Every execution is represented by an `AgentRun` rather than being an anonymous function call. Build 4 adds a durable workflow above the runtime for multi-step work:
-
-```text
-CREATED
-   ↓
-RUNNING
-   ├───────────────┐
-   ↓               ↓
-COMPLETED       FAILED / CANCELLED / TIMED_OUT / LIMIT_EXCEEDED
-```
-
-Workflow execution adds:
-
-```text
-WorkflowRun
-   ↓
-StepStarted
-   ↓
-Activity
-   ├── success → StepCompleted → next step
-   ├── retry   → scheduled retry
-   ├── wait    → WAITING → external signal
-   └── failure → DEAD_LETTERED
-```
-
-The durable boundary is intentionally **at-least-once** for activities. External side-effect adapters must use stable idempotency keys. Worker leases, acknowledgements, event history, and `recover()` provide crash recovery without claiming impossible exactly-once external mutation semantics.
-
----
-
-## Security and Governance
-
-The platform security baseline is mapped to OWASP ASVS 5.0. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Identity architecture follows zero-trust principles and treats software/AI agents as explicit execution identities. Observability follows OpenTelemetry semantic-convention guidance, with sensitive AI content excluded by default.
-
-Workflow state, events, and tasks are tenant-scoped and protected by PostgreSQL `FORCE ROW LEVEL SECURITY`. High-impact actions remain human-controlled. Build 5 will introduce the dedicated policy, risk, and approval plane above this durable execution layer.
-
----
-
-## CI / Release Gates
-
-Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
-
-- pytest
-- seven-domain deployment smoke tests
-- Custom Agent tests and secure tool-gateway tests
-- enterprise security controls
-- identity/multi-tenancy and runtime regression tests
-- durable workflow and migration security regression tests
-- migration validation
-- red-team regression
-- Ruff
-- MyPy
-- Bandit
-- pip-audit
-- compileall
-- Terraform format/validation
-- SBOM generation/validation
-- staging API startup/readiness
-- load smoke
-- production Docker build/runtime smoke
-- Semgrep static security scan
-- release image signing, SBOM attestation, and build provenance
-
-A green workflow is a merge gate, not a substitute for customer-specific production validation.
-
----
-
-## License & Attribution
-
-Part of the **FDE Mastery** curriculum — a production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.
-
-| Build | Capability | Status |
-|------:|------------|--------|
-| 1 | Architecture Foundation | GREEN |
-| 2 | Identity & Multi-Tenancy | GREEN |
-| 3 | Agent Runtime | GREEN |
-| 4 | Durable Workflow Engine | GREEN |
+See [`docs/BUILD-6-TOOL-GATEWAY.md`](docs/build-6-tool-gateway.md) and [`docs/ADR-0006-tool-gateway.md`](docs/ADR-0006-tool-gateway.md).
