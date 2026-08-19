@@ -4,7 +4,7 @@ FDE Mastery is migrating from a production-oriented modular platform into a gove
 
 ## Build 1 — Architecture Foundation
 
-Build 1 establishes the dependency direction used by all subsequent builds:
+Build 1 establishes the dependency direction used by all subsequent builds. The active kernel lives at `month-7-platform/fde_platform/`:
 
 ```text
 apps / API / workers
@@ -22,7 +22,7 @@ adapters / infrastructure / integrations
 domain plugins
 ```
 
-The platform kernel (`fde_platform`) is deliberately framework- and vendor-neutral. It owns stable contracts and ports; FastAPI, PostgreSQL, model providers, tool providers, observability exporters, and other infrastructure remain outside the kernel.
+The platform kernel is deliberately framework- and vendor-neutral. It owns stable contracts and ports; FastAPI, PostgreSQL, model providers, tool providers, observability exporters, and other infrastructure remain outside the kernel.
 
 ## Target bounded contexts
 
@@ -66,7 +66,7 @@ Existing `month-1-cybersecurity` through `month-6-revops` code remains available
 
 ## Architecture enforcement
 
-`tests/test_architecture_boundaries.py` makes these rules executable. A future refactor that introduces a forbidden kernel dependency or direct production import of a curriculum module should fail CI rather than silently erode the architecture.
+`month-7-platform/tests/test_architecture_boundaries.py` makes these rules executable. A future refactor that introduces a forbidden kernel dependency or direct production import of a curriculum module should fail CI rather than silently erode the architecture.
 
 ## Standards basis
 
