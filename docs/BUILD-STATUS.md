@@ -29,8 +29,8 @@
 - [x] Workflow regression and migration security contract tests exist.
 - [x] Build 4 ADR and architecture documentation are recorded.
 - [x] Active Month 7 README records Build 4 as the current completed phase.
-- [ ] CI verification — pending GitHub Actions run on this build branch/PR.
+- [x] GitHub Actions Platform Quality workflow passed all jobs and checks on the Build 4 PR.
 
 ## Verification policy
 
-A build is only declared **GREEN** after the repository CI pipeline passes. Local tooling in this environment cannot reach GitHub's network, so GitHub Actions is the authoritative execution environment for the full existing quality/security/deployment suite.
+A build is only declared **GREEN** after the repository CI pipeline passes. The Build 4 PR passed the complete Platform Quality workflow, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
