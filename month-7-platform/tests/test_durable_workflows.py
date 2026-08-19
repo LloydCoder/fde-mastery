@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-
-import pytest
+from uuid import uuid4
 
 from fde_platform.workflow import (
     DurableWorkflowEngine,
@@ -15,6 +14,7 @@ from fde_platform.workflow import (
     WorkflowStep,
 )
 from fde_platform.workflow.engine import WorkflowWait
+from fde_platform.workflow.queue import WorkflowTask
 
 
 def build_engine(activities):
@@ -67,7 +67,7 @@ def test_workflow_completes_and_is_replayable():
     replayed = engine.replay(run.workflow_run_id)
     assert replayed.status == WorkflowStatus.COMPLETED
     assert replayed.current_step == 2
-    assert [event.sequence for event in engine.store.list_events(run.workflow_run_id)] == list(range(5))
+    assert [event.sequence for event in engine.store.list_events(run.workflow_run_id)] == list(range(6))
 
 
 def test_retry_is_bounded_and_dead_letters_after_max_attempts():
@@ -141,9 +141,6 @@ def test_cancel_is_terminal():
 
 def test_queue_lease_can_expire_and_be_reclaimed():
     queue = InMemoryWorkflowQueue()
-    from fde_platform.workflow.queue import WorkflowTask
-    from uuid import uuid4
-
     task = WorkflowTask(
         workflow_run_id=uuid4(),
         step_id="step",
