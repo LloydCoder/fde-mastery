@@ -6,7 +6,27 @@ This is the framework-neutral kernel for the active FDE Mastery platform.
 
 - stable cross-boundary contracts
 - ports for agent, model, tool, repository and event-bus capabilities
+- immutable identity/request context primitives
+- first-class agent execution lifecycle and runtime safety boundaries
 - executable dependency-boundary metadata
+
+## Runtime boundary
+
+`fde_platform.runtime` owns `AgentRun` lifecycle, execution budgets, cooperative cancellation, checkpoints, and the `RunStore` persistence port. It deliberately does not own workflow scheduling, model-provider calls, tool execution, or infrastructure concerns.
+
+```text
+Application / API / Worker
+            ↓
+     AgentRuntime
+            ↓
+     AgentRun + Context
+            ↓
+       Domain Agent
+            ↓
+       RunStore port
+```
+
+Build 3 keeps the reference runtime synchronous. Durable persistence, queue-backed workers, replay, and workflow recovery are deferred to Build 4.
 
 ## Non-responsibilities
 

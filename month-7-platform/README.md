@@ -1,14 +1,14 @@
 # Month 7: Platform Layer — Unified Client Onboarding, Deployment & Delivery
 
-The capstone infrastructure layer that transforms 6 domain-specific agents into a **sellable, zero-delay managed service**. This platform provides client onboarding, schema auto-mapping, preference configuration, containerized deployment, unified API gateway, multi-system integrations, observability, and billing.
+The capstone infrastructure layer that transforms domain-specific agents into a governed enterprise AI platform. This platform provides client onboarding, schema auto-mapping, preference configuration, containerized deployment, unified API gateway, multi-system integrations, observability, billing, identity, multi-tenancy, and first-class agent execution.
 
 ---
 
-## Enterprise Architecture Migration — Build 1 COMPLETE
+## Enterprise Architecture Migration — Build 3 COMPLETE
 
-The enterprise-grade architecture migration is now active. Build 1 establishes `fde_platform/` as the framework-neutral kernel for stable contracts and ports.
+The enterprise-grade architecture migration is active. The platform now has a framework-neutral kernel, canonical identity/multi-tenancy primitives, and a first-class agent execution runtime.
 
-### Build 1 guarantees
+### Build 1 — Architecture Foundation
 
 - Stable agent, domain, execution, model, tool, repository, and event-bus contracts
 - Hexagonal/ports-and-adapters dependency direction
@@ -17,12 +17,42 @@ The enterprise-grade architecture migration is now active. Build 1 establishes `
 - No direct production imports of Month 1–6 curriculum modules
 - Legacy curriculum explicitly isolated as compatibility/history material
 - Packaging configured so `fde_platform` ships with the platform distribution
-- ADR and architecture documentation updated for the migration
+
+**Build 1 status: GREEN — complete.**
+
+### Build 2 — Identity & Multi-Tenancy
+
+- Provider-neutral principal model for users, services, and agents
+- Canonical tenant/environment primitives
+- Immutable request context binding identity to tenant and environment
+- Fail-closed tenant, role, and scope authorization
+- PostgreSQL tenant/environment/membership schema
+- PostgreSQL `FORCE ROW LEVEL SECURITY` with restrictive `USING` and `WITH CHECK` isolation
+- Cross-tenant authorization and migration security regression tests
+
+**Build 2 status: GREEN — complete.**
+
+### Build 3 — Agent Runtime
+
+- First-class `AgentRun` execution record
+- Explicit lifecycle and terminal-state semantics
+- Execution budgets for steps, elapsed time, and serialized output
+- Cooperative cancellation
+- Versioned checkpoints with SHA-256 state fingerprints
+- `RunStore` persistence port with thread-safe in-memory reference adapter
+- Compatibility adapter for existing `DomainAgent` implementations
+- Runtime regression coverage for success, failure, cancellation, limits, checkpoints, and domain compatibility
+
+**Build 3 status: GREEN — complete.**
 
 ### Current migration rule
 
 ```text
 Application / API / Workers
+            ↓
+     Identity + Context
+            ↓
+       Agent Runtime
             ↓
      Platform contracts
             ↓
@@ -31,11 +61,9 @@ Application / API / Workers
 Infrastructure adapters
 ```
 
-The repository remains a modular monolith during this phase. Future workflow, agent-runtime, policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
+The repository remains a modular monolith during this phase. Future workflow, policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
 
-**Build 1 status: GREEN — ready for Build 2.**
-
-See [`../docs/architecture/README.md`](../docs/architecture/README.md), [`../docs/adr/0002-enterprise-platform-boundaries.md`](../docs/adr/0002-enterprise-platform-boundaries.md), and [`fde_platform/README.md`](fde_platform/README.md).
+See [`docs/BUILD-3-AGENT-RUNTIME.md`](docs/BUILD-3-AGENT-RUNTIME.md), [`docs/adr/0004-agent-runtime.md`](docs/adr/0004-agent-runtime.md), and [`fde_platform/README.md`](fde_platform/README.md).
 
 ---
 
@@ -103,38 +131,28 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  CLIENT ONBOARDING (Day 1-2)                                                │
-│  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────────┐           │
-│  │ Schema      │  │ Preference      │  │ Golden Dataset        │           │
-│  │ Mapper      │→ │ Engine          │→ │ Generator            │           │
-│  │ (auto-map)  │  │ (rubric overrides)│  │ (50 cases from sample)│          │
-│  └─────────────┘  └─────────────────┘  └─────────────────────┘           │
+│  CLIENT ONBOARDING                                                          │
+│  Schema Mapper → Preferences → Golden Dataset → Deployment Plan             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  DEPLOYMENT (Day 2-3)                                                       │
-│  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────────┐           │
-│  │ Docker      │  │ Terraform       │  │ API Gateway         │           │
-│  │ (per-client)│  │ (VPC deploy)    │  │ FastAPI /{client}   │           │
-│  └─────────────┘  └─────────────────┘  └─────────────────────┘           │
+│  IDENTITY & MULTI-TENANCY                                                    │
+│  Principal → RequestContext → Tenant/Environment → Authorization → RLS      │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  SHARED ORCHESTRATOR                                                        │
-│  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────────┐           │
-│  │ Agent       │  │ Context         │  │ Escalation          │           │
-│  │ Router      │  │ Manager         │  │ Matrix              │           │
-│  │ (6 domains) │  │ (cross-domain)  │  │ (human handoff)     │           │
-│  └─────────────┘  └─────────────────┘  └─────────────────────┘           │
+│  AGENT RUNTIME                                                               │
+│  AgentRun → Budget → Cancellation → Checkpoint → Domain Agent → Result      │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  INTEGRATIONS & OBSERVABILITY                                               │
-│  ┌─────────────┐  ┌─────────────────┐  ┌─────────────────────┐           │
-│  │ Slack Bot   │  │ ServiceNow      │  │ Drift Detector      │           │
-│  │ Webhook     │  │ Custom API      │  │ Confidence Tracker  │           │
-│  │             │  │                 │  │ Billing Meter       │           │
-│  └─────────────┘  └─────────────────┘  └─────────────────────┘           │
+│  DOMAIN PLUGINS                                                              │
+│  Cybersecurity │ Finance │ HealthTech │ Logistics │ Legal │ RevOps │ ...    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  INFRASTRUCTURE & OBSERVABILITY                                              │
+│  PostgreSQL │ Redis │ Integrations │ OpenTelemetry │ Evaluation │ Releases   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -145,8 +163,8 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 | Phase | Timeline | Action | Output |
 |-------|----------|--------|--------|
 | **Discovery** | 30 min | Map pain to pre-built domain agent | SOW with template pricing |
-| **Onboarding** | 2 hours | Upload sample data → auto-map → generate golden dataset | 50-case benchmark, >90% pass |
-| **Deployment** | 4 hours | Docker container + API endpoint + integrations | Live `/api/{client}/{domain}/triage` |
+| **Onboarding** | 2 hours | Upload sample data → auto-map → generate golden dataset | 50-case benchmark |
+| **Deployment** | 4 hours | Docker container + API endpoint + integrations | Live client endpoint |
 | **Value Proof** | Week 2 | Drift detection + confidence tracking + billing | Business review with metrics |
 
 ---
@@ -157,7 +175,7 @@ The contract is covered by API tests and the domain enum/allowlist is intentiona
 
 ```bash
 cd month-7-platform
-python main.py onboard   --client-id retailer-corp   --client-name "RetailCo Global"   --domains cybersecurity,finance   --sample-dir ./sample_data/retailer-corp   --tier growth
+python main.py onboard --client-id retailer-corp --client-name "RetailCo Global" --domains cybersecurity,finance --sample-dir ./sample_data/retailer-corp --tier growth
 ```
 
 ### 2. Run Platform Evaluation
@@ -183,155 +201,102 @@ docker-compose up --build
 
 ## Project Structure
 
-```
+```text
 month-7-platform/
-├── README.md                              # This file
-├── fde_platform/                          # Enterprise platform kernel
+├── README.md
+├── fde_platform/
 │   ├── contracts/                         # Stable cross-boundary contracts
+│   ├── identity/                          # Principal, tenant and request context
+│   ├── authorization/                     # Fail-closed authorization boundary
 │   ├── ports/                             # Hexagonal architecture ports
+│   ├── runtime/                           # First-class agent execution runtime
 │   └── architecture.py                    # Executable boundary policy
-├── schemas.py                             # Unified platform schemas
-├── main.py                                # Platform CLI (onboard / eval / simulate)
-├── eval_harness.py                        # Platform-level evaluation harness
-│
+├── schemas.py
+├── main.py
+├── eval_harness.py
 ├── client_onboarding/
-│   ├── schema_mapper.py                   # Auto-map client data → domain schemas
-│   ├── preference_engine.py               # Client rubric overrides
-│   ├── golden_generator.py                # Generate 50-case golden dataset from samples
-│   └── onboard_cli.py                     # Onboarding orchestrator
-│
 ├── deployment/
-│   ├── docker/
-│   │   ├── Dockerfile                     # Per-client container image
-│   │   └── docker-compose.yml             # Full stack (API + Redis + Prometheus)
-│   ├── terraform/                         # AWS/GCP/Azure VPC IaC (scaffold)
-│   └── api_gateway/
-│       └── main.py                        # FastAPI: /{client_id}/{domain}/triage
-│
 ├── shared_orchestrator/
-│   ├── router.py                          # Multi-domain agent router
-│   ├── context_manager.py                 # Cross-domain memory & aggregate scoring
-│   └── escalation_matrix.py               # Human handoff protocol manager
-│
 ├── integrations/
-│   ├── tinlance_contract.py               # Tinlance gateway/mastery HTTP contract
-│   ├── slack_bot.py                       # Slack alerting & notifications
-│   ├── servicenow.py                      # Incident/ticket creation
-│   └── custom_webhook.py                  # Generic downstream webhook
-│
 ├── observability/
-│   ├── drift_detector.py                  # Weekly eval re-run & pass-rate delta
-│   ├── confidence_tracker.py              # Per-client confidence degradation alerts
-│   └── billing_meter.py                   # Per-API-call invoicing
-│
-└── demo/
-    └── enterprise_sales_simulation.py     # Live prospect walkthrough script
+├── evaluation/
+└── tests/
+    └── test_agent_runtime.py              # Build 3 runtime invariants
 ```
 
 ---
 
-## Key Components
+## Agent Runtime Contract
 
-### Client Onboarding
+Every execution is represented by an `AgentRun` rather than being an anonymous function call:
 
-| Module | Purpose |
-|--------|---------|
-| `schema_mapper.py` | Infers field mappings from client sample JSON to domain schemas using candidate key matching |
-| `preference_engine.py` | Applies client-specific rubric overrides (e.g., stricter discount thresholds for conservative firms) |
-| `golden_generator.py` | Creates 50-case synthetic benchmark datasets seeded from real client data patterns |
-| `onboard_cli.py` | One-command onboarding: config → mapping → preferences → golden dataset → deployment plan |
-
-### Deployment
-
-| Component | Purpose |
-|-----------|---------|
-| `Dockerfile` | Builds per-client container with domain agent + API gateway |
-| `docker-compose.yml` | Orchestrates API gateway, Redis cache, and Prometheus metrics |
-| `api_gateway/main.py` | FastAPI app exposing `POST /api/{client_id}/{domain}/triage` with auth, billing, and audit |
-
-### Shared Orchestrator
-
-| Component | Purpose |
-|-----------|---------|
-| `router.py` | Routes requests to the correct domain agent instance based on URL path |
-| `context_manager.py` | Maintains cross-domain memory (e.g., finance fraud signal informs cybersecurity triage) |
-| `escalation_matrix.py` | Creates, tracks, and resolves human escalation tickets with assignment and status |
-
-### Integrations
-
-| Integration | Trigger | Target |
-|-------------|---------|--------|
-| **Slack Bot** | Every triage result | `#fde-alerts` channel with severity-colored attachments |
-| **ServiceNow** | Escalated cases | Auto-create incident with assignment group |
-| **Custom Webhook** | Configurable per client | POST triage payload to client-defined endpoint |
-
-### Observability
-
-| Module | Function |
-|--------|----------|
-| `drift_detector.py` | Re-runs golden dataset weekly, flags >5% pass-rate degradation |
-| `confidence_tracker.py` | Rolling window mean/min confidence; alerts if mean < 0.85 or min < 0.70 |
-| `billing_meter.py` | Tracks calls per domain, applies tier pricing, generates `BillingRecord` invoices |
-
----
-
-## Pricing Model
-
-| Tier | Domains | Calls/Month | Price/Month | Includes |
-|------|---------|-------------|-------------|----------|
-| **Starter** | 1 | 10,000 | $5,000 | API access, Slack bot, email support |
-| **Growth** | 2 | 50,000 | $15,000 | + Deal Desk integration, drift monitoring, Clearbit enrichment |
-| **Enterprise** | All 6 | Unlimited | $50,000 | + VPC deploy, 24/7 support, custom schema mapping, dedicated CSM |
-
-**Value proposition**: *Traditional consultants bill $300/hr and take 8 weeks to build. We deploy in 48 hours because the agent is already built — you pay for configuration, not creation.*
-
----
-
-## Benchmark Evaluation Results
-
-The platform evaluation harness validates all infrastructure components:
-
-| Test | Component | Status |
-|------|-----------|--------|
-| Schema Mapper | Auto-infers 4/6 required cybersecurity fields from sample | ✅ PASS |
-| Preference Engine | Loads default rubric + applies client override | ✅ PASS |
-| Golden Generator | Creates 10-case dataset in <1s | ✅ PASS |
-| Agent Router | Registers and lists domain agents | ✅ PASS |
-| Escalation Matrix | Creates and resolves escalation records | ✅ PASS |
-| Drift Detector | Simulates 96.5% pass rate, no drift | ✅ PASS |
-| Confidence Tracker | Records 0.94 confidence, computes mean | ✅ PASS |
-| Billing Meter | 2 calls @ $0.03 = $0.06 billed | ✅ PASS |
-
-**Platform Pass Rate: 100% (8/8)**
-
----
-
-## Sales Simulation
-
-Run the enterprise sales walkthrough to demonstrate zero-delay value to prospects:
-
-```bash
-python demo/enterprise_sales_simulation.py
+```text
+CREATED
+   ↓
+RUNNING
+   ├───────────────┐
+   ↓               ↓
+COMPLETED       FAILED / CANCELLED / TIMED_OUT / LIMIT_EXCEEDED
 ```
 
-Output includes:
-- **Discovery**: 5-minute pain mapping to pre-built agent
-- **Onboarding**: Live schema mapping + golden dataset generation
-- **Deployment**: API endpoint live within 10 minutes
-- **Value Proof**: Week 2 metrics showing 95%+ containment, 340 hrs/week saved
+Runtime safety controls include:
+
+- bounded step count
+- bounded elapsed time
+- bounded serialized output
+- cooperative cancellation
+- monotonically sequenced checkpoints
+- SHA-256 checkpoint fingerprints
+- bounded error metadata
+- tenant/request/agent execution context
+
+The runtime is intentionally synchronous in Build 3. Durable workers, distributed cancellation, workflow recovery, queues, replay, and dead-letter handling are Build 4 concerns.
+
+---
+
+## Security and Governance
+
+The platform security baseline is mapped to OWASP ASVS 5.0. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Identity architecture follows zero-trust principles and treats software/AI agents as explicit execution identities. Observability follows OpenTelemetry semantic-convention guidance, with sensitive AI content excluded by default.
+
+High-impact actions remain human-controlled. Examples include account disablement, endpoint isolation, clinical intervention, payment/purchase approval, supplier award, contract rejection, and customer notification.
+
+---
+
+## CI / Release Gates
+
+Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
+
+- pytest
+- seven-domain deployment smoke tests
+- Custom Agent tests and secure tool-gateway tests
+- enterprise security controls
+- identity/multi-tenancy and runtime regression tests
+- migration validation
+- red-team regression
+- Ruff
+- MyPy
+- Bandit
+- pip-audit
+- compileall
+- Terraform format/validation
+- SBOM generation/validation
+- staging API startup/readiness
+- load smoke
+- production Docker build/runtime smoke
+- Semgrep static security scan
+- release image signing, SBOM attestation, and build provenance
+
+A green workflow is a merge gate, not a substitute for customer-specific production validation.
 
 ---
 
 ## License & Attribution
 
-Part of the **FDE Mastery** curriculum — a 6-month production engineering roadmap for deterministic, schema-guaranteed LLM agents.
+Part of the **FDE Mastery** curriculum — a production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.
 
-| Month | Domain | Tag |
-|-------|--------|-----|
-| 1 | Cybersecurity | `v1.0-soc-triage` |
-| 2 | Finance | `v1.1-finance-risk-engine` |
-| 3 | HealthTech | `v1.2-healthtech-hipaa-engine` |
-| 4 | Logistics | `v1.3-logistics-supply-chain` |
-| 5 | Legal | `v1.4-legal-contract-risk` |
-| 6 | RevOps | `v1.5-revops-enterprise-automation` |
-| 7 | **Platform** | `v2.0-platform-layer` |
+| Build | Capability | Status |
+|------:|------------|--------|
+| 1 | Architecture Foundation | GREEN |
+| 2 | Identity & Multi-Tenancy | GREEN |
+| 3 | Agent Runtime | GREEN |
+| 4 | Durable Workflow Engine | NEXT |
