@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Any, Mapping
 
 from .tenant import TenantId
 
 
-class PrincipalType(StrEnum):
+class PrincipalType(str, Enum):
     USER = "user"
     SERVICE = "service"
     AGENT = "agent"
