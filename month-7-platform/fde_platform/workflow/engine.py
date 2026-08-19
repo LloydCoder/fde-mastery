@@ -194,25 +194,40 @@ class DurableWorkflowEngine:
             raise ValueError("workflow has no durable history")
         expected = 0
         projection = run.model_copy(deep=True)
+        projection.current_step = 0
+        projection.error_type = None
+        projection.error_message = None
+        projection.completed_at = None
         for event in events:
             if event.sequence != expected:
                 raise ValueError("workflow history sequence is corrupt")
             expected += 1
-            if event.event_type == "WorkflowCompleted":
+            if event.event_type == "WorkflowStarted":
+                projection.status = WorkflowStatus.RUNNING
+                projection.input = dict(event.payload.get("input", {}))
+            elif event.event_type in {"StepStarted", "StepRetryScheduled", "SignalReceived"}:
+                projection.status = WorkflowStatus.RUNNING
+            elif event.event_type == "WorkflowWaiting":
+                projection.status = WorkflowStatus.WAITING
+                projection.step_attempt = int(event.payload.get("attempt", projection.step_attempt))
+            elif event.event_type == "StepCompleted":
+                projection.current_step += 1
+                projection.step_attempt = 0
+            elif event.event_type == "WorkflowCompleted":
                 projection.status = WorkflowStatus.COMPLETED
                 projection.result = event.payload.get("result")
             elif event.event_type == "WorkflowCancelled":
                 projection.status = WorkflowStatus.CANCELLED
-            elif event.event_type == "WorkflowWaiting":
-                projection.status = WorkflowStatus.WAITING
-            elif event.event_type == "StepCompleted":
-                projection.current_step += 1
             elif event.event_type in {"WorkflowFailed", "WorkflowDeadLettered"}:
-                projection.status = WorkflowStatus.DEAD_LETTERED if event.event_type.endswith("DeadLettered") else WorkflowStatus.FAILED
+                projection.status = (
+                    WorkflowStatus.DEAD_LETTERED
+                    if event.event_type == "WorkflowDeadLettered"
+                    else WorkflowStatus.FAILED
+                )
                 projection.error_type = str(event.payload.get("error_type", "WorkflowFailure"))
                 projection.error_message = str(event.payload.get("error_message", ""))
-            elif event.event_type == "WorkflowStarted":
-                projection.input = dict(event.payload.get("input", {}))
+        if projection.terminal:
+            projection.completed_at = events[-1].created_at
         return projection
 
     def _enqueue_current(self, run: WorkflowRun, *, attempt: int) -> None:
