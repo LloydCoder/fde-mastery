@@ -16,6 +16,7 @@ Build 2 establishes identity and tenant isolation as platform invariants without
 - PostgreSQL RLS with `FORCE ROW LEVEL SECURITY`, restrictive policies, and both `USING`/`WITH CHECK` tenant predicates.
 - Regression tests for cross-tenant denial, scope enforcement, context binding, and migration controls.
 - ADR-0003 documenting the identity and tenancy boundary.
+- CI quality gates expanded to lint, type-check, compile, and security-scan the new platform kernel.
 
 ## Security model
 
