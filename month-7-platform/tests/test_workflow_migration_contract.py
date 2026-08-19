@@ -14,6 +14,9 @@ def test_workflow_migration_is_tenant_isolated_and_append_only():
     assert "USING (tenant_id = fde_current_tenant_id())" in sql
     assert "WITH CHECK (tenant_id = fde_current_tenant_id())" in sql
     assert "UNIQUE (workflow_run_id, sequence)" in sql
+    assert "FOREIGN KEY (workflow_run_id, tenant_id)" in sql
+    assert "fde_prevent_workflow_event_mutation" in sql
+    assert "BEFORE UPDATE OR DELETE ON fde_workflow_events" in sql
 
 
 def test_workflow_task_migration_supports_leases_and_safe_claims():
@@ -23,3 +26,4 @@ def test_workflow_task_migration_supports_leases_and_safe_claims():
     assert "lease_until TIMESTAMPTZ" in sql
     assert "FORCE ROW LEVEL SECURITY" in sql
     assert "AS RESTRICTIVE" in sql
+    assert "FOREIGN KEY (workflow_run_id, tenant_id)" in sql
