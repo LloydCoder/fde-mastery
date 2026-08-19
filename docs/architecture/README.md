@@ -1,73 +1,35 @@
 # Enterprise Architecture
 
-FDE Mastery is migrating from a production-oriented modular platform into a governed enterprise AI platform. The migration is incremental: existing APIs and domain adapters remain operational while new platform boundaries are introduced behind stable contracts.
-
-## Build 1 — Architecture Foundation
-
-Build 1 establishes the dependency direction used by all subsequent builds. The active kernel lives at `month-7-platform/fde_platform/`:
+## Canonical repository structure
 
 ```text
-apps / API / workers
-        |
-        v
-application services
-        |
-        v
-fde_platform contracts + ports
-        ^
-        |
-adapters / infrastructure / integrations
-        |
-        v
-domain plugins
+apps/                 deployable application entrypoints
+packages/platform-core/ provider-neutral enterprise platform kernel
+domains/              business/domain implementations
+infrastructure/       deployment, IaC, migrations and runtime assets
+tests/                unit, integration, contract, security and architecture tests
+docs/                 architecture, ADRs, operations and standards
+legacy/curriculum/    historical Months 1-6 curriculum; not production runtime
 ```
 
-The platform kernel is deliberately framework- and vendor-neutral. It owns stable contracts and ports; FastAPI, PostgreSQL, model providers, tool providers, observability exporters, and other infrastructure remain outside the kernel.
+## Dependency rule
 
-## Target bounded contexts
+Production code must depend inward on stable platform contracts. Domain implementations may depend on platform contracts but must not reach into infrastructure adapters directly. Application entrypoints compose the platform and adapters. Legacy curriculum is isolated from production packages.
 
-The migration will converge on these logical planes:
+## Enterprise planes
 
-- **Control plane** — tenants, agents, versions, policies, tools, models, evaluations, deployments.
-- **Data plane** — gateways, workflows, agent runtime, workers, integrations, sandboxed execution.
-- **Trust plane** — identity, authorization, policy decisions, risk, approvals, audit and security controls.
-- **Evaluation plane** — golden datasets, adversarial tests, regression, quality, safety, cost and promotion gates.
-- **Observability plane** — traces, metrics, logs, AI telemetry, SLOs and FinOps.
-- **Domain plugins** — cybersecurity, finance, healthtech, logistics, legal, revops, procurement and future custom domains.
+1. Identity and tenancy
+2. Agent runtime
+3. Durable workflow
+4. Trust and policy
+5. Tool gateway
+6. Model gateway
+7. Eventing
+8. Evaluation
+9. Observability and FinOps
+10. Deployment and disaster recovery
+11. Developer/product surface
 
-These are logical boundaries first. They are not a mandate to create a microservice for every package.
+## Cross-cutting invariants
 
-## Dependency rules
-
-### Allowed direction
-
-```text
-API/application -> contracts/ports -> adapters
-Domain plugin  -> contracts/ports
-Infrastructure -> contracts/ports
-```
-
-### Forbidden direction
-
-```text
-fde_platform -> FastAPI/PostgreSQL/provider/infrastructure
-fde_platform -> domains
-fde_platform -> legacy month-* curriculum
-production -> month-* curriculum directly
-```
-
-### Why
-
-This follows hexagonal architecture / ports-and-adapters principles and preserves the ability to introduce independent runtimes, workflow workers, model gateways and tool gateways later without forcing the domain layer to know their implementations.
-
-## Compatibility policy
-
-Existing `month-1-cybersecurity` through `month-6-revops` code remains available for historical and compatibility purposes. It is isolated as legacy material and is prohibited as a direct dependency of production architecture. See [`legacy/README.md`](../../legacy/README.md).
-
-## Architecture enforcement
-
-`month-7-platform/tests/test_architecture_boundaries.py` makes these rules executable. A future refactor that introduces a forbidden kernel dependency or direct production import of a curriculum module should fail CI rather than silently erode the architecture.
-
-## Standards basis
-
-The architecture is informed by current platform-engineering guidance (platform as a product, golden paths and guardrails), OWASP ASVS 5.0, NIST AI RMF operationalization, and OpenTelemetry semantic-convention practices. These standards are treated as design inputs, not as substitutes for application-specific threat modeling and testing.
+Tenant context is explicit. Authorization is fail-closed. Side effects are idempotent where delivery is at-least-once. Secrets and provider SDKs remain behind controlled boundaries. Security and architecture checks are release gates.
