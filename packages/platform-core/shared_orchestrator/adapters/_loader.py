@@ -1,10 +1,11 @@
-"""Utilities for loading the legacy Month 1-6 agents safely.
+"""Utilities for loading the isolated legacy Month 1-6 agents safely.
 
-The domain projects intentionally remain standalone applications and their
-folders contain hyphens, so they are not normal Python packages. Several
-agents also import their local ``schemas`` module as a top-level import.
-This loader gives each domain an isolated module namespace and temporarily
-binds its local schemas while importing the agent.
+The historical curriculum is intentionally kept outside the production package
+under ``legacy/curriculum``. The domain projects remain standalone applications
+and their folders contain hyphens, so they are not normal Python packages. Several
+agents also import their local ``schemas`` module as a top-level import. This
+loader gives each domain an isolated module namespace and temporarily binds its
+local schemas while importing the agent.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ from types import ModuleType
 
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[2]
-REPO_ROOT = PLATFORM_ROOT.parent
+REPO_ROOT = PLATFORM_ROOT.parents[1]
+LEGACY_CURRICULUM_ROOT = REPO_ROOT / "legacy" / "curriculum"
 
 
 @contextmanager
@@ -34,8 +36,8 @@ def _schema_alias(schema_module: ModuleType):
 
 
 def load_domain_agent(domain_dir: str) -> ModuleType:
-    """Load a standalone domain ``agent.py`` under an isolated module name."""
-    domain_path = REPO_ROOT / domain_dir
+    """Load one historical domain agent from the isolated curriculum tree."""
+    domain_path = LEGACY_CURRICULUM_ROOT / domain_dir
     schema_path = domain_path / "schemas.py"
     agent_path = domain_path / "agent.py"
 
