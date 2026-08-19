@@ -195,6 +195,7 @@ class DurableWorkflowEngine:
         expected = 0
         projection = run.model_copy(deep=True)
         projection.current_step = 0
+        projection.step_attempt = 0
         projection.error_type = None
         projection.error_message = None
         projection.completed_at = None
@@ -213,6 +214,9 @@ class DurableWorkflowEngine:
             elif event.event_type == "StepCompleted":
                 projection.current_step += 1
                 projection.step_attempt = 0
+                result = event.payload.get("result")
+                if isinstance(result, Mapping):
+                    projection.state = dict(result)
             elif event.event_type == "WorkflowCompleted":
                 projection.status = WorkflowStatus.COMPLETED
                 projection.result = event.payload.get("result")
