@@ -51,21 +51,50 @@ class PolicyDecisionPoint:
         self._rules = rules
         self._default_version = default_version
 
-    def evaluate(self, request: AuthorizationRequest, *, risk: RiskTier = RiskTier.LOW) -> PolicyDecision:
+    def evaluate(
+        self,
+        request: AuthorizationRequest,
+        *,
+        risk: RiskTier = RiskTier.LOW,
+    ) -> PolicyDecision:
         if str(request.context.tenant_id) != str(request.resource_tenant_id):
-            return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_TENANT, risk, self._default_version)
+            return PolicyDecision(
+                AuthorizationDecision.DENY,
+                DecisionReason.DENIED_TENANT,
+                risk,
+                self._default_version,
+            )
         if request.required_scope and not request.context.principal.has_scope(request.required_scope):
-            return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_SCOPE, risk, self._default_version)
+            return PolicyDecision(
+                AuthorizationDecision.DENY,
+                DecisionReason.DENIED_SCOPE,
+                risk,
+                self._default_version,
+            )
         if request.required_roles and not (request.required_roles & request.context.principal.roles):
-            return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_ROLE, risk, self._default_version)
+            return PolicyDecision(
+                AuthorizationDecision.DENY,
+                DecisionReason.DENIED_ROLE,
+                risk,
+                self._default_version,
+            )
 
         candidates = [
-            rule for rule in self._rules
+            rule
+            for rule in self._rules
             if request.action in rule.actions
-            and (not rule.resource_prefixes or any(request.resource.startswith(p) for p in rule.resource_prefixes))
+            and (
+                not rule.resource_prefixes
+                or any(request.resource.startswith(prefix) for prefix in rule.resource_prefixes)
+            )
         ]
         if not candidates:
-            return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_ACTION, risk, self._default_version)
+            return PolicyDecision(
+                AuthorizationDecision.DENY,
+                DecisionReason.DENIED_ACTION,
+                risk,
+                self._default_version,
+            )
 
         for rule in candidates:
             if rule.allowed_roles and not (rule.allowed_roles & request.context.principal.roles):
@@ -73,9 +102,31 @@ class PolicyDecisionPoint:
             if rule.required_scopes and not rule.required_scopes.issubset(request.context.principal.scopes):
                 continue
             if risk > rule.max_risk:
-                return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_RISK, risk, rule.version, True)
+                return PolicyDecision(
+                    AuthorizationDecision.DENY,
+                    DecisionReason.DENIED_RISK,
+                    risk,
+                    rule.version,
+                    True,
+                )
             if rule.approval_required or risk.requires_human_approval:
-                return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_RISK, risk, rule.version, True)
-            return PolicyDecision(AuthorizationDecision.ALLOW, DecisionReason.ALLOWED, risk, rule.version)
+                return PolicyDecision(
+                    AuthorizationDecision.DENY,
+                    DecisionReason.DENIED_RISK,
+                    risk,
+                    rule.version,
+                    True,
+                )
+            return PolicyDecision(
+                AuthorizationDecision.ALLOW,
+                DecisionReason.ALLOWED,
+                risk,
+                rule.version,
+            )
 
-        return PolicyDecision(AuthorizationDecision.DENY, DecisionReason.DENIED_POLICY, risk, candidates[0].version)
+        return PolicyDecision(
+            AuthorizationDecision.DENY,
+            DecisionReason.DENIED_POLICY,
+            risk,
+            candidates[0].version,
+        )
