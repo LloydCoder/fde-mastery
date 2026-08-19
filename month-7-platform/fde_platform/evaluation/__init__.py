@@ -4,6 +4,7 @@ from .harness import EvaluationHarness
 from .models import (
     EvalCase,
     EvalDataset,
+    EvalKind,
     EvalResult,
     EvalRun,
     EvaluationThresholds,
@@ -14,6 +15,7 @@ from .scorers import ExactMatchScorer, KeywordSafetyScorer
 __all__ = [
     "EvalCase",
     "EvalDataset",
+    "EvalKind",
     "EvalResult",
     "EvalRun",
     "EvaluationHarness",
