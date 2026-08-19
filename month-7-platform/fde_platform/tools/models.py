@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Any, Mapping
 
 
-class ToolCapability(StrEnum):
+class ToolCapability(str, Enum):
     """Explicit capabilities a tool may request."""
 
     READ = "read"
