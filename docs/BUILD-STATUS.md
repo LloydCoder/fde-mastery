@@ -13,7 +13,7 @@
 | **9 — AI Evaluation Plane** | **GREEN** | Golden, adversarial, safety, quality, cost and promotion gates |
 | **10 — Observability & AI FinOps** | **GREEN** | OTel-compatible telemetry, bounded dimensions, execution correlation, tenant cost ledger, fail-closed AI budgets |
 | **11 — Enterprise Deployment & DR** | **GREEN** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
-| **12 — Platform Productization** | **IN PROGRESS** | Stable developer CLI, machine-readable capability manifest, enterprise repository structure and final hardening |
+| **12 — Platform Productization** | **GREEN** | Stable provider-neutral developer surface, machine-readable capability manifest, enterprise repository structure, contract coverage and final CI hardening |
 
 ## Build 11 verification
 
@@ -30,7 +30,7 @@
 - [x] Platform Quality run #368 passed all jobs and checks.
 - [x] Build 11 PR was merged only after the complete CI gate was green.
 
-## Build 12 exit criteria
+## Build 12 verification
 
 - [x] Provider-neutral `platformctl` developer entry point exists.
 - [x] Machine-readable platform capability manifest exists.
@@ -42,9 +42,11 @@
 - [x] CI, evaluation and release-attestation workflows target the new platform package location.
 - [x] ADR-0013 records the repository structure decision.
 - [x] Build 12 architecture and security documentation are recorded.
-- [ ] Platform Quality workflow passes all jobs and checks on the Build 12 PR.
-- [ ] Build 12 PR is merged only after the complete CI gate is green.
+- [x] Platform Quality run #379 passed all jobs and checks, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke.
+- [x] Build 12 PR was merged only after the complete CI gate was green.
 
 ## Verification policy
 
 A build is only declared **GREEN** after the repository CI pipeline passes tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
+
+Build 12 verification also confirmed the repository-structure migration does not leave production adapters dependent on pre-migration Month 1–6 paths; the legacy loader resolves curriculum agents from `legacy/curriculum` while retaining isolated schema loading.
