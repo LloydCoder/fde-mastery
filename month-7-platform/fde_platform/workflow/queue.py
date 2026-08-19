@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from threading import RLock
 from uuid import UUID, uuid4
@@ -16,7 +16,7 @@ class WorkflowTask:
     available_at: datetime
     attempt: int = 1
     idempotency_key: str = ""
-    task_id: UUID = uuid4()
+    task_id: UUID = field(default_factory=uuid4)
     lease_until: datetime | None = None
 
 
