@@ -5,4 +5,4 @@ ports shared by applications, domain plugins, and infrastructure adapters.
 """
 
 __all__ = ["__version__"]
-__version__ = "0.1.0"
+__version__ = "1.7.0"
