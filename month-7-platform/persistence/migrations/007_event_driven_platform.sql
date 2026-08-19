@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS fde_inbox_messages (
         CHECK (status IN ('processing', 'processed', 'failed')),
     attempts INTEGER NOT NULL DEFAULT 1 CHECK (attempts >= 1),
     last_error TEXT,
-    PRIMARY KEY (consumer_name, event_id),
-    CONSTRAINT fk_fde_inbox_event
-        FOREIGN KEY (event_id) REFERENCES fde_outbox_events(event_id)
-        ON DELETE RESTRICT
+    PRIMARY KEY (consumer_name, event_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fde_inbox_tenant
     ON fde_inbox_messages(tenant_id, environment, received_at);
+
+CREATE INDEX IF NOT EXISTS idx_fde_inbox_consumer_status
+    ON fde_inbox_messages(consumer_name, status, received_at);
 
 ALTER TABLE fde_inbox_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fde_inbox_messages FORCE ROW LEVEL SECURITY;
@@ -85,4 +85,4 @@ CREATE POLICY fde_inbox_tenant_isolation
 COMMENT ON TABLE fde_outbox_events IS
     'Transactional publication intents. Domain writes and outbox inserts must share a transaction.';
 COMMENT ON TABLE fde_inbox_messages IS
-    'Consumer-side idempotency ledger for at-least-once delivery.';
+    'Consumer-side idempotency ledger for at-least-once delivery; events may originate outside this database.';
