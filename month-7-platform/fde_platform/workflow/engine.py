@@ -72,6 +72,17 @@ class DurableWorkflowEngine:
         self._enqueue_current(run, attempt=1)
         return run
 
+    def recover(self, workflow_run_id: UUID) -> WorkflowRun:
+        """Re-enqueue a non-terminal running run after worker/process recovery.
+
+        Queue deduplication keeps this safe to call repeatedly. Waiting runs are
+        deliberately not re-enqueued because they require an external signal.
+        """
+        run = self._require_run(workflow_run_id)
+        if run.status in {WorkflowStatus.CREATED, WorkflowStatus.RUNNING}:
+            self._enqueue_current(run, attempt=max(1, run.step_attempt))
+        return run
+
     def run_once(self, *, now: datetime | None = None, lease_seconds: float = 60.0) -> WorkflowRun | None:
         task = self.queue.claim(now=now, lease_seconds=lease_seconds)
         if task is None:
