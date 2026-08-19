@@ -8,7 +8,7 @@ execution environment. They do not perform authorization themselves.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 import re
 from typing import NewType
 
@@ -17,7 +17,7 @@ TenantId = NewType("TenantId", str)
 _ID_RE = re.compile(r"^[a-z][a-z0-9_-]{2,62}$")
 
 
-class Environment(StrEnum):
+class Environment(str, Enum):
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
