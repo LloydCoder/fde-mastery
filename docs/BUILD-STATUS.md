@@ -8,7 +8,7 @@
 | **4 — Durable Workflows** | **GREEN** | Durable workflow state/history, leased queue, retries, waits/signals, recovery, replay, dead letters |
 | **5 — Trust & Policy Plane** | **GREEN** | Fail-closed PDP, versioned policy rules, risk tiers, human approval boundary, tamper-evident authorization audit |
 | **6 — Tool Gateway** | **GREEN** | Tool registry, capability-scoped execution, tenant/request isolation, approval boundary, idempotency |
-| 7 — Model Gateway | IN PROGRESS | Model registry, routing, fallback, budgets, provider abstraction |
+| **7 — Model Gateway** | **GREEN** | Model registry, capability/data-class controls, policy gate, deterministic routing, retry-aware fallback, provider abstraction |
 | 8 — Event-Driven Platform | NOT STARTED | Events, outbox/inbox, event bus, replay, DLQ |
 | 9 — AI Evaluation Plane | NOT STARTED | Golden, adversarial, safety, quality, cost and promotion gates |
 | 10 — Observability & FinOps | NOT STARTED | OTel traces, SLOs, cost and quality telemetry |
@@ -29,9 +29,9 @@
 - [x] Explicit model response/error envelope exists.
 - [x] Model gateway security regression tests exist.
 - [x] Build 7 ADR and implementation documentation are recorded.
-- [ ] GitHub Actions Platform Quality workflow passes all jobs and checks on the Build 7 PR.
-- [ ] Build 7 PR is merged only after the complete CI gate is green.
+- [x] GitHub Actions Platform Quality workflow passed all jobs and checks on the Build 7 PR.
+- [x] Build 7 PR was merged only after the complete CI gate was green.
 
 ## Verification policy
 
-A build is only declared **GREEN** after the repository CI pipeline passes. Build 7 must pass the complete Platform Quality workflow, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
+A build is only declared **GREEN** after the repository CI pipeline passes. Build 7 passed the complete Platform Quality workflow, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
