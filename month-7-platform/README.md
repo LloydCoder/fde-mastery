@@ -4,6 +4,41 @@ The capstone infrastructure layer that transforms 6 domain-specific agents into 
 
 ---
 
+## Enterprise Architecture Migration — Build 1 COMPLETE
+
+The enterprise-grade architecture migration is now active. Build 1 establishes `fde_platform/` as the framework-neutral kernel for stable contracts and ports.
+
+### Build 1 guarantees
+
+- Stable agent, domain, execution, model, tool, repository, and event-bus contracts
+- Hexagonal/ports-and-adapters dependency direction
+- Kernel isolation from FastAPI, database drivers, model-provider SDKs, and infrastructure adapters
+- Executable architecture-boundary tests
+- No direct production imports of Month 1–6 curriculum modules
+- Legacy curriculum explicitly isolated as compatibility/history material
+- Packaging configured so `fde_platform` ships with the platform distribution
+- ADR and architecture documentation updated for the migration
+
+### Current migration rule
+
+```text
+Application / API / Workers
+            ↓
+     Platform contracts
+            ↓
+       Domain plugins
+            ↓
+Infrastructure adapters
+```
+
+The repository remains a modular monolith during this phase. Future workflow, agent-runtime, policy, tool, model, and event services will be introduced only when their boundaries are stable enough to justify extraction.
+
+**Build 1 status: GREEN — ready for Build 2.**
+
+See [`../docs/architecture/README.md`](../docs/architecture/README.md), [`../docs/adr/0002-enterprise-platform-boundaries.md`](../docs/adr/0002-enterprise-platform-boundaries.md), and [`fde_platform/README.md`](fde_platform/README.md).
+
+---
+
 ## Tinlance Gateway Integration
 
 The production Tinlance gateway calls this service through the stable contract:
@@ -151,6 +186,10 @@ docker-compose up --build
 ```
 month-7-platform/
 ├── README.md                              # This file
+├── fde_platform/                          # Enterprise platform kernel
+│   ├── contracts/                         # Stable cross-boundary contracts
+│   ├── ports/                             # Hexagonal architecture ports
+│   └── architecture.py                    # Executable boundary policy
 ├── schemas.py                             # Unified platform schemas
 ├── main.py                                # Platform CLI (onboard / eval / simulate)
 ├── eval_harness.py                        # Platform-level evaluation harness

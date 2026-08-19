@@ -41,6 +41,7 @@ py-modules = ["schemas", "observability_metrics", "config", "domain_agent"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = [
+  "fde_platform*",
   "deployment*",
   "persistence*",
   "shared_orchestrator*",
