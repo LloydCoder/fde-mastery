@@ -34,7 +34,7 @@ class InMemoryToolGateway(ToolGateway):
 
     def __init__(self) -> None:
         self._tools: dict[str, _RegisteredTool] = {}
-        self._results: dict[tuple[str, str], ToolResult] = {}
+        self._results: dict[tuple[str, str, str], ToolResult] = {}
 
     def register(self, definition: ToolDefinition, handler: Callable[[dict[str, Any]], Any]) -> None:
         if definition.name in self._tools:
@@ -45,13 +45,15 @@ class InMemoryToolGateway(ToolGateway):
         registered = self._tools.get(call.tool_name)
         if registered is None:
             return ToolResult(False, error_code="tool_not_found")
+        if call.tenant_id != str(context.tenant_id):
+            return ToolResult(False, error_code="tenant_context_mismatch")
         if call.request_id != context.request_id:
             return ToolResult(False, error_code="request_context_mismatch")
         if not call.capabilities.issubset(registered.definition.capabilities):
             return ToolResult(False, error_code="capability_denied")
         if registered.definition.requires_approval:
             return ToolResult(False, error_code="approval_required")
-        key = (call.tool_name, call.idempotency_key)
+        key = (call.tenant_id, call.tool_name, call.idempotency_key)
         if key in self._results:
             return self._results[key]
         try:
