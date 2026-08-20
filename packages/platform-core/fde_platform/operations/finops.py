@@ -14,18 +14,26 @@ class CostRecord:
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
+    input_cost_per_1k: Decimal = Decimal("0")
+    output_cost_per_1k: Decimal = Decimal("0")
     tool_cost: Decimal = Decimal("0")
     compute_cost: Decimal = Decimal("0")
 
     @property
+    def token_cost(self) -> Decimal:
+        return (Decimal(self.input_tokens) / Decimal("1000")) * self.input_cost_per_1k + (Decimal(self.output_tokens) / Decimal("1000")) * self.output_cost_per_1k
+
+    @property
     def total(self) -> Decimal:
-        return self.tool_cost + self.compute_cost
+        return self.token_cost + self.tool_cost + self.compute_cost
 
     def __post_init__(self) -> None:
         if not all(value.strip() for value in (self.tenant_id, self.agent_id, self.workflow_id, self.model)):
             raise ValueError("cost dimensions are required")
         if min(self.input_tokens, self.output_tokens) < 0:
             raise ValueError("token counts cannot be negative")
+        if min(self.input_cost_per_1k, self.output_cost_per_1k, self.tool_cost, self.compute_cost) < 0:
+            raise ValueError("costs cannot be negative")
 
 
 class CostTracker:
