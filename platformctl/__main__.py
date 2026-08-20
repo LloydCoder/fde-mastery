@@ -41,9 +41,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="platformctl")
     parser.add_argument("command", choices=("manifest", "doctor"), help="inspect platform readiness")
     args = parser.parse_args()
-    payload = manifest() if args.command == "manifest" else doctor()
-    print(json.dumps(payload, indent=2, sort_keys=True))
-    return 0 if all(value == "PASS" for value in payload.values()) else 1
+    if args.command == "manifest":
+        print(json.dumps(manifest(), indent=2, sort_keys=True))
+        return 0
+    result = doctor()
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if all(value == "PASS" for value in result.values()) else 1
 
 
 if __name__ == "__main__":
