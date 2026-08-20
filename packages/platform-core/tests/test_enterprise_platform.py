@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 
 from fde_platform.approvals import ApprovalService
-from fde_platform.control_plane import AgentRegistry
+from fde_platform.control_plane import AgentRegistry, RegistryEntry
 from fde_platform.deployment import DeploymentMode, DeploymentProfile
 from fde_platform.identity import Environment, Principal, PrincipalType, RequestContext, TenantId, TenantRef
 from fde_platform.operations import CostRecord, CostTracker, DecisionEvidence, DecisionLineage, Incident, IncidentService
@@ -20,12 +20,12 @@ def context() -> RequestContext:
 
 def test_registry_promotes_one_immutable_version() -> None:
     registry = AgentRegistry()
-    registry.register(__import__("fde_platform.control_plane.registry", fromlist=["RegistryEntry"]).RegistryEntry("soc", 1, "acme", "staged", object()))
-    registry.register(__import__("fde_platform.control_plane.registry", fromlist=["RegistryEntry"]).RegistryEntry("soc", 2, "acme", "staged", object()))
+    registry.register(RegistryEntry("soc", 1, "acme", "staged", object()))
+    registry.register(RegistryEntry("soc", 2, "acme", "staged", object()))
     registry.promote("soc", 2, "acme")
     assert registry.active("soc", "acme").version == 2
     with pytest.raises(ValueError):
-        registry.register(__import__("fde_platform.control_plane.registry", fromlist=["RegistryEntry"]).RegistryEntry("soc", 2, "acme", "staged", object()))
+        registry.register(RegistryEntry("soc", 2, "acme", "staged", object()))
 
 
 def test_security_gateway_blocks_high_impact_actions() -> None:
