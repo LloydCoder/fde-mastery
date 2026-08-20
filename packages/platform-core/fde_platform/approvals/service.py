@@ -25,6 +25,8 @@ class ApprovalRequest:
             raise ValueError("request_id, tenant_id and action are required")
         if self.quorum < 1 or self.quorum > len(self.required_approvers):
             raise ValueError("quorum must be within approver count")
+        if self.status not in {"pending", "approved", "expired", "rejected"}:
+            raise ValueError("invalid approval status")
 
 
 class ApprovalService:
@@ -52,12 +54,11 @@ class ApprovalService:
         current = self._requests[request_id]
         now = datetime.now(timezone.utc)
         if current.expires_at and now >= current.expires_at:
-            expired = ApprovalRequest(**{**current.__dict__, "status": "expired"}) if hasattr(current, "__dict__") else ApprovalRequest(
-                current.request_id, current.tenant_id, current.action, current.required_approvers,
-                current.quorum, current.expires_at, "expired", current.approved_by,
-            )
+            expired = ApprovalRequest(current.request_id, current.tenant_id, current.action, current.required_approvers, current.quorum, current.expires_at, "expired", current.approved_by)
             self._requests[request_id] = expired
             raise PermissionError("approval request expired")
+        if current.status != "pending":
+            raise PermissionError("approval request is not pending")
         if principal not in current.required_approvers:
             raise PermissionError("principal is not an approver")
         approved = current.approved_by | {principal}
