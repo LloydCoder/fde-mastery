@@ -37,5 +37,7 @@ class SandboxViolation(PermissionError):
 def validate_sandbox(policy: SandboxPolicy, *, network_access: bool, credential_scope: str) -> None:
     if network_access and policy.network == "deny":
         raise SandboxViolation("network access denied by sandbox policy")
-    if credential_scope not in {"", "task-scoped"} and policy.credentials != "none":
+    if credential_scope not in {"", "task-scoped"}:
         raise SandboxViolation("credential scope is broader than task-scoped policy")
+    if credential_scope == "task-scoped" and policy.credentials == "none":
+        raise SandboxViolation("task-scoped credentials are disabled by sandbox policy")
