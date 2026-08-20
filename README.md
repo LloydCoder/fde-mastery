@@ -2,7 +2,7 @@
 
 **Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. The platform provides identity, authorization, policy, resilience, persistence, auditability, evaluation, observability, integrations, and signed/provenance-backed releases.
+FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. The platform provides identity, authorization, policy, resilience, durable workflows, control-plane registries, model/tool boundaries, persistence, auditability, evaluation, observability, interoperability contracts, FinOps, incident management, deployment isolation, and signed/provenance-backed releases.
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
@@ -10,47 +10,81 @@ FDE Mastery is a reusable enterprise AI platform with seven domain services—Cy
 
 ![FDE Mastery enterprise architecture](./docs/architecture-enterprise.svg)
 
-The repository now uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform package remains internally cohesive so packaging, imports, deployment and CI can migrate without a risky all-at-once extraction.
+The repository uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform remains a modular monolith by design: control-plane, data-plane and trust-plane boundaries are explicit so only components that require independent scaling or isolation need to become separate services.
+
+```text
+                    CONTROL PLANE
+ identity · tenancy · agent/tool/model/policy registries
+ evaluations · deployments · configuration · approvals
+                              │
+                              ▼
+API / Gateway → AuthN/AuthZ → Policy → Durable Workflow
+                                      │
+                                      ▼
+                                Agent Runtime
+                                  /       \
+                                 /         \
+                         Model Gateway   Tool Gateway
+                              │               │
+                         Providers       Enterprise Systems
+                                 \           /
+                                  ▼         ▼
+                              Event / Audit
+                                   │
+                    Evaluation · FinOps · Incidents
+                                   │
+                              Observability
+
+                    TRUST PLANE
+ identity · least privilege · risk · HITL · sandbox · audit
+```
 
 ## Repository structure
 
 ```text
 fde-mastery/
-├── apps/                         # deployable application ownership
+├── apps/                         # deployable application boundaries, including worker
 ├── packages/
-│   └── platform-core/           # canonical production platform distribution
-├── domains/                     # future first-class domain package ownership
-├── infrastructure/              # repository-level infrastructure ownership
-├── tests/                       # repository-level architecture/contract tests
+│   └── platform-core/            # canonical production platform distribution
+├── domains/                      # first-class domain ownership surface
+├── infrastructure/               # repository-level infrastructure ownership
+├── platformctl/                  # dependency-free platform inspection CLI
+├── tests/                        # repository-level architecture/contract tests
 ├── legacy/
-│   └── curriculum/              # historical Months 1–6, isolated from production
-├── docs/                        # architecture, ADRs, operations and evidence
-└── .github/workflows/           # CI/CD and release attestations
+│   └── curriculum/               # historical Months 1–6, isolated from production
+├── docs/                         # architecture, ADRs, operations and evidence
+└── .github/workflows/             # CI/CD and release attestations
 ```
 
-`packages/platform-core` currently contains the cohesive runtime package, including its domain adapters, security, persistence, evaluation, observability and deployment surfaces. Future extractions must be contract-driven and green in CI.
+## Platform capabilities
 
-## What is in the platform
+### P0 — production control and isolation
 
-- Seven domain adapters behind one `DomainAgent` contract
-- Procurement as a first-class domain with supplier risk, quote comparison, spend thresholds, and human approval boundaries
-- Tenant-scoped Custom Agent framework for customer-specific workflows without modifying the core platform
-- Explicit Custom Agent tool gateway with tenant allowlists and fail-closed approval checks
-- Central `AgentRouter` with retries, jitter, circuit breaking, concurrency limits, and per-domain isolation
-- FastAPI API with typed request/response contracts and request correlation
-- Tenant and scope/RBAC authorization
-- PostgreSQL persistence, checksum-verified migrations, idempotency, and centralized audit events
-- Tamper-evident audit hash-chain utility and sensitive-data redaction
-- Policy-as-code and human approval for high-impact actions
-- Redis-compatible distributed rate limiting and durable task-queue contract
-- OpenTelemetry tracing/metrics with Collector deployment references and semantic-convention guidance
-- Versioned evaluation, statistical drift detection, shadow-mode recording, and red-team regression tests
-- Chaos/resilience tests and load-smoke validation
-- Tenant-scoped integration contracts and integration adapters
-- Terraform validation, CycloneDX SBOM generation, keyless Cosign signing, SBOM attestation, and SLSA-oriented build provenance
-- Production deployment, disaster-recovery, rollback, security, and operational documentation
+- Versioned Agent, Tool, Model and Policy registries with explicit promotion states
+- Durable workflow and leased worker boundary so API processes can enqueue work without owning execution
+- Independent trust-plane security gateway; model output is never an authorization decision
+- Risk tiers and explicit approval requirements for high-impact actions
+- Quorum/expiry human approvals
+- Tenant-aware identity context and PostgreSQL RLS foundations
+- Sandbox policy contract for custom/untrusted workloads
 
-The repository demonstrates **production-oriented engineering controls**. It is not a claim of security certification, regulatory compliance, or a real customer deployment.
+### P1 — interoperability and operational evidence
+
+- Authorization-aware MCP and A2A protocol contracts
+- Transactional outbox/inbox event architecture
+- AI decision lineage containing evidence references rather than hidden chain-of-thought
+- Tenant-aware AI FinOps for token, tool and compute economics
+- AI incident lifecycle with containment, investigation, remediation and closure
+- Architecture/contract tests for the new trust and control boundaries
+
+### P2 — platform productization
+
+- Shared, isolated and dedicated deployment profiles
+- Dependency-free `platformctl manifest` and `platformctl doctor` commands
+- Machine-readable platform capability manifest
+- Explicit service extraction boundaries without premature microservice proliferation
+
+These capabilities are implemented as platform contracts and reference adapters. They do not by themselves constitute a security certification, regulatory approval, or proof of a live customer deployment.
 
 ## Domain portfolio
 
@@ -125,7 +159,7 @@ See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md).
 
 ## Security, AI governance and supply chain
 
-The security baseline is mapped to OWASP ASVS 5.0.0. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Observability follows OpenTelemetry semantic conventions. Release artifacts use signed images, SBOM attestations, and SLSA-oriented build provenance.
+The security baseline is mapped to OWASP ASVS 5.x and OWASP's 2026 Agentic Applications guidance. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Observability follows OpenTelemetry guidance. Release artifacts use signed images, SBOM attestations, and SLSA-oriented build provenance.
 
 ```text
 Source
@@ -145,19 +179,17 @@ Registry
 Deployment verification
 ```
 
-## Observability
+## Observability and decision evidence
 
-The platform uses OpenTelemetry with a Collector-oriented deployment model. The observability contract covers request correlation, gateway/router/domain spans, metrics and latency, confidence/evaluation signals, rate-limit events, audit events, drift detection, and provider failure/recovery signals.
-
-Sensitive payloads are not required for correlation and should remain out of telemetry. OpenTelemetry's GenAI conventions are currently maintained as a dedicated, development-stage convention set, so the platform treats the schema as an explicit compatibility boundary rather than assuming permanent attribute stability. citeturn0search0turn0search10
+The platform uses OpenTelemetry with a Collector-oriented deployment model. Operational telemetry is designed around request, workflow, agent, model, tool, policy and evaluation boundaries. Sensitive prompts and raw customer content should not be emitted into ordinary telemetry. Decision lineage stores references to inputs, retrieval, policies, tools, model/version, approval and outputs without exposing hidden chain-of-thought.
 
 ## CI / release gates
 
 Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
 
-- pytest
+- pytest and P0/P1/P2 platform-control tests
 - seven-domain deployment smoke tests
-- Custom Agent tests and secure tool-gateway tests
+- Custom Agent and secure tool-gateway tests
 - enterprise security controls
 - migration validation
 - red-team regression
@@ -165,12 +197,13 @@ Every architectural change is expected to pass the repository quality pipeline b
 - MyPy
 - Bandit
 - pip-audit
-- compileall
+- compileall, including platform CLI and worker boundary
+- platform CLI doctor/manifest checks
 - Terraform format/validation
 - SBOM generation/validation
 - staging API startup/readiness
 - load smoke
-- production Docker build
+- production Docker build/runtime smoke
 - Semgrep static security scan
 - release image signing, SBOM attestation, and build provenance
 
@@ -187,6 +220,13 @@ export FDE_MONTH1_PROVIDER=mock
 export MOCK_LLM=true
 export FDE_ENVIRONMENT=test
 python -m pytest -q
+```
+
+Platform inspection:
+
+```bash
+PYTHONPATH=packages/platform-core python -m platformctl manifest
+PYTHONPATH=packages/platform-core python -m platformctl doctor
 ```
 
 For PostgreSQL:
@@ -217,7 +257,3 @@ High-impact workflows should retain authorized human review and appropriate doma
 ## About
 
 **FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
-
-## License
-
-See [`LICENSE`](./LICENSE).
