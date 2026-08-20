@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
   merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -45,6 +46,22 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.8"
+      - name: Validate enterprise repository layout
+        working-directory: .
+        run: |
+          test -f packages/platform-core/pyproject.toml
+          test -f packages/platform-core/Dockerfile
+          test -d legacy/curriculum
+          test -d docs
+          test -d infrastructure
+          test -d tests
+          test ! -d month-1-cybersecurity
+          test ! -d month-2-finance
+          test ! -d month-3-healthtech
+          test ! -d month-4-logistics
+          test ! -d month-5-legal
+          test ! -d month-6-revops
+          test ! -d month-7-platform
       - name: Install platform and CI tools
         run: |
           python -m pip install --upgrade pip setuptools wheel
