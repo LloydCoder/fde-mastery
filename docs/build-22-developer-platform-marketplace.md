@@ -14,6 +14,7 @@ Provide a provider-neutral, tenant-safe extension control plane for third-party 
 - HTTPS-only provenance/source references.
 - Ed25519 signature envelopes with trusted-key verification.
 - Canonical, deterministic manifest bytes for signing and verification.
+- Malformed-signature fail-closed handling.
 - Publisher allowlisting.
 - API compatibility bounds.
 - Required-capability promotion gates.
@@ -25,7 +26,9 @@ Provide a provider-neutral, tenant-safe extension control plane for third-party 
 
 ## Supply-chain design
 
-The design follows current OCI/Sigstore/SLSA patterns rather than inventing a proprietary artifact model. OCI 1.1 supports subject-linked artifacts and the Referrers API, which is appropriate for associating signatures and attestations with an immutable artifact digest. Sigstore bundles package verification material and signature content, while SLSA provenance binds an artifact to its build inputs and builder. See:
+The design follows current OCI/Sigstore/SLSA patterns rather than inventing a proprietary artifact model. OCI 1.1 supports subject-linked artifacts and the Referrers API, which is appropriate for associating signatures and attestations with an immutable artifact digest. Sigstore bundles package verification material and signature content, while SLSA provenance binds an artifact to its build inputs and builder.
+
+References:
 
 - https://opencontainers.org/posts/blog/2024-03-13-image-and-distribution-1-1/
 - https://docs.sigstore.dev/about/bundle/
@@ -41,4 +44,4 @@ The resulting flow is:
 
 ## Verification
 
-Build 22 is complete only after the repository Platform Quality, SDK Quality, Semgrep, production Docker/runtime, SBOM, migration, security, static-analysis and build-specific extension tests are green.
+Build 22 is complete only after the repository Platform Quality, SDK Quality, Semgrep, production Docker/runtime, SBOM, migration, security, static-analysis and build-specific extension tests are green. A transient infrastructure failure must be rerun and independently verified; it must never be treated as a passing gate.
