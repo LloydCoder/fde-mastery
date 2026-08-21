@@ -20,25 +20,7 @@
 | **16 — MCP / A2A Interoperability** | **GREEN** | MCP/A2A contracts, tenant-scoped discovery, authorization, endpoint allowlisting and durable task bridge |
 | **17 — Advanced AI / Agent Security Plane** | **GREEN** | Risk-tiered action gate, security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
 | **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
-| **19 — Customer Control Plane** | **IN PROGRESS** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
-
-## Build 18 verification
-
-- [x] Existing `fde_platform.evaluation` contracts were inspected and reused rather than duplicated.
-- [x] Immutable tenant/target-scoped release candidate contract is implemented.
-- [x] Existing `EvalRun` and `EvaluationThresholds` remain the source of evaluation truth.
-- [x] Production evaluation drift detector is isolated inside the production package boundary.
-- [x] Statistical drift detection composes with release assessment.
-- [x] Cost and latency regression guardrails are explicit.
-- [x] Security evaluation is an independent fail-closed gate.
-- [x] Evidence IDs and evaluator version are mandatory.
-- [x] Release decisions are deterministic: PROMOTE, BLOCK or ROLLBACK.
-- [x] Release assessment never deploys or bypasses policy, workflow or approval boundaries.
-- [x] Unit/contract coverage includes promotion, rollback, regression, evidence and fail-closed policy validation.
-- [x] Build 18 ADR and implementation documentation are recorded.
-- [x] Platform Quality run #519 passed every job, including tests, security, static analysis, SBOM, staging/load smoke and production Docker runtime smoke.
-- [x] Semgrep passed.
-- [x] Build 18 PR #28 was merged after the final documentation-triggered CI gate was green.
+| **19 — Customer Control Plane** | **GREEN** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
 
 ## Build 19 verification
 
@@ -52,8 +34,9 @@
 - [x] Customer snapshots contain only resources belonging to the requesting tenant.
 - [x] No second RBAC/ABAC or execution engine was introduced.
 - [x] Build 19 implementation documentation is recorded.
-- [ ] Platform Quality and Semgrep workflows are green.
-- [ ] Build 19 PR is merged only after the complete CI gate is green.
+- [x] Platform Quality run #531 passed every job, including tests, security, static analysis, SBOM, staging/load smoke and production Docker runtime smoke.
+- [x] Semgrep passed.
+- [x] Build 19 is ready for merge after the final documentation-triggered CI gate is green.
 
 ## Verification policy
 
