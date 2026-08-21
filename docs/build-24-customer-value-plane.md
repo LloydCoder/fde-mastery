@@ -44,9 +44,9 @@ The plane intentionally stores evidence references rather than raw customer cont
 
 The implementation is deliberately framework-agnostic. It is a contract/calculation layer, not a second telemetry or analytics platform. Existing observability and engagement systems remain the integration points.
 
-OpenTelemetry guidance recommends consistent metric naming and attributes, meaningful aggregation, and explicit cardinality controls. High-cardinality identifiers such as user IDs should not become metric dimensions. The value plane therefore keeps tenant/engagement/evidence identifiers in the value-domain records and does not define them as unbounded telemetry attributes. citeturn0search2turn0search3
+OpenTelemetry guidance recommends consistent metric naming and attributes, meaningful aggregation, and explicit cardinality controls. High-cardinality identifiers such as user IDs should not become metric dimensions. The value plane therefore keeps tenant/engagement/evidence identifiers in the value-domain records and does not define them as unbounded telemetry attributes. See the OpenTelemetry metrics semantic-convention guidance.
 
-NIST AI RMF's Measure function calls for quantitative/qualitative measurement, benchmarking, uncertainty consideration, regular testing, and documented reporting. The value plane supplies the deterministic measurement/evidence contract; customer-specific baselines and outcome claims still require real evidence. citeturn0search12
+NIST AI RMF's Measure function calls for quantitative/qualitative measurement, benchmarking, uncertainty consideration, regular testing, and documented reporting. The value plane supplies the deterministic measurement/evidence contract; customer-specific baselines and outcome claims still require real evidence.
 
 ## Non-goals
 
