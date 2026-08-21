@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,7 +61,8 @@ class TokenBucket:
         if self.tokens is None:
             self.tokens = float(self.capacity)
             self.last_refill = current
-        elapsed = max(0.0, current - (self.last_refill or current))
+        previous = self.last_refill if self.last_refill is not None else current
+        elapsed = max(0.0, current - previous)
         self.tokens = min(float(self.capacity), self.tokens + elapsed * self.refill_per_second)
         self.last_refill = current
         if self.tokens < 1.0:
