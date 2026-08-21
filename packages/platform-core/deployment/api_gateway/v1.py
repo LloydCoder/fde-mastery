@@ -41,7 +41,7 @@ def capabilities() -> dict[str, Any]:
     return {"api_version": "v1", "capabilities": AGENT_ROUTER.capabilities()}
 
 
-@router.post("/triage/{client_id}/{domain}", dependencies=[Depends(require_api_or_oidc)])
+@router.post("/triage/{client_id}/{domain}")
 def triage_v1(
     client_id: str,
     domain: Domain,
