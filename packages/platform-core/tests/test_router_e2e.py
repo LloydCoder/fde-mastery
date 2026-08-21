@@ -25,16 +25,14 @@ def test_router_executes_registered_domain_adapter(domain, monkeypatch):
     try:
         router.register_defaults()
         result = router.route(domain, PAYLOADS[domain])
+        assert isinstance(result, DomainAgentResult)
+        assert result.domain == domain
+        assert isinstance(result.result, dict)
+        assert 0.0 <= result.confidence <= 1.0
+        assert "engine" in result.audit_metadata
         if domain is Domain.CUSTOM:
-            assert result.disposition == "PROCEED_TO_APPROVAL"
+            assert result.result["disposition"] == "PROCEED_TO_APPROVAL"
             assert result.requires_human_review is False
-            assert 0.0 <= result.confidence <= 1.0
-        else:
-            assert isinstance(result, DomainAgentResult)
-            assert result.domain == domain
-            assert isinstance(result.result, dict)
-            assert 0.0 <= result.confidence <= 1.0
-            assert "engine" in result.audit_metadata
     finally:
         router.close()
 
