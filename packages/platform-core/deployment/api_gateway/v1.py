@@ -59,8 +59,8 @@ def triage_v1(
         return _problem_response(exc.status_code, request, code="HTTP_ERROR", detail=str(exc.detail))
     if isinstance(result, JSONResponse) and result.status_code >= 400:
         try:
-            body = json.loads(result.body.decode("utf-8"))
-        except (AttributeError, UnicodeDecodeError, json.JSONDecodeError):
+            body = json.loads(bytes(result.body).decode("utf-8"))
+        except (AttributeError, TypeError, UnicodeDecodeError, json.JSONDecodeError):
             return _problem_response(result.status_code, request, code="API_ERROR", detail="The request failed.")
         error = body.get("error", {}) if isinstance(body, dict) else {}
         return _problem_response(
