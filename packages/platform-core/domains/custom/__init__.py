@@ -1,5 +1,5 @@
 """Tenant-scoped custom domain implementation."""
 
-from .agent import CustomDomainAgent, CustomDomainResult
+from .agent import CustomDomainAgent
 
-__all__ = ["CustomDomainAgent", "CustomDomainResult"]
+__all__ = ["CustomDomainAgent"]
