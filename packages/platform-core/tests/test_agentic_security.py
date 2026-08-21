@@ -62,7 +62,8 @@ def test_prompt_injection_screening_is_deterministic() -> None:
 
 
 def test_sensitive_output_is_redacted() -> None:
-    text = "token=eyJabc123456789.abcdef123456789.ghi123456789 and AKIA1234567890ABCDEF12"
+    # AWS access key IDs are exactly 20 characters: AKIA + 16-character suffix.
+    text = "token=eyJabc123456789.abcdef123456789.ghi123456789 and AKIA1234567890ABCDEF"
     redacted, categories = redact_sensitive_output(text)
     assert "eyJabc" not in redacted
     assert "AKIA" not in redacted
