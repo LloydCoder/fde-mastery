@@ -29,11 +29,31 @@ def make_engagement() -> FDEEngagement:
             ),
         ),
         acceptance_criteria=(
-            AcceptanceCriterion("requirements", "Customer requirements are documented", EvidenceKind.REQUIREMENT),
-            AcceptanceCriterion("baseline", "Baseline measurement is reproducible", EvidenceKind.BASELINE),
-            AcceptanceCriterion("evaluation", "Evaluation results meet the agreed gate", EvidenceKind.EVALUATION),
-            AcceptanceCriterion("pilot-approval", "Customer approves controlled pilot", EvidenceKind.APPROVAL),
-            AcceptanceCriterion("deployment", "Deployment evidence exists", EvidenceKind.DEPLOYMENT),
+            AcceptanceCriterion(
+                criterion_id="requirements",
+                description="Customer requirements are documented",
+                evidence_kind=EvidenceKind.REQUIREMENT,
+            ),
+            AcceptanceCriterion(
+                criterion_id="baseline",
+                description="Baseline measurement is reproducible",
+                evidence_kind=EvidenceKind.BASELINE,
+            ),
+            AcceptanceCriterion(
+                criterion_id="evaluation",
+                description="Evaluation results meet the agreed gate",
+                evidence_kind=EvidenceKind.EVALUATION,
+            ),
+            AcceptanceCriterion(
+                criterion_id="pilot-approval",
+                description="Customer approves controlled pilot",
+                evidence_kind=EvidenceKind.APPROVAL,
+            ),
+            AcceptanceCriterion(
+                criterion_id="deployment",
+                description="Deployment evidence exists",
+                evidence_kind=EvidenceKind.DEPLOYMENT,
+            ),
         ),
     )
 
