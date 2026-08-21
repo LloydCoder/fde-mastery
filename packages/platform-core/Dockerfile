@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 COPY schemas.py domain_agent.py observability_metrics.py config.py api.py ./
+COPY fde_platform ./fde_platform
 COPY observability ./observability
 COPY deployment ./deployment
 COPY persistence ./persistence

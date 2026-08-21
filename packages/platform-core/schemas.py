@@ -16,6 +16,7 @@ class Domain(str, Enum):
     LEGAL = "legal"
     REVOPS = "revops"
     PROCUREMENT = "procurement"
+    CUSTOM = "custom"
 
 
 class ClientConfig(BaseModel):

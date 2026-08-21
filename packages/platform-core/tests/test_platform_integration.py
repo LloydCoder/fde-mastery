@@ -49,7 +49,7 @@ def isolated_platform_state():
 
     reset_rate_limits()
     module.REPOSITORY = InMemoryPlatformRepository()
-    module.REPOSITORY.register_client(ClientRecord.create("test-client", "Integration Test Client", ["cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement"]))
+    module.REPOSITORY.register_client(ClientRecord.create("test-client", "Integration Test Client", ["cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"]))
     yield
     reset_rate_limits()
     module.REPOSITORY = InMemoryPlatformRepository()
@@ -63,6 +63,7 @@ DOMAIN_CASES = [
     ("legal", {"contract_id": "SYN-CONTRACT-001", "title": "Synthetic Master Services Agreement", "counterparty": "Synthetic Corp", "governing_jurisdiction": "Delaware", "annual_contract_value_usd": 50000, "clauses": [{"clause_id": "CLAUSE-001", "clause_type": "LIABILITY_CAP", "section_title": "Limitation of Liability", "text": "Each party's aggregate liability shall be limited to fees paid under this agreement."}]}),
     ("revops", {"opportunity_id": "SYN-OPP-001", "account_name": "Synthetic Enterprise", "annual_recurring_revenue_usd": 50000, "lead_source": "INBOUND_DEMO", "deal_stage": "PROPOSAL_NEGOTIATION", "discount_requested_pct": 5, "has_exec_sponsor": True, "telemetry": {"monthly_active_users": 100, "weekly_usage_growth_pct": 8.0, "license_utilization_pct": 75.0}}),
     ("procurement", {"supplier_id": "SYN-SUP-001", "quote_amount_usd": 25000, "supplier_risk_score": 20, "approval_threshold_usd": 50000, "quote_count": 3}),
+    ("custom", {"risk_level": "medium", "confidence": 0.75, "reasons": ["Synthetic custom-domain integration fixture."]}),
 ]
 
 
@@ -126,4 +127,4 @@ def test_usage_is_persisted_through_repository(client):
 def test_agent_health_exposes_all_domains(client):
     response = client.get("/health/agents", headers={"X-API-Key": "test-api-key"})
     assert response.status_code == 200
-    assert set(response.json()) == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement"}
+    assert set(response.json()) == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}

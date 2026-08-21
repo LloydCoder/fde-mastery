@@ -13,6 +13,7 @@ PAYLOADS = {
     Domain.LEGAL: {"contract_id": "CON-E2E-001", "title": "Master Services Agreement", "counterparty": "Example Corp", "governing_jurisdiction": "New York", "annual_contract_value_usd": 25000.0, "clauses": [{"clause_id": "C-1", "clause_type": "GOVERNING_LAW", "section_title": "Governing Law", "text": "This agreement is governed by the laws of New York."}]},
     Domain.REVOPS: {"opportunity_id": "OPP-E2E-001", "account_name": "Example Enterprise", "annual_recurring_revenue_usd": 50000.0, "lead_source": "INBOUND_DEMO", "deal_stage": "QUALIFICATION", "discount_requested_pct": 5.0, "has_exec_sponsor": True, "telemetry": {"monthly_active_users": 100, "weekly_usage_growth_pct": 5.0, "license_utilization_pct": 80.0}},
     Domain.PROCUREMENT: {"supplier_id": "SUP-E2E-001", "quote_amount_usd": 25000.0, "supplier_risk_score": 20.0, "approval_threshold_usd": 50000.0, "quote_count": 3},
+    Domain.CUSTOM: {"risk_level": "low", "confidence": 0.95, "reasons": ["Synthetic custom-domain case."]},
 }
 
 
@@ -29,6 +30,9 @@ def test_router_executes_registered_domain_adapter(domain, monkeypatch):
         assert isinstance(result.result, dict)
         assert 0.0 <= result.confidence <= 1.0
         assert "engine" in result.audit_metadata
+        if domain is Domain.CUSTOM:
+            assert result.result["disposition"] == "PROCEED_TO_APPROVAL"
+            assert result.requires_human_review is False
     finally:
         router.close()
 

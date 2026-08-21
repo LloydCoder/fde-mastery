@@ -18,6 +18,7 @@ VALID_DOMAINS = (
     "legal",
     "revops",
     "procurement",
+    "custom",
 )
 
 
