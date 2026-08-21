@@ -4,14 +4,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from fde_platform.tools import InMemoryToolGateway
+from fde_platform.tools import ToolGateway
 from fde_platform.tools.models import ToolCapability, ToolDefinition
 
 from .plane import IntegrationBinding
 
 
 def register_integration_action(
-    gateway: InMemoryToolGateway,
+    gateway: ToolGateway,
     *,
     binding: IntegrationBinding,
     action: str,
