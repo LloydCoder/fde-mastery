@@ -27,7 +27,8 @@
 | **23 — Enterprise Governance & Compliance Plane** | **GREEN** | Control catalog, tenant-bound evidence, data classification, policy attestations, compliance posture, deterministic audit packs and governance boundaries |
 | **24 — Enterprise Customer Experience & Value Plane** | **GREEN** | Evidence-backed customer value plans, tenant-safe outcome observations, deterministic KPI realization, bounded progress/achievement and auditable evidence integrity |
 | **25 — Commercial Entitlements & Usage Plane** | **GREEN** | Versioned product plans, tenant subscriptions, feature entitlements, fail-closed access decisions, idempotent tenant-scoped usage metering and bounded commercial metadata |
-| **26 — Enterprise Knowledge & Memory Plane** | **IN PROGRESS** | Tenant/scope-bound knowledge records, provenance/trust levels, poisoning-aware retrieval, integrity digests, versioning, expiration and bounded metadata |
+| **26 — Enterprise Knowledge & Memory Plane** | **GREEN** | Tenant/scope-bound knowledge records, provenance/trust levels, poisoning-aware retrieval, integrity digests, versioning, expiration and bounded metadata |
+| **27 — Privacy & Data Lifecycle Plane** | **IN PROGRESS** | Tenant-scoped data classification, purpose limitation, retention policies, legal holds, erasure eligibility and integrity receipts |
 
 ## Build 19 verification correction
 
@@ -69,7 +70,15 @@ Build 25 PR #35 was merged as commit `adf8ed4bcb4109a2add26640ad21d651a2828d1b`.
 
 ## Build 26 verification
 
-Build 26 is **IN PROGRESS** on `build-26-knowledge-memory-plane`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
+Build 26 passed Platform Quality #653, SDK Quality #91 and Semgrep. The final Platform Quality gate passed 254 tests, seven-domain verification, enterprise deployment gates, P0-P2 controls, golden dataset validation, AI security regression, enterprise security controls, migration validation, Ruff, MyPy, Bandit, dependency audit, compile, CLI, Terraform, SBOM generation/validation, staging/load smoke and production Docker/runtime smoke.
+
+The first Build 26 test run exposed a policy-test expectation mismatch: external memory was correctly blocked by the default trust threshold before the explicit external-content flag was evaluated. The test was corrected to exercise the external opt-in boundary explicitly, and the complete pipeline was rerun successfully.
+
+Build 26 PR #36 was merged as commit `719341a8454fc041683e9d24d4a5d589a029a02e`.
+
+## Build 27 verification
+
+Build 27 is **IN PROGRESS** on `build-27-privacy-data-lifecycle`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
 
 ## Verification policy
 
