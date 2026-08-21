@@ -14,6 +14,7 @@
 | **10 — Observability & AI FinOps** | **GREEN** | OTel-compatible telemetry, bounded dimensions, execution correlation, tenant cost ledger, fail-closed AI budgets |
 | **11 — Enterprise Deployment & DR** | **GREEN** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
 | **12 — Platform Productization** | **GREEN** | Stable provider-neutral developer surface, machine-readable capability manifest, enterprise repository structure, contract coverage and final CI hardening |
+| **13 — Domain Intelligence Foundation** | **PENDING** | Canonical domain promotion contract, domain registry, representative evaluation fixtures, first-class Custom domain |
 
 ## Build 11 verification
 
@@ -44,6 +45,19 @@
 - [x] Build 12 architecture and security documentation are recorded.
 - [x] Platform Quality run #379 passed all jobs and checks, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke.
 - [x] Build 12 PR was merged only after the complete CI gate was green.
+
+## Build 13 verification
+
+- [x] DomainDescriptor now carries lifecycle, risk, approval, evaluation and representative-data metadata.
+- [x] Canonical domain registry exists outside the framework-neutral kernel.
+- [x] Eight first-class domains are registered: Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, Procurement and Custom.
+- [x] Custom domain is configuration-driven and recommendation-only with no autonomous side effects.
+- [x] Synthetic representative promotion fixtures cover every first-class domain.
+- [x] Domain promotion contract tests cover catalog completeness, fixture coverage, factory loading, health, HITL requirements and fail-closed unknown-domain behavior.
+- [x] Custom domain is registered through the existing resilient platform router.
+- [x] Build 13 ADR and implementation documentation are recorded.
+- [ ] Platform Quality workflow is green.
+- [ ] Build 13 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
