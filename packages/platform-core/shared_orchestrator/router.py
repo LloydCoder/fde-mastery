@@ -20,6 +20,7 @@ _DOMAIN_SOURCES = {
     Domain.LEGAL: "domains/legal (legacy month-5 implementation)",
     Domain.REVOPS: "domains/revops (legacy month-6 implementation)",
     Domain.PROCUREMENT: "domains/procurement",
+    Domain.CUSTOM: "domains/custom",
 }
 
 
@@ -51,7 +52,7 @@ class AgentRouter:
         self._resilience[domain] = ResilienceExecutor(self._resilience_config)
 
     def register_defaults(self) -> None:
-        """Register all seven production domain adapters."""
+        """Register every first-class production domain."""
         from .adapters import (
             CybersecurityDomainAdapter,
             FinanceDomainAdapter,
@@ -61,6 +62,8 @@ class AgentRouter:
             ProcurementDomainAdapter,
             RevOpsDomainAdapter,
         )
+        from domains.custom.agent import CustomDomainAgent
+
         self.register_agent(Domain.CYBERSECURITY, CybersecurityDomainAdapter())
         self.register_agent(Domain.FINANCE, FinanceDomainAdapter())
         self.register_agent(Domain.HEALTHTECH, HealthTechDomainAdapter())
@@ -68,6 +71,7 @@ class AgentRouter:
         self.register_agent(Domain.LEGAL, LegalDomainAdapter())
         self.register_agent(Domain.REVOPS, RevOpsDomainAdapter())
         self.register_agent(Domain.PROCUREMENT, ProcurementDomainAdapter())
+        self.register_agent(Domain.CUSTOM, CustomDomainAgent())
 
     @staticmethod
     def _retryable(exc: Exception) -> bool:
