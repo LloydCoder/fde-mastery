@@ -29,7 +29,8 @@
 | **25 — Commercial Entitlements & Usage Plane** | **GREEN** | Versioned product plans, tenant subscriptions, feature entitlements, fail-closed access decisions, idempotent tenant-scoped usage metering and bounded commercial metadata |
 | **26 — Enterprise Knowledge & Memory Plane** | **GREEN** | Tenant/scope-bound knowledge records, provenance/trust levels, poisoning-aware retrieval, integrity digests, versioning, expiration and bounded metadata |
 | **27 — Privacy & Data Lifecycle Plane** | **GREEN** | Tenant-scoped data classification, purpose limitation, retention policies, legal holds, erasure eligibility and integrity receipts |
-| **28 — Enterprise Identity Governance Plane** | **IN PROGRESS** | Tenant/scope-bound roles, fine-grained permissions, delegated bindings, expiry/revocation and provisioning lifecycle contracts |
+| **28 — Enterprise Identity Governance Plane** | **GREEN** | Tenant/scope-bound roles, fine-grained permissions, delegated bindings, expiry/revocation and provisioning lifecycle contracts |
+| **29 — Secrets & Cryptographic-Key Lifecycle Plane** | **IN PROGRESS** | Provider-neutral secret/key references, short-lived access grants, rotation enforcement, expiration, revocation and external vault/KMS boundaries |
 
 ## Build 19 verification correction
 
@@ -85,7 +86,13 @@ Build 27 PR #37 was merged as commit `416a46b913afb27f1317bf41caec2ae8c98d0322`.
 
 ## Build 28 verification
 
-Build 28 is **IN PROGRESS** on `build-28-identity-governance`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
+Build 28 passed Platform Quality #671, SDK Quality #109 and Semgrep. The final Platform Quality gate passed the full repository test/security/build pipeline, including tests, seven-domain verification, enterprise deployment gates, P0-P2 controls, golden dataset validation, AI security regression, enterprise security controls, migration validation, Ruff, MyPy, Bandit, dependency audit, compile, CLI, Terraform, SBOM generation/validation, staging/load smoke and production Docker/runtime smoke.
+
+Build 28 PR #38 was merged as commit `cb44f23f6ad68fb0af9c4dcfd995b9f85d2d4a36`.
+
+## Build 29 verification
+
+Build 29 is **IN PROGRESS** on `build-29-secrets-key-lifecycle`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
 
 ## Verification policy
 
