@@ -53,6 +53,16 @@ def test_entitlement_is_tenant_scoped_and_versioned():
     assert denied.reason == "subscription_inactive"
 
 
+def test_entitlement_limit_is_enforced():
+    registry = EntitlementRegistry()
+    registry.register_plan(plan())
+    registry.attach_subscription(subscription())
+    decision = registry.decide("tenant-a", "agent.runs", now=NOW, current_usage=Decimal("1000"))
+    assert decision.allowed is False
+    assert decision.reason == "entitlement_limit_exhausted"
+    assert decision.remaining == Decimal("0")
+
+
 def test_unknown_plan_version_cannot_be_attached():
     registry = EntitlementRegistry()
     with pytest.raises(ValueError, match="unknown plan"):
@@ -65,6 +75,14 @@ def test_inactive_subscription_fails_closed():
     registry.attach_subscription(subscription(SubscriptionStatus.PAST_DUE))
     decision = registry.decide("tenant-a", "agent.runs", now=NOW)
     assert decision.allowed is False
+
+
+def test_naive_subscription_datetime_is_rejected():
+    with pytest.raises(ValueError, match="timezone-aware"):
+        Subscription(
+            "sub-1", "tenant-a", "growth", 1, SubscriptionStatus.ACTIVE,
+            datetime(2026, 8, 20),
+        )
 
 
 def test_usage_is_idempotent_per_tenant():
