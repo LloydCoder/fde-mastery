@@ -23,7 +23,7 @@ class ComplianceFramework(str, Enum):
 class ControlStatus(str, Enum):
     NOT_ASSESSED = "not_assessed"
     PARTIAL = "partial"
-    PASS = "pass"
+    PASS = "pass"  # nosec B105 - compliance status, not a credential
     FAIL = "fail"
 
 
@@ -38,7 +38,7 @@ class DataClassification(str, Enum):
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
     RESTRICTED = "restricted"
-    SECRET = "secret"
+    SECRET = "secret"  # nosec B105 - data classification label, not a credential
 
 
 @dataclass(frozen=True, slots=True)
