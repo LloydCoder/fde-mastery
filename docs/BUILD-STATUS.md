@@ -21,22 +21,15 @@
 | **17 — Advanced AI / Agent Security Plane** | **GREEN** | Risk-tiered action gate, security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
 | **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
 | **19 — Customer Control Plane** | **GREEN** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
+| **20 — Incident & Reliability / SRE Plane** | **IN PROGRESS** | Tenant-safe SLI/SLO/error-budget contracts, incident lifecycle, postmortem and corrective-action foundations |
 
-## Build 19 verification
+## Build 19 verification correction
 
-- [x] Existing `RequestContext` remains the tenant security boundary.
-- [x] Existing `AuthorizationService` remains the sole authorization decision boundary.
-- [x] Customer environments are explicitly tenant-owned.
-- [x] Projects are explicitly bound to an existing tenant environment.
-- [x] Resources are explicitly bound to an existing tenant project.
-- [x] Resource inventory covers agents, workflows, tools, models, policies, integrations, evaluations, deployments and incidents.
-- [x] Cross-tenant registration and reads fail closed.
-- [x] Customer snapshots contain only resources belonging to the requesting tenant.
-- [x] No second RBAC/ABAC or execution engine was introduced.
-- [x] Build 19 implementation documentation is recorded.
-- [x] Platform Quality run #531 passed every job, including tests, security, static analysis, SBOM, staging/load smoke and production Docker runtime smoke.
-- [x] Semgrep passed.
-- [x] Build 19 is ready for merge after the final documentation-triggered CI gate is green.
+Build 19 was merged as commit `762f292cb6cf997caedd7d0a65508dbb50eff2aa` after its documented Platform Quality and Semgrep gates passed. The previous wording saying it was "ready for merge after" a documentation-triggered gate was stale and has been corrected here.
+
+## Build 20 verification target
+
+Build 20 is only declared **GREEN** after the full repository Platform Quality and Semgrep gates pass, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke.
 
 ## Verification policy
 
