@@ -43,6 +43,7 @@ class SecretRef:
     purpose: str
     created_at: datetime
     rotation_interval_days: int
+    rotated_at: datetime | None = None
     expires_at: datetime | None = None
     state: SecretState = SecretState.ACTIVE
     metadata: Mapping[str, str] = field(default_factory=dict)
@@ -60,9 +61,11 @@ class SecretRef:
                 raise ValueError(f"{name} is required and bounded")
         if self.rotation_interval_days < 1 or self.rotation_interval_days > 3650:
             raise ValueError("rotation interval must be between 1 and 3650 days")
-        for timestamp, name in ((self.created_at, "created_at"), (self.expires_at, "expires_at")):
+        for timestamp, name in ((self.created_at, "created_at"), (self.rotated_at, "rotated_at"), (self.expires_at, "expires_at")):
             if timestamp is not None and (timestamp.tzinfo is None or timestamp.utcoffset() is None):
                 raise ValueError(f"{name} must be timezone-aware")
+        if self.rotated_at is not None and self.rotated_at < self.created_at:
+            raise ValueError("rotated_at cannot precede created_at")
         if self.expires_at is not None and self.expires_at <= self.created_at:
             raise ValueError("expires_at must be after created_at")
         if len(self.metadata) > _MAX_METADATA:
@@ -71,7 +74,7 @@ class SecretRef:
             raise ValueError("metadata must contain strings")
 
     def rotation_due_at(self) -> datetime:
-        return self.created_at + timedelta(days=self.rotation_interval_days)
+        return (self.rotated_at or self.created_at) + timedelta(days=self.rotation_interval_days)
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +143,8 @@ class SecretLifecycleRegistry:
         secret = self._secrets.get((tenant_id, secret_id))
         if secret is None:
             return SecretAccessDecision(False, "secret_not_found")
+        if when.tzinfo is None or when.utcoffset() is None:
+            raise ValueError("now must be timezone-aware")
         if secret.state in {SecretState.REVOKED, SecretState.EXPIRED}:
             return SecretAccessDecision(False, "secret_inactive")
         if secret.expires_at is not None and when >= secret.expires_at:
@@ -157,13 +162,15 @@ class SecretLifecycleRegistry:
                 return SecretAccessDecision(True, "access_granted")
         return SecretAccessDecision(False, "access_not_granted")
 
-    def transition(self, tenant_id: str, secret_id: str, state: SecretState) -> None:
+    def transition(self, tenant_id: str, secret_id: str, state: SecretState, *, rotated_at: datetime | None = None) -> None:
         key = (tenant_id, secret_id)
         secret = self._secrets.get(key)
         if secret is None:
             raise ValueError("secret_not_found")
         if secret.state is SecretState.REVOKED and state is not SecretState.REVOKED:
             raise ValueError("revoked secret cannot be reactivated")
+        if rotated_at is not None and (rotated_at.tzinfo is None or rotated_at.utcoffset() is None):
+            raise ValueError("rotated_at must be timezone-aware")
         self._secrets[key] = SecretRef(
             secret_id=secret.secret_id,
             tenant_id=secret.tenant_id,
@@ -174,6 +181,7 @@ class SecretLifecycleRegistry:
             purpose=secret.purpose,
             created_at=secret.created_at,
             rotation_interval_days=secret.rotation_interval_days,
+            rotated_at=rotated_at or secret.rotated_at,
             expires_at=secret.expires_at,
             state=state,
             metadata=secret.metadata,
