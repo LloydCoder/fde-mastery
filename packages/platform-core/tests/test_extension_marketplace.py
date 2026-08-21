@@ -39,6 +39,7 @@ def make_manifest(private_key: Ed25519PrivateKey, *, publisher: str = "acme") ->
         artifact_digest=artifact,
         provenance=provenance,
         signature=SignatureEnvelope("ed25519", "acme-prod", "placeholder"),
+        metadata={"display_name": "Ticketing"},
     )
     signature = base64.b64encode(private_key.sign(unsigned.canonical_payload())).decode()
     return ExtensionManifest(
@@ -51,7 +52,7 @@ def make_manifest(private_key: Ed25519PrivateKey, *, publisher: str = "acme") ->
         artifact_digest=unsigned.artifact_digest,
         provenance=unsigned.provenance,
         signature=SignatureEnvelope("ed25519", "acme-prod", signature),
-        metadata={"display_name": "Ticketing"},
+        metadata=unsigned.metadata,
     )
 
 
