@@ -6,7 +6,7 @@ from typing import Any
 
 from fde_platform.identity import RequestContext
 from fde_platform.tools import ToolGateway
-from fde_platform.tools.models import ToolCall, ToolCapability, ToolResult
+from fde_platform.tools.models import ToolCall, ToolCapability, ToolDefinition, ToolResult
 
 from .agentic import AgentAction, AgentActionSecurityGate, AgentSecurityContext, RiskTier
 
@@ -20,7 +20,7 @@ class AgentSecureToolGateway(ToolGateway):
         self._security_context = security_context
         self._gate = gate or AgentActionSecurityGate()
 
-    def register(self, definition, handler: Callable[[dict[str, Any]], Any]) -> None:
+    def register(self, definition: ToolDefinition, handler: Callable[[dict[str, Any]], Any]) -> None:
         self._delegate.register(definition, handler)
 
     def invoke(self, context: RequestContext, call: ToolCall) -> ToolResult:
