@@ -18,6 +18,7 @@ _MAX_FEATURES = 256
 _MAX_METADATA = 32
 _MAX_KEY_LENGTH = 64
 _MAX_VALUE_LENGTH = 256
+_MAX_FEATURE_LENGTH = 128
 
 
 def _bounded_metadata(values: Mapping[str, str]) -> dict[str, str]:
@@ -25,18 +26,23 @@ def _bounded_metadata(values: Mapping[str, str]) -> dict[str, str]:
         raise ValueError("metadata exceeds maximum cardinality")
     result: dict[str, str] = {}
     for key, value in values.items():
-        if not key or len(key) > _MAX_KEY_LENGTH:
+        if not isinstance(key, str) or not key or len(key) > _MAX_KEY_LENGTH:
             raise ValueError("metadata key is invalid")
-        if len(value) > _MAX_VALUE_LENGTH:
-            raise ValueError("metadata value is too long")
+        if not isinstance(value, str) or len(value) > _MAX_VALUE_LENGTH:
+            raise ValueError("metadata value is invalid")
         result[key] = value
     return result
 
 
-def _require_id(value: str, field_name: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{field_name} is required")
+def _require_id(value: str, field_name: str, max_length: int = _MAX_VALUE_LENGTH) -> str:
+    if not isinstance(value, str) or not value.strip() or len(value.strip()) > max_length:
+        raise ValueError(f"{field_name} is required and must be bounded")
     return value.strip()
+
+
+def _require_aware(value: datetime, field_name: str) -> None:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
 
 
 class SubscriptionStatus(str, Enum):
@@ -55,11 +61,13 @@ class Entitlement:
     unit: str | None = None
 
     def __post_init__(self) -> None:
-        _require_id(self.feature, "feature")
+        _require_id(self.feature, "feature", _MAX_FEATURE_LENGTH)
         if self.limit is not None and (self.limit < 0 or not self.limit.is_finite()):
             raise ValueError("entitlement limit must be finite and non-negative")
         if self.limit is not None and not self.unit:
             raise ValueError("bounded entitlements require a unit")
+        if self.unit is not None:
+            _require_id(self.unit, "unit", 32)
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,10 +108,14 @@ class Subscription:
         _require_id(self.plan_id, "plan_id")
         if self.plan_version < 1:
             raise ValueError("plan version must be positive")
-        if self.ends_at is not None and self.ends_at <= self.starts_at:
-            raise ValueError("subscription end must be after start")
+        _require_aware(self.starts_at, "starts_at")
+        if self.ends_at is not None:
+            _require_aware(self.ends_at, "ends_at")
+            if self.ends_at <= self.starts_at:
+                raise ValueError("subscription end must be after start")
 
     def is_active_at(self, when: datetime) -> bool:
+        _require_aware(when, "when")
         if self.status not in {SubscriptionStatus.TRIALING, SubscriptionStatus.ACTIVE}:
             return False
         return self.starts_at <= when and (self.ends_at is None or when < self.ends_at)
@@ -120,13 +132,11 @@ class UsageEvent:
     metadata: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        for value, name in (
-            (self.event_id, "event_id"),
-            (self.tenant_id, "tenant_id"),
-            (self.feature, "feature"),
-            (self.idempotency_key, "idempotency_key"),
-        ):
-            _require_id(value, name)
+        _require_id(self.event_id, "event_id")
+        _require_id(self.tenant_id, "tenant_id")
+        _require_id(self.feature, "feature", _MAX_FEATURE_LENGTH)
+        _require_id(self.idempotency_key, "idempotency_key")
+        _require_aware(self.occurred_at, "occurred_at")
         if self.quantity <= 0 or not self.quantity.is_finite():
             raise ValueError("usage quantity must be finite and positive")
         object.__setattr__(self, "metadata", _bounded_metadata(self.metadata))
@@ -160,7 +170,11 @@ class EntitlementRegistry:
             raise ValueError("tenant already has a subscription")
         self._subscriptions[subscription.tenant_id] = subscription
 
-    def decide(self, tenant_id: str, feature: str, *, now: datetime | None = None) -> AccessDecision:
+    def decide(self, tenant_id: str, feature: str, *, now: datetime | None = None, current_usage: Decimal = Decimal("0")) -> AccessDecision:
+        _require_id(tenant_id, "tenant_id")
+        _require_id(feature, "feature", _MAX_FEATURE_LENGTH)
+        if current_usage < 0 or not current_usage.is_finite():
+            raise ValueError("current usage must be finite and non-negative")
         now = now or datetime.now(timezone.utc)
         subscription = self._subscriptions.get(tenant_id)
         if subscription is None or not subscription.is_active_at(now):
@@ -171,7 +185,12 @@ class EntitlementRegistry:
         entitlement = plan.entitlement(feature)
         if entitlement is None:
             return AccessDecision(False, "feature_not_entitled")
-        return AccessDecision(True, "feature_entitled", entitlement.limit)
+        if entitlement.limit is None:
+            return AccessDecision(True, "feature_entitled_unbounded")
+        remaining = max(Decimal("0"), entitlement.limit - current_usage)
+        if remaining <= 0:
+            return AccessDecision(False, "entitlement_limit_exhausted", Decimal("0"))
+        return AccessDecision(True, "feature_entitled", remaining)
 
 
 class UsageMeter:
