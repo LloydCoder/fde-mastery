@@ -15,7 +15,7 @@
 | **11 — Enterprise Deployment & DR** | **GREEN** | Regional/dedicated deployment, residency, backup, failover, recovery evidence, supply-chain controls |
 | **12 — Platform Productization** | **GREEN** | Stable provider-neutral developer surface, machine-readable capability manifest, enterprise repository structure, contract coverage and final CI hardening |
 | **13 — Domain Intelligence Foundation** | **GREEN** | Canonical domain promotion contract, domain registry, representative evaluation fixtures, first-class Custom domain |
-| **14 — FDE Engagement & Workflow Engine** | **PENDING** | Tenant-scoped engagement lifecycle, value metrics, evidence gates, promotion workflow and durable-workflow compilation |
+| **14 — FDE Engagement & Workflow Engine** | **GREEN** | Tenant-scoped engagement lifecycle, value metrics, evidence gates, promotion workflow and durable-workflow compilation |
 
 ## Build 13 verification
 
@@ -34,14 +34,15 @@
 
 - [x] Tenant-scoped FDE engagement contract exists.
 - [x] Measurable baseline and target metrics are first-class.
-- [x] Acceptance criteria and evidence references are explicit.
+- [x] Acceptance criteria are explicitly bound to lifecycle stages.
+- [x] Evidence references are explicit and can be tied to individual criteria.
 - [x] Lifecycle transitions fail closed.
 - [x] Promotion gates define evidence and human-approval requirements.
 - [x] Production requires deployment and approval evidence.
 - [x] Lifecycle compiles to the existing durable WorkflowDefinition contract without introducing a second runtime.
 - [x] Contract tests cover transition safety, promotion gates, compilation, evidence and tenant scoping.
 - [x] Build 14 ADR and implementation documentation are recorded.
-- [ ] Platform Quality workflow is green.
+- [x] Platform Quality run #436 passed every job and check, including tests, security, static analysis, SBOM, staging/load smoke, production Docker runtime smoke and Semgrep.
 - [ ] Build 14 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
