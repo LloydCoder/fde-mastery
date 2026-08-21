@@ -1,25 +1,16 @@
-"""Customer value realization contracts for FDE engagements.
-
-The value plane turns an engagement objective into measurable, tenant-scoped outcomes.
-It deliberately separates *observed evidence* from calculated value so customer claims
-remain auditable and never become synthetic success metrics.
-
-The module is framework-agnostic and does not emit telemetry itself. Adapters may map the
-stable metric identifiers to OpenTelemetry instruments while keeping high-cardinality IDs
-out of metric attributes.
-"""
+"""Customer value realization contracts for FDE engagements."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
-from enum import StrEnum
+from enum import Enum
 from hashlib import sha256
 from math import isfinite
 from typing import Iterable, Mapping
 
 
-class MetricKind(StrEnum):
+class MetricKind(str, Enum):
     COUNT = "count"
     RATE = "rate"
     DURATION = "duration"
@@ -27,14 +18,14 @@ class MetricKind(StrEnum):
     RATIO = "ratio"
 
 
-class Direction(StrEnum):
+class Direction(str, Enum):
     INCREASE = "increase"
     DECREASE = "decrease"
     MINIMIZE = "minimize"
     MAXIMIZE = "maximize"
 
 
-class EvidenceStatus(StrEnum):
+class EvidenceStatus(str, Enum):
     OBSERVED = "observed"
     VERIFIED = "verified"
     REJECTED = "rejected"
@@ -42,8 +33,6 @@ class EvidenceStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ValueMetric:
-    """Bounded definition of a customer outcome metric."""
-
     metric_id: str
     name: str
     kind: MetricKind
@@ -78,12 +67,6 @@ class ValueMetric:
 
 @dataclass(frozen=True, slots=True)
 class ValueObservation:
-    """Immutable evidence-backed measurement.
-
-    ``evidence_ref`` is an identifier for evidence held by the governance/evidence plane;
-    raw customer content must not be embedded here.
-    """
-
     tenant_id: str
     metric_id: str
     value: float
@@ -125,8 +108,6 @@ class ValueTarget:
 
 @dataclass(frozen=True, slots=True)
 class ValuePlan:
-    """Tenant-scoped customer value contract."""
-
     tenant_id: str
     engagement_id: str
     objective: str
@@ -171,19 +152,14 @@ class ValueReport:
 
 
 class CustomerValueCalculator:
-    """Deterministic value realization calculator.
-
-    A target is achieved according to its declared direction. Progress is bounded to 0..1;
-    this prevents over-performance from producing misleading percentages above 100%.
-    """
+    """Deterministic value realization calculator."""
 
     @staticmethod
     def _progress(direction: Direction, baseline: float, target: float, latest: float) -> float:
-        denominator = target - baseline
-        if denominator == 0:
+        if target == baseline:
             return 1.0 if latest == target else 0.0
         if direction in (Direction.INCREASE, Direction.MAXIMIZE):
-            raw = (latest - baseline) / denominator
+            raw = (latest - baseline) / (target - baseline)
         else:
             raw = (baseline - latest) / (baseline - target)
         return max(0.0, min(1.0, raw))
@@ -195,52 +171,44 @@ class CustomerValueCalculator:
         return latest <= target
 
     def calculate(self, plan: ValuePlan, observations: Iterable[ValueObservation]) -> ValueReport:
-        observations_by_metric: dict[str, list[ValueObservation]] = {target.metric.metric_id: [] for target in plan.targets}
+        by_metric: dict[str, list[ValueObservation]] = {target.metric.metric_id: [] for target in plan.targets}
         for observation in observations:
-            if observation.tenant_id != plan.tenant_id:
-                continue
-            if observation.metric_id in observations_by_metric and observation.status is not EvidenceStatus.REJECTED:
-                observations_by_metric[observation.metric_id].append(observation)
+            if observation.tenant_id == plan.tenant_id and observation.metric_id in by_metric and observation.status is not EvidenceStatus.REJECTED:
+                by_metric[observation.metric_id].append(observation)
 
         results: list[MetricResult] = []
         for target in plan.targets:
-            evidence = sorted(observations_by_metric[target.metric.metric_id], key=lambda item: item.observed_at)
+            evidence = sorted(by_metric[target.metric.metric_id], key=lambda item: item.observed_at)
             if not evidence:
                 continue
             latest = target.metric.validate_value(evidence[-1].value)
             absolute = latest - target.baseline
             relative = None if target.baseline == 0 else absolute / abs(target.baseline)
-            results.append(
-                MetricResult(
-                    metric_id=target.metric.metric_id,
-                    baseline=target.baseline,
-                    target=target.target,
-                    latest=latest,
-                    absolute_change=absolute,
-                    relative_change=relative,
-                    target_progress=self._progress(target.metric.direction, target.baseline, target.target, latest),
-                    achieved=self._achieved(target.metric.direction, target.target, latest),
-                    evidence_refs=tuple(item.evidence_ref for item in evidence),
-                )
-            )
+            results.append(MetricResult(
+                metric_id=target.metric.metric_id,
+                baseline=target.baseline,
+                target=target.target,
+                latest=latest,
+                absolute_change=absolute,
+                relative_change=relative,
+                target_progress=self._progress(target.metric.direction, target.baseline, target.target, latest),
+                achieved=self._achieved(target.metric.direction, target.target, latest),
+                evidence_refs=tuple(item.evidence_ref for item in evidence),
+            ))
 
-        achieved_count = sum(result.achieved for result in results)
         return ValueReport(
             tenant_id=plan.tenant_id,
             engagement_id=plan.engagement_id,
             objective=plan.objective,
             generated_at=datetime.now(timezone.utc),
             results=tuple(results),
-            achieved_count=achieved_count,
+            achieved_count=sum(result.achieved for result in results),
             total_count=len(plan.targets),
         )
 
 
 def evidence_digest(observations: Iterable[ValueObservation]) -> str:
-    """Return a deterministic digest over evidence references and measurements.
-
-    This is an integrity aid, not a replacement for the governance evidence registry.
-    """
+    """Return a deterministic integrity digest; not a replacement for evidence storage."""
     rows = sorted(
         f"{item.tenant_id}|{item.metric_id}|{item.value!r}|{item.observed_at.isoformat()}|{item.evidence_ref}|{item.status.value}"
         for item in observations
@@ -249,7 +217,7 @@ def evidence_digest(observations: Iterable[ValueObservation]) -> str:
 
 
 def decimal_value(value: str) -> Decimal:
-    """Parse a decimal customer value without accepting NaN/Infinity."""
+    """Parse a decimal value without accepting NaN/Infinity."""
     try:
         parsed = Decimal(value)
     except (InvalidOperation, ValueError) as exc:
