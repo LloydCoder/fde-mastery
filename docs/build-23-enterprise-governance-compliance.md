@@ -2,9 +2,16 @@
 
 ## Research basis
 
-Build 23 operationalizes governance rather than claiming certification. NIST AI RMF organizes AI risk work into Govern, Map, Measure and Manage and treats governance as cross-cutting throughout the lifecycle. The current NIST AI RMF Playbook was updated June 10, 2026 and the framework is being revised. citeturn1search2turn1search9
+Build 23 operationalizes governance rather than claiming certification. NIST AI RMF organizes AI risk work into Govern, Map, Measure and Manage and treats governance as cross-cutting throughout the lifecycle. The current NIST AI RMF Playbook was updated June 10, 2026 and the framework is being revised.
 
-NIST AI 600-1 provides the Generative AI profile. ISO/IEC 42001:2023 specifies requirements for establishing, implementing, maintaining and continually improving an AI Management System and uses a management-system/PDCA approach. citeturn1search1turn1search0
+NIST AI 600-1 provides the Generative AI profile. ISO/IEC 42001:2023 specifies requirements for establishing, implementing, maintaining and continually improving an AI Management System and uses a management-system/PDCA approach.
+
+Primary references:
+
+- https://www.nist.gov/itl/ai-risk-management-framework/nist-ai-risk-management-framework
+- https://www.nist.gov/itl/ai-risk-management-framework/nist-ai-rmf-playbook
+- https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence
+- https://www.iso.org/standard/42001
 
 ## Implemented
 
