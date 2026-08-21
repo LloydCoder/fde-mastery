@@ -16,6 +16,7 @@
 | **12 — Platform Productization** | **GREEN** | Stable provider-neutral developer surface, machine-readable capability manifest, enterprise repository structure, contract coverage and final CI hardening |
 | **13 — Domain Intelligence Foundation** | **GREEN** | Canonical domain promotion contract, domain registry, representative evaluation fixtures, first-class Custom domain |
 | **14 — FDE Engagement & Workflow Engine** | **GREEN** | Tenant-scoped engagement lifecycle, value metrics, evidence gates, promotion workflow and durable-workflow compilation |
+| **15 — Enterprise Integration Plane** | **IN PROGRESS** | Tenant/environment integration registry, managed credential references, OAuth PKCE, authenticated webhooks, SSRF-safe outbound policy, retry/rate limits, integration persistence and Tool Gateway bridge |
 
 ## Build 13 verification
 
@@ -43,7 +44,22 @@
 - [x] Contract tests cover transition safety, promotion gates, compilation, evidence and tenant scoping.
 - [x] Build 14 ADR and implementation documentation are recorded.
 - [x] Platform Quality run #436 passed every job and check, including tests, security, static analysis, SBOM, staging/load smoke, production Docker runtime smoke and Semgrep.
-- [ ] Build 14 PR is merged only after the complete CI gate is green.
+- [x] Build 14 PR was merged only after the complete CI gate was green.
+
+## Build 15 verification
+
+- [ ] Tenant/environment integration registry and fail-closed lifecycle are verified.
+- [ ] Credential material is excluded from integration contracts; only managed secret references are accepted.
+- [ ] OAuth authorization-code + PKCE/S256 and state primitives are verified.
+- [ ] Webhook HMAC verification, timestamp tolerance and replay/idempotency controls are verified.
+- [ ] Outbound integration HTTPS, host allowlisting, private/reserved-network rejection and redirect blocking are verified.
+- [ ] Bounded retry and Retry-After handling are verified.
+- [ ] Connector-level rate limiting is verified.
+- [ ] Integration actions are bridged through the existing Tool Gateway rather than a second executor.
+- [ ] Tenant-isolated integration and webhook-delivery persistence migration is validated.
+- [ ] Build 15 ADR and implementation documentation are recorded.
+- [ ] Platform Quality and Semgrep workflows are green.
+- [ ] Build 15 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
