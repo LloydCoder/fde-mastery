@@ -23,7 +23,8 @@
 | **19 — Customer Control Plane** | **GREEN** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
 | **20 — Incident & Reliability / SRE Plane** | **GREEN** | SLI/SLO/error-budget contracts, deterministic reliability recommendations, tenant-safe incident lifecycle, postmortem and corrective-action foundations |
 | **21 — API Platform & SDKs** | **GREEN** | Stable v1 API facade, OpenAPI 3.1 surface, RFC 9457 v1 errors, standard idempotency semantics, Python/TypeScript SDKs and API security hardening |
-| **22 — Developer Platform & Marketplace** | **NEXT** | Signed extension manifests, versioned plugins, capability permissions, compatibility checks, approval/promotion lifecycle and developer tooling |
+| **22 — Developer Platform & Marketplace** | **GREEN** | Signed extension manifests, provenance, capability permissions, publisher trust, compatibility checks, approval/promotion lifecycle and tenant-scoped registry |
+| **23 — Enterprise Governance & Compliance Plane** | **IN PROGRESS** | Control catalog, evidence collection, data classification, policy attestations, compliance posture and audit-ready governance |
 
 ## Build 19 verification correction
 
@@ -35,23 +36,13 @@ The original Build 20 tracking branch contained documentation/version tracking b
 
 ## Build 21 verification
 
-Build 21 passed:
+Build 21 passed Platform Quality #581, SDK Quality #19, Semgrep, 215 automated tests, Ruff, MyPy, Bandit, dependency audit, migration validation, Terraform validation, SBOM generation/validation, staging/load smoke and production Docker/runtime smoke. PR #31 was merged as commit `88a8ad7b32742c8c70f6ab250e7f4161f7978c3b`.
 
-- Platform Quality #581: **GREEN**
-- SDK Quality #19: **GREEN**
-- Semgrep/static security: **GREEN**
-- 215 automated tests: **GREEN**
-- Ruff: **GREEN**
-- MyPy: **GREEN**
-- Bandit: **GREEN**
-- Dependency audit: **GREEN**
-- Migration validation: **GREEN**
-- Terraform validation: **GREEN**
-- SBOM generation/validation: **GREEN**
-- Staging API/load smoke: **GREEN**
-- Production Docker build/runtime smoke: **GREEN**
+## Build 22 verification
 
-Build 21 PR #31 was merged as commit `88a8ad7b32742c8c70f6ab250e7f4161f7978c3b`.
+Build 22 passed Platform Quality #599, SDK Quality #37 and Semgrep. The final Platform Quality gate passed tests, security controls, migration validation, Ruff, MyPy, Bandit, dependency audit, compile, CLI, Terraform, SBOM, staging/load smoke and production Docker/runtime smoke. The earlier Terraform failure was an external registry connection reset and was independently rerun successfully.
+
+Build 22 PR #32 was merged as commit `c7f2541965ee2fe5c0eb5d8d410de5138eaf7f3b`.
 
 ## Verification policy
 
