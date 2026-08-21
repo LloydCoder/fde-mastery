@@ -1,7 +1,7 @@
 """Bounded retry and rate-limit primitives for outbound integrations."""
 from __future__ import annotations
 
-import random
+import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -41,7 +41,7 @@ def classify_retry(status_code: int, attempt: int, *, retry_after: str | None = 
         server_delay = retry_after_seconds(retry_after)
         exponential = min(max_delay, base_delay * (2 ** (attempt - 1)))
         delay = server_delay if server_delay is not None else exponential
-        delay = min(max_delay, delay + random.uniform(0.0, max(0.0, delay * jitter)))
+        delay = min(max_delay, delay + secrets.SystemRandom().uniform(0.0, max(0.0, delay * jitter)))
         return RetryDecision(True, delay, reason="server_retryable")
     return RetryDecision(False, reason="status_not_retryable")
 
