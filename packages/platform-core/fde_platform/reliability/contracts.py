@@ -5,7 +5,7 @@ deployment, and durable-workflow boundaries remain responsible for execution.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
@@ -130,6 +130,12 @@ class Postmortem:
     follow_up_action_ids: tuple[str, ...] = ()
     completed_at: datetime | None = None
 
+    def __post_init__(self) -> None:
+        if not self.incident_id.strip() or not self.tenant_id.strip() or not self.impact.strip() or not self.root_cause.strip():
+            raise ValueError("postmortem identity and impact/root cause are required")
+        if self.completed_at is not None and (self.completed_at.tzinfo is None or self.completed_at.utcoffset() is None):
+            raise ValueError("completed_at must be timezone-aware")
+
 
 @dataclass(frozen=True, slots=True)
 class CorrectiveAction:
@@ -146,3 +152,42 @@ class CorrectiveAction:
             raise ValueError("corrective-action identity and ownership are required")
         if self.due_at.tzinfo is None or self.due_at.utcoffset() is None:
             raise ValueError("due_at must be timezone-aware")
+
+
+class IncidentRegistry:
+    """Tenant-scoped incident lifecycle registry for deterministic adapters and tests."""
+
+    _transitions = {
+        IncidentStatus.DETECTED: {IncidentStatus.CONTAINED, IncidentStatus.INVESTIGATING},
+        IncidentStatus.CONTAINED: {IncidentStatus.INVESTIGATING, IncidentStatus.REMEDIATED},
+        IncidentStatus.INVESTIGATING: {IncidentStatus.CONTAINED, IncidentStatus.REMEDIATED},
+        IncidentStatus.REMEDIATED: {IncidentStatus.CLOSED},
+        IncidentStatus.CLOSED: set(),
+    }
+
+    def __init__(self) -> None:
+        self._items: dict[tuple[str, str], IncidentRecord] = {}
+
+    def create(self, incident: IncidentRecord) -> IncidentRecord:
+        key = (incident.tenant_id, incident.incident_id)
+        if key in self._items:
+            raise ValueError("incident already exists")
+        self._items[key] = incident
+        return incident
+
+    def get(self, tenant_id: str, incident_id: str) -> IncidentRecord:
+        incident = self._items.get((tenant_id, incident_id))
+        if incident is None:
+            raise KeyError("incident not found")
+        return incident
+
+    def transition(self, tenant_id: str, incident_id: str, status: IncidentStatus) -> IncidentRecord:
+        current = self.get(tenant_id, incident_id)
+        if status not in self._transitions[current.status]:
+            raise ValueError(f"invalid incident transition: {current.status} -> {status}")
+        updated = IncidentRecord(current.incident_id, current.tenant_id, current.severity, current.title, status, current.detected_at, current.evidence_refs)
+        self._items[(tenant_id, incident_id)] = updated
+        return updated
+
+    def list_tenant(self, tenant_id: str) -> tuple[IncidentRecord, ...]:
+        return tuple(item for (tenant, _), item in self._items.items() if tenant == tenant_id)
