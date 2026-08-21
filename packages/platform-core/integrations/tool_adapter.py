@@ -1,7 +1,7 @@
 """Bridge integrations into the existing Tool Gateway without creating a second executor."""
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from typing import Any
 
 from fde_platform.tools import InMemoryToolGateway
