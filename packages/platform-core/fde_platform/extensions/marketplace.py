@@ -217,7 +217,7 @@ def _semver_tuple(version: str) -> tuple[int, int, int]:
     match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version)
     if match is None:
         raise ValueError("invalid semantic version")
-    return tuple(int(part) for part in match.groups())
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
 
 def _api_in_range(current: str, minimum: str, maximum: str) -> bool:
