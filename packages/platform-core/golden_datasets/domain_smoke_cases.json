@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "purpose": "Synthetic representative promotion fixtures for every first-class domain.",
+  "cases": {
+    "cybersecurity": {"log_id": "SOC-B13-001", "timestamp": "2026-01-01T00:00:00+00:00", "source_ip": "10.10.10.10", "destination_ip": "10.10.10.20", "user_id": "synthetic-analyst", "event_type": "UNAUTHORIZED_SSH_ATTEMPT", "payload_summary": "Repeated failed SSH authentication attempts."},
+    "finance": {"transaction_id": "TXN-B13-001", "account_id": "acct-synthetic", "counterparty_id": "counterparty-synthetic", "transaction_type": "WIRE_TRANSFER", "amount": 1000, "currency": "USD", "source_country": "US", "destination_country": "US", "metadata": {}},
+    "healthtech": {"encounter_id": "ENC-B13-001", "patient_id": "patient-synthetic", "encounter_type": "AMBULATORY", "primary_symptom": "routine follow-up", "vital_signs": {"heart_rate": 72, "systolic_bp": 120, "diastolic_bp": 80, "spo2": 98}, "raw_notes": "Synthetic promotion fixture.", "phi_redacted": true},
+    "logistics": {"shipment_id": "SHIP-B13-001", "transport_mode": "OCEAN_CONTAINER", "carrier": "Synthetic Carrier", "origin_country": "US", "destination_country": "DE", "hs_code": "8517.62", "declared_temp_range_c": [2, 8], "goods_value_usd": 10000, "telemetry": {"temperature_c": 5, "humidity_percent": 45, "shock_g_force": 0.2, "location_coords": "40.7128,-74.0060"}, "carrier_status_note": "On schedule."},
+    "legal": {"contract_id": "CONTRACT-B13-001", "title": "Synthetic Services Agreement", "counterparty": "Synthetic Counterparty", "governing_jurisdiction": "Delaware, USA", "annual_contract_value_usd": 50000, "clauses": []},
+    "revops": {"opportunity_id": "OPP-B13-001", "account_name": "Synthetic Account", "annual_recurring_revenue_usd": 100000, "lead_source": "PRODUCT_QUALIFIED_PQL", "deal_stage": "TECHNICAL_EVALUATION", "discount_requested_pct": 5, "has_exec_sponsor": true, "telemetry": {"monthly_active_users": 100, "weekly_usage_growth_pct": 10, "license_utilization_pct": 80}},
+    "procurement": {"supplier_id": "SUP-B13-001", "quote_amount_usd": 75000, "supplier_risk_score": 25, "approval_threshold_usd": 50000, "quote_count": 3},
+    "custom": {"risk_level": "medium", "confidence": 0.75, "reasons": ["Synthetic tenant-defined review case."]}
+  }
+}
