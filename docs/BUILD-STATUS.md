@@ -26,6 +26,7 @@
 | **22 — Developer Platform & Marketplace** | **GREEN** | Signed extension manifests, provenance, capability permissions, publisher trust, compatibility checks, approval/promotion lifecycle and tenant-scoped registry |
 | **23 — Enterprise Governance & Compliance Plane** | **GREEN** | Control catalog, tenant-bound evidence, data classification, policy attestations, compliance posture, deterministic audit packs and governance boundaries |
 | **24 — Enterprise Customer Experience & Value Plane** | **GREEN** | Evidence-backed customer value plans, tenant-safe outcome observations, deterministic KPI realization, bounded progress/achievement and auditable evidence integrity |
+| **25 — Commercial Entitlements & Usage Plane** | **IN PROGRESS** | Versioned product plans, tenant subscriptions, feature entitlements, fail-closed access decisions, idempotent tenant-scoped usage metering and bounded commercial metadata |
 
 ## Build 19 verification correction
 
@@ -56,6 +57,10 @@ Build 23 PR #33 was merged as commit `044f8fff4271f8b03324e02e67da62649baab6cf`.
 Build 24 passed Platform Quality #623, SDK Quality #61 and Semgrep. The final Platform Quality gate passed the full test/security/build pipeline, including tests, seven-domain verification, enterprise gates, P0-P2 controls, AI security regression, migration validation, Ruff, MyPy, Bandit, dependency audit, compile, CLI, Terraform, SBOM generation/validation, staging/load smoke and production Docker/runtime smoke.
 
 The implementation was also corrected before the final run to preserve the repository's Python >=3.10 compatibility by using `str, Enum` instead of Python-3.11-only `StrEnum`.
+
+## Build 25 verification
+
+Build 25 is **IN PROGRESS**. The implementation and build-specific contract tests have been added on `build-25-commercial-entitlements`. The merge gate remains the repository CI pipeline, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, production Docker runtime smoke, Semgrep and any build-specific quality gates.
 
 ## Verification policy
 
