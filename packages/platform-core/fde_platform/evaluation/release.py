@@ -5,12 +5,11 @@ security, drift, evidence and regression controls. It never deploys or authorize
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Iterable
 
-from evaluation.drift import DriftResult, detect_drift
-
+from .drift import DriftResult, detect_drift
 from .models import EvalRun, EvaluationThresholds
 
 
@@ -49,7 +48,9 @@ class ReleaseCandidate:
 
 @dataclass(frozen=True, slots=True)
 class ReleasePolicy:
-    evaluation_thresholds: EvaluationThresholds = EvaluationThresholds()
+    evaluation_thresholds: EvaluationThresholds = field(
+        default_factory=lambda: EvaluationThresholds(min_pass_rate=0.95, min_mean_score=0.95)
+    )
     maximum_cost_regression: float = 0.20
     maximum_latency_regression: float = 0.20
     catastrophic_pass_rate: float = 0.80
