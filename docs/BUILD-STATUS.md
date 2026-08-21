@@ -21,8 +21,9 @@
 | **17 — Advanced AI / Agent Security Plane** | **GREEN** | Risk-tiered action gate, security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
 | **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
 | **19 — Customer Control Plane** | **GREEN** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
-| **20 — Incident & Reliability / SRE Plane** | **IN PROGRESS** | Tenant-safe SLI/SLO/error-budget contracts, incident lifecycle, postmortem and corrective-action foundations |
-| **21 — API Platform & SDKs** | **IN PROGRESS** | Stable v1 API facade, OpenAPI contract surface, standard idempotency semantics, Python/TypeScript SDKs and API security hardening |
+| **20 — Incident & Reliability / SRE Plane** | **GREEN** | SLI/SLO/error-budget contracts, deterministic reliability recommendations, tenant-safe incident lifecycle, postmortem and corrective-action foundations |
+| **21 — API Platform & SDKs** | **GREEN** | Stable v1 API facade, OpenAPI 3.1 surface, RFC 9457 v1 errors, standard idempotency semantics, Python/TypeScript SDKs and API security hardening |
+| **22 — Developer Platform & Marketplace** | **NEXT** | Signed extension manifests, versioned plugins, capability permissions, compatibility checks, approval/promotion lifecycle and developer tooling |
 
 ## Build 19 verification correction
 
@@ -30,12 +31,28 @@ Build 19 was merged as commit `762f292cb6cf997caedd7d0a65508dbb50eff2aa` after i
 
 ## Build 20 verification
 
-The Build 20 branch passed Platform Quality run #541 and Semgrep, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke. The repository audit then identified that the prior Build 20 work contained documentation/version tracking but not the promised reliability implementation. Build 20 is therefore being corrected on the Build 21 branch before Build 21 is declared complete; this prevents an undocumented capability gap from being carried forward.
+The original Build 20 tracking branch contained documentation/version tracking but not the promised reliability implementation. That gap was corrected as part of the Build 21 delivery. The corrected reliability implementation passed the complete Build 21 Platform Quality gate, including 215 tests, security controls, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke.
 
-## Build 21 verification target
+## Build 21 verification
 
-Build 21 is only declared **GREEN** after the full repository Platform Quality and Semgrep gates pass, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke, plus SDK type/contract verification.
+Build 21 passed:
+
+- Platform Quality #581: **GREEN**
+- SDK Quality #19: **GREEN**
+- Semgrep/static security: **GREEN**
+- 215 automated tests: **GREEN**
+- Ruff: **GREEN**
+- MyPy: **GREEN**
+- Bandit: **GREEN**
+- Dependency audit: **GREEN**
+- Migration validation: **GREEN**
+- Terraform validation: **GREEN**
+- SBOM generation/validation: **GREEN**
+- Staging API/load smoke: **GREEN**
+- Production Docker build/runtime smoke: **GREEN**
+
+Build 21 PR #31 was merged as commit `88a8ad7b32742c8c70f6ab250e7f4161f7978c3b`.
 
 ## Verification policy
 
-A build is only declared **GREEN** after the repository CI pipeline passes tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, and production Docker runtime smoke.
+A build is only declared **GREEN** after the repository CI pipeline passes tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, production Docker runtime smoke, and any build-specific quality gates.
