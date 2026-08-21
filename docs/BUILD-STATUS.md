@@ -19,22 +19,8 @@
 | **15 — Enterprise Integration Plane** | **GREEN** | Integration registry, managed credentials, OAuth PKCE, authenticated webhooks, SSRF-safe outbound policy, retries/rate limits and Tool Gateway bridge |
 | **16 — MCP / A2A Interoperability** | **GREEN** | MCP/A2A contracts, tenant-scoped discovery, authorization, endpoint allowlisting and durable task bridge |
 | **17 — Advanced AI / Agent Security Plane** | **GREEN** | Risk-tiered action gate, security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
-| **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment composed with existing evaluation contracts, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
-
-## Build 17 verification
-
-- [x] Risk-tiered agent action gate is implemented and verified.
-- [x] Agent security context is tenant/agent/request bound.
-- [x] Capability allowlisting and autonomy budget controls are verified.
-- [x] High/critical actions require explicit approval evidence.
-- [x] Untrusted/external context cannot perform irreversible actions.
-- [x] Prompt-injection screening is deterministic and defense-in-depth.
-- [x] Credential-shaped output is redacted before leaving the trust boundary.
-- [x] Memory records carry provenance/trust and can be tenant/trust filtered.
-- [x] Secure Tool Gateway adapter blocks unsafe actions before execution.
-- [x] Build 17 ADR and implementation documentation are recorded.
-- [x] Platform Quality and Semgrep workflows are green.
-- [x] Build 17 PR #27 was merged only after the complete CI gate was green.
+| **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
+| **19 — Customer Control Plane** | **IN PROGRESS** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
 
 ## Build 18 verification
 
@@ -52,7 +38,22 @@
 - [x] Build 18 ADR and implementation documentation are recorded.
 - [x] Platform Quality run #519 passed every job, including tests, security, static analysis, SBOM, staging/load smoke and production Docker runtime smoke.
 - [x] Semgrep passed.
-- [x] Build 18 PR is ready for merge after the final documentation-triggered CI gate is green.
+- [x] Build 18 PR #28 was merged after the final documentation-triggered CI gate was green.
+
+## Build 19 verification
+
+- [x] Existing `RequestContext` remains the tenant security boundary.
+- [x] Existing `AuthorizationService` remains the sole authorization decision boundary.
+- [x] Customer environments are explicitly tenant-owned.
+- [x] Projects are explicitly bound to an existing tenant environment.
+- [x] Resources are explicitly bound to an existing tenant project.
+- [x] Resource inventory covers agents, workflows, tools, models, policies, integrations, evaluations, deployments and incidents.
+- [x] Cross-tenant registration and reads fail closed.
+- [x] Customer snapshots contain only resources belonging to the requesting tenant.
+- [x] No second RBAC/ABAC or execution engine was introduced.
+- [x] Build 19 implementation documentation is recorded.
+- [ ] Platform Quality and Semgrep workflows are green.
+- [ ] Build 19 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
