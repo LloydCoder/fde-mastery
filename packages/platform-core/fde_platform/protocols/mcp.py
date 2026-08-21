@@ -39,14 +39,14 @@ class MCPToolCall:
     arguments: Mapping[str, object]
     request_id: str
     authorization_reference: str
-    tenant_id: str = ""
+    tenant_id: str | None = None
     protocol_version: MCPProtocolVersion = MCPProtocolVersion.V2026_07_28
 
     def __post_init__(self) -> None:
         if not self.request_id.strip() or not self.authorization_reference.strip():
             raise ValueError("request_id and authorization_reference are required")
-        if not self.tenant_id.strip():
-            raise ValueError("tenant_id is required")
+        if self.tenant_id is not None and not self.tenant_id.strip():
+            raise ValueError("tenant_id cannot be blank when supplied")
 
 
 __all__ = [
