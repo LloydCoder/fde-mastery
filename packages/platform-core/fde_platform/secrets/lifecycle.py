@@ -18,7 +18,7 @@ _MAX_METADATA = 32
 class SecretType(str, Enum):
     API_KEY = "api_key"
     DATABASE_CREDENTIAL = "database_credential"
-    OAUTH_CLIENT_SECRET = "oauth_client_secret"
+    OAUTH_CLIENT_CREDENTIAL = "oauth_client_credential"
     SIGNING_KEY = "signing_key"
     ENCRYPTION_KEY = "encryption_key"
     CERTIFICATE = "certificate"
