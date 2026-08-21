@@ -7,6 +7,7 @@ promotion decision. It never executes extension code.
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import json
 import re
@@ -133,11 +134,10 @@ class ExtensionManifest:
         if key_bytes is None:
             return False
         try:
-            Ed25519PublicKey.from_public_bytes(key_bytes).verify(
-                base64.b64decode(self.signature.signature, validate=True), self.canonical_payload()
-            )
+            signature = base64.b64decode(self.signature.signature, validate=True)
+            Ed25519PublicKey.from_public_bytes(key_bytes).verify(signature, self.canonical_payload())
             return True
-        except (ValueError, InvalidSignature):
+        except (ValueError, TypeError, binascii.Error, InvalidSignature):
             return False
 
 
