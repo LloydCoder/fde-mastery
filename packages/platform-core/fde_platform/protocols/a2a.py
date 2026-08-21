@@ -1,9 +1,23 @@
-"""Agent-to-agent envelope contracts with explicit capability references."""
+"""A2A compatibility contracts and enterprise interoperability exports."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping
+
+from .interoperability import (
+    A2AAgentRegistry,
+    A2ARequest,
+    A2ATaskBridge,
+    A2ATaskRef,
+    A2ATaskState,
+    AgentCard,
+    AgentInterface,
+    AgentSkill,
+    SecurityScheme,
+    authorize_a2a,
+    validate_agent_card_endpoint,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,3 +46,10 @@ class A2AEnvelope:
             raise ValueError("tenant_id and authorization_reference are required")
         if self.ttl_seconds <= 0:
             raise ValueError("ttl_seconds must be positive")
+
+
+__all__ = [
+    "A2AAgentRegistry", "A2AEnvelope", "A2ARequest", "A2ATaskBridge", "A2ATaskRef", "A2ATaskState",
+    "AgentCard", "AgentInterface", "AgentMessage", "AgentSkill", "SecurityScheme", "authorize_a2a",
+    "validate_agent_card_endpoint",
+]
