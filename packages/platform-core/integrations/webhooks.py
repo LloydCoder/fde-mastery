@@ -4,15 +4,17 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
 class ReplayGuard:
     ttl_seconds: int = 900
+    _seen: dict[str, float] = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self) -> None:
-        self._seen: dict[str, float] = {}
+        if self.ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
 
     def accept(self, delivery_id: str, *, now: float | None = None) -> bool:
         if not delivery_id.strip():
