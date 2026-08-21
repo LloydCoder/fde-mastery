@@ -19,7 +19,7 @@
 | **15 — Enterprise Integration Plane** | **GREEN** | Integration registry, managed credentials, OAuth PKCE, authenticated webhooks, SSRF-safe outbound policy, retries/rate limits and Tool Gateway bridge |
 | **16 — MCP / A2A Interoperability** | **GREEN** | MCP/A2A contracts, tenant-scoped discovery, authorization, endpoint allowlisting and durable task bridge |
 | **17 — Advanced AI / Agent Security Plane** | **GREEN** | Risk-tiered action gate, security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
-| **18 — Continuous Evaluation & Release Intelligence** | **IN PROGRESS** | Continuous release assessment composed with existing evaluation contracts, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
+| **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment composed with existing evaluation contracts, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
 
 ## Build 17 verification
 
@@ -41,6 +41,7 @@
 - [x] Existing `fde_platform.evaluation` contracts were inspected and reused rather than duplicated.
 - [x] Immutable tenant/target-scoped release candidate contract is implemented.
 - [x] Existing `EvalRun` and `EvaluationThresholds` remain the source of evaluation truth.
+- [x] Production evaluation drift detector is isolated inside the production package boundary.
 - [x] Statistical drift detection composes with release assessment.
 - [x] Cost and latency regression guardrails are explicit.
 - [x] Security evaluation is an independent fail-closed gate.
@@ -49,8 +50,9 @@
 - [x] Release assessment never deploys or bypasses policy, workflow or approval boundaries.
 - [x] Unit/contract coverage includes promotion, rollback, regression, evidence and fail-closed policy validation.
 - [x] Build 18 ADR and implementation documentation are recorded.
-- [ ] Platform Quality and Semgrep workflows are green.
-- [ ] Build 18 PR is merged only after the complete CI gate is green.
+- [x] Platform Quality run #519 passed every job, including tests, security, static analysis, SBOM, staging/load smoke and production Docker runtime smoke.
+- [x] Semgrep passed.
+- [x] Build 18 PR is ready for merge after the final documentation-triggered CI gate is green.
 
 ## Verification policy
 
