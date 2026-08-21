@@ -11,6 +11,7 @@ from .release import (
     collect_evidence,
     compare_runs,
     require_promotion,
+    rollback_required,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "collect_evidence",
     "compare_runs",
     "require_promotion",
+    "rollback_required",
 ]
