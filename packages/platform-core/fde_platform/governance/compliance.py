@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Iterable, Mapping
+from typing import Mapping
 
 
 class ComplianceFramework(str, Enum):
@@ -39,6 +39,24 @@ class DataClassification(str, Enum):
     CONFIDENTIAL = "confidential"
     RESTRICTED = "restricted"
     SECRET = "secret"
+
+
+@dataclass(frozen=True, slots=True)
+class DataHandlingPolicy:
+    classification: DataClassification
+    allowed_model_data_classes: frozenset[DataClassification]
+    export_allowed: bool
+    human_review_required: bool
+
+    def permits_model(self, requested: DataClassification) -> bool:
+        rank = {
+            DataClassification.PUBLIC: 0,
+            DataClassification.INTERNAL: 1,
+            DataClassification.CONFIDENTIAL: 2,
+            DataClassification.RESTRICTED: 3,
+            DataClassification.SECRET: 4,
+        }
+        return requested in self.allowed_model_data_classes and rank[requested] <= rank[self.classification]
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,17 +200,12 @@ class GovernanceRegistry:
         moment = now or datetime.now(timezone.utc)
         if moment.tzinfo is None or moment.utcoffset() is None:
             raise ValueError("now must be timezone-aware")
-        controls = {
-            control_id: self._attestations.get((tenant_id, control_id), Attestation(
-                tenant_id=tenant_id,
-                control_id=control_id,
-                status=ControlStatus.NOT_ASSESSED,
-                assessor="system",
-                assessed_at=moment,
-            )).status
-            for control_id, control in self._controls.items()
-            if control.framework is framework
-        }
+        controls: dict[str, ControlStatus] = {}
+        for control_id, control in self._controls.items():
+            if control.framework is not framework:
+                continue
+            attestation = self._attestations.get((tenant_id, control_id))
+            controls[control_id] = attestation.status if attestation else ControlStatus.NOT_ASSESSED
         tenant_evidence = [e for (tenant, _), e in self._evidence.items() if tenant == tenant_id]
         current = sum(e.is_current(now=moment) for e in tenant_evidence)
         expired = sum(not e.is_current(now=moment) for e in tenant_evidence)
