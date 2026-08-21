@@ -5,6 +5,7 @@ import pytest
 from fde_platform.reliability import (
     CorrectiveAction,
     IncidentRecord,
+    IncidentRegistry,
     IncidentSeverity,
     IncidentStatus,
     ReliabilityDecision,
@@ -63,6 +64,17 @@ def test_incident_requires_tenant_and_severity() -> None:
     incident = IncidentRecord("INC-1", "tenant-a", IncidentSeverity.SEV2, "API degradation")
     assert incident.status is IncidentStatus.DETECTED
     assert incident.tenant_id == "tenant-a"
+
+
+def test_incident_registry_is_tenant_scoped_and_fail_closed() -> None:
+    registry = IncidentRegistry()
+    registry.create(IncidentRecord("INC-1", "tenant-a", IncidentSeverity.SEV2, "API degradation"))
+    assert registry.get("tenant-a", "INC-1").status is IncidentStatus.DETECTED
+    with pytest.raises(KeyError):
+        registry.get("tenant-b", "INC-1")
+    updated = registry.transition("tenant-a", "INC-1", IncidentStatus.INVESTIGATING)
+    assert updated.status is IncidentStatus.INVESTIGATING
+    assert len(registry.list_tenant("tenant-b")) == 0
 
 
 def test_corrective_action_requires_timezone_aware_due_date() -> None:
