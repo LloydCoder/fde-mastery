@@ -1,0 +1,30 @@
+name: SDK Quality
+
+on:
+  push:
+    branches:
+      - main
+      - 'build-*'
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typescript-sdk:
+    name: TypeScript SDK typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sdks/typescript/package.json
+      - name: Install TypeScript compiler
+        run: npm install --no-save --no-package-lock typescript@5.9.3
+      - name: Typecheck SDK
+        run: npx tsc --noEmit -p sdks/typescript/tsconfig.json
