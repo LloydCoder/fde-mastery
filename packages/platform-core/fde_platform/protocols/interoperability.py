@@ -59,12 +59,6 @@ class MCPRequest:
             raise PermissionError("MCP authorization tenant does not match request tenant")
         if self.method == "tools/call" and not self.name:
             raise ValueError("MCP tools/call requires a tool name")
-        declared_method = self.headers.get("Mcp-Method")
-        declared_name = self.headers.get("Mcp-Name")
-        if declared_method and declared_method != self.method:
-            raise ValueError("Mcp-Method header does not match request method")
-        if declared_name and declared_name != (self.name or ""):
-            raise ValueError("Mcp-Name header does not match request name")
 
 
 @dataclass(frozen=True, slots=True)
