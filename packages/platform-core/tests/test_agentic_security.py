@@ -83,7 +83,7 @@ def test_secure_gateway_blocks_delete_before_execution() -> None:
     delegate = InMemoryToolGateway()
     called = []
     delegate.register(ToolDefinition("delete", "1", "Delete", frozenset({ToolCapability.DELETE})), lambda args: called.append(args))
-    security_context = context(allowed_capabilities=frozenset({"delete"}), approval_reference="approval-1")
+    security_context = context(trust=TrustLevel.EXTERNAL, allowed_capabilities=frozenset({"delete"}), approval_reference="approval-1")
     gateway = AgentSecureToolGateway(delegate, security_context)
     tenant_id = TenantId("tenant-a")
     request_context = RequestContext(
@@ -93,5 +93,5 @@ def test_secure_gateway_blocks_delete_before_execution() -> None:
         environment=Environment.PRODUCTION,
     )
     result = gateway.invoke(request_context, ToolCall("delete", {}, "tenant-a", "req-1", "idem-1", frozenset({ToolCapability.DELETE})))
-    assert result.error_code == "untrusted_context_cannot_perform_irreversible_action" or result.success is False
+    assert result.error_code == "untrusted_context_cannot_perform_irreversible_action"
     assert called == []
