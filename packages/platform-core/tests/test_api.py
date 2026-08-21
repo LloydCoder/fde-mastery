@@ -6,7 +6,7 @@ from api import app
 def test_health_endpoint_is_public():
     response = TestClient(app).get("/health")
     assert response.status_code == 200
-    assert set(response.json()["domains"]) == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement"}
+    assert set(response.json()["domains"]) == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}
 
 
 def test_execute_requires_bearer_token():
