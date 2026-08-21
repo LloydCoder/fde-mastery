@@ -45,6 +45,11 @@ def _require_aware(value: datetime, field_name: str) -> None:
         raise ValueError(f"{field_name} must be timezone-aware")
 
 
+def _require_finite_non_negative(value: Decimal, field_name: str) -> None:
+    if not value.is_finite() or value < 0:
+        raise ValueError(f"{field_name} must be finite and non-negative")
+
+
 class SubscriptionStatus(str, Enum):
     TRIALING = "trialing"
     ACTIVE = "active"
@@ -62,8 +67,8 @@ class Entitlement:
 
     def __post_init__(self) -> None:
         _require_id(self.feature, "feature", _MAX_FEATURE_LENGTH)
-        if self.limit is not None and (self.limit < 0 or not self.limit.is_finite()):
-            raise ValueError("entitlement limit must be finite and non-negative")
+        if self.limit is not None:
+            _require_finite_non_negative(self.limit, "entitlement limit")
         if self.limit is not None and not self.unit:
             raise ValueError("bounded entitlements require a unit")
         if self.unit is not None:
@@ -137,7 +142,7 @@ class UsageEvent:
         _require_id(self.feature, "feature", _MAX_FEATURE_LENGTH)
         _require_id(self.idempotency_key, "idempotency_key")
         _require_aware(self.occurred_at, "occurred_at")
-        if self.quantity <= 0 or not self.quantity.is_finite():
+        if not self.quantity.is_finite() or self.quantity <= 0:
             raise ValueError("usage quantity must be finite and positive")
         object.__setattr__(self, "metadata", _bounded_metadata(self.metadata))
 
@@ -170,11 +175,17 @@ class EntitlementRegistry:
             raise ValueError("tenant already has a subscription")
         self._subscriptions[subscription.tenant_id] = subscription
 
-    def decide(self, tenant_id: str, feature: str, *, now: datetime | None = None, current_usage: Decimal = Decimal("0")) -> AccessDecision:
+    def decide(
+        self,
+        tenant_id: str,
+        feature: str,
+        *,
+        now: datetime | None = None,
+        current_usage: Decimal = Decimal("0"),
+    ) -> AccessDecision:
         _require_id(tenant_id, "tenant_id")
         _require_id(feature, "feature", _MAX_FEATURE_LENGTH)
-        if current_usage < 0 or not current_usage.is_finite():
-            raise ValueError("current usage must be finite and non-negative")
+        _require_finite_non_negative(current_usage, "current usage")
         now = now or datetime.now(timezone.utc)
         subscription = self._subscriptions.get(tenant_id)
         if subscription is None or not subscription.is_active_at(now):
@@ -204,7 +215,11 @@ class UsageMeter:
         key = (event.tenant_id, event.idempotency_key)
         existing = self._events.get(key)
         if existing is not None:
-            if existing.event_id != event.event_id or existing.quantity != event.quantity or existing.feature != event.feature:
+            if (
+                existing.event_id != event.event_id
+                or existing.quantity != event.quantity
+                or existing.feature != event.feature
+            ):
                 raise ValueError("idempotency key reused with different usage event")
             return False
         self._events[key] = event
