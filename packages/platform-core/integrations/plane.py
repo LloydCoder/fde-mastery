@@ -6,11 +6,11 @@ stores credential material. Runtime side effects remain behind the existing Tool
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Mapping
 
 
-class AuthMethod(StrEnum):
+class AuthMethod(str, Enum):
     API_KEY = "api_key"
     OAUTH2 = "oauth2"
     HMAC = "hmac"
@@ -18,7 +18,7 @@ class AuthMethod(StrEnum):
     NONE = "none"
 
 
-class IntegrationStatus(StrEnum):
+class IntegrationStatus(str, Enum):
     ACTIVE = "active"
     DISABLED = "disabled"
     DEGRADED = "degraded"
