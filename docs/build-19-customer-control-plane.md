@@ -6,7 +6,14 @@ Provide a single tenant-scoped control-plane contract over customer environments
 
 ## Research basis
 
-The design follows NIST AI RMF governance principles: lifecycle governance requires documented roles, accountability, inventories and ongoing monitoring. It also follows OWASP authorization guidance: authorization must be enforced server-side, least privilege must be applied, and multi-tenant data must remain segregated. citeturn1search0turn1search1turn1search8
+The design follows NIST AI RMF governance principles: lifecycle governance requires documented roles, accountability, inventories and ongoing monitoring. It also follows OWASP authorization guidance: authorization must be enforced server-side, least privilege must be applied, and multi-tenant data must remain segregated.
+
+Primary references:
+
+- NIST AI Risk Management Framework 1.0 and AI RMF Playbook.
+- NIST Risk Management Framework continuous monitoring and authorization guidance.
+- OWASP Authorization Cheat Sheet.
+- OWASP authorization and multi-tenant access-control guidance.
 
 ## Delivered
 
