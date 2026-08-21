@@ -40,12 +40,20 @@ class EvaluationMetric:
             raise ValueError("metric values must not be NaN")
         if self.minimum is not None and self.maximum is not None and self.minimum > self.maximum:
             raise ValueError("minimum cannot exceed maximum")
+        if self.baseline < 0 or self.current < 0:
+            raise ValueError("metric values cannot be negative")
 
     @property
     def passed(self) -> bool:
         return (self.minimum is None or self.current >= self.minimum) and (
             self.maximum is None or self.current <= self.maximum
         )
+
+    @property
+    def regression_ratio(self) -> float:
+        if self.baseline == 0:
+            return 0.0 if self.current == 0 else float("inf")
+        return (self.current - self.baseline) / self.baseline
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +89,7 @@ class ReleasePolicy:
     minimum_pass_rate: float = 0.95
     maximum_cost_regression: float = 0.20
     maximum_latency_regression: float = 0.20
+    catastrophic_pass_rate: float = 0.80
     drift_alpha: float = 0.01
     minimum_drift_drop: float = 0.05
     require_security_pass: bool = True
@@ -88,6 +97,8 @@ class ReleasePolicy:
     def __post_init__(self) -> None:
         if not 0 <= self.minimum_pass_rate <= 1:
             raise ValueError("minimum_pass_rate must be between 0 and 1")
+        if not 0 <= self.catastrophic_pass_rate <= self.minimum_pass_rate:
+            raise ValueError("catastrophic_pass_rate must not exceed minimum_pass_rate")
         if self.maximum_cost_regression < 0 or self.maximum_latency_regression < 0:
             raise ValueError("regression limits cannot be negative")
         if not 0 < self.drift_alpha < 1 or self.minimum_drift_drop < 0:
@@ -101,6 +112,17 @@ class ReleaseAssessment:
     drift: DriftResult
     failed_metrics: tuple[str, ...]
     evidence_ids: tuple[str, ...]
+
+
+def _regression_reasons(run: EvaluationRun, policy: ReleasePolicy) -> list[str]:
+    reasons: list[str] = []
+    for metric in run.metrics:
+        name = metric.name.lower()
+        if "cost" in name and metric.regression_ratio > policy.maximum_cost_regression:
+            reasons.append("cost_regression_limit_exceeded")
+        if "latency" in name and metric.regression_ratio > policy.maximum_latency_regression:
+            reasons.append("latency_regression_limit_exceeded")
+    return reasons
 
 
 def assess_release(run: EvaluationRun, policy: ReleasePolicy = ReleasePolicy()) -> ReleaseAssessment:
@@ -127,9 +149,14 @@ def assess_release(run: EvaluationRun, policy: ReleasePolicy = ReleasePolicy()) 
         reasons.append("statistically_significant_regression")
     if policy.require_security_pass and not run.security_passed:
         reasons.append("security_evaluation_failed")
+    reasons.extend(_regression_reasons(run, policy))
 
-    decision = PromotionDecision.PROMOTE if not reasons else PromotionDecision.BLOCK
-    return ReleaseAssessment(decision, tuple(reasons), drift, tuple(failed_metrics), run.evidence_ids)
+    catastrophic = current_rate < policy.catastrophic_pass_rate or not run.security_passed and policy.require_security_pass
+    if catastrophic:
+        decision = PromotionDecision.ROLLBACK if reasons else PromotionDecision.PROMOTE
+    else:
+        decision = PromotionDecision.PROMOTE if not reasons else PromotionDecision.BLOCK
+    return ReleaseAssessment(decision, tuple(dict.fromkeys(reasons)), drift, tuple(failed_metrics), run.evidence_ids)
 
 
 def compare_runs(current: EvaluationRun, candidate: EvaluationRun) -> Mapping[str, float]:
