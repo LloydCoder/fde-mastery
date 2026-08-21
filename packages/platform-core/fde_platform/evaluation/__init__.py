@@ -10,6 +10,16 @@ from .models import (
     EvaluationThresholds,
     PromotionDecision,
 )
+from .release import (
+    ReleaseAssessment,
+    ReleaseCandidate,
+    ReleaseDecision,
+    ReleasePolicy,
+    assess_release,
+    collect_evidence,
+    require_promotion,
+    rollback_required,
+)
 from .scorers import ExactMatchScorer, KeywordSafetyScorer
 
 __all__ = [
@@ -23,4 +33,12 @@ __all__ = [
     "ExactMatchScorer",
     "KeywordSafetyScorer",
     "PromotionDecision",
+    "ReleaseAssessment",
+    "ReleaseCandidate",
+    "ReleaseDecision",
+    "ReleasePolicy",
+    "assess_release",
+    "collect_evidence",
+    "require_promotion",
+    "rollback_required",
 ]
