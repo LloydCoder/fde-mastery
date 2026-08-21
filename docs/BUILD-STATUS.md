@@ -18,6 +18,7 @@
 | **14 — FDE Engagement & Workflow Engine** | **GREEN** | Tenant-scoped engagement lifecycle, value metrics, evidence gates, promotion workflow and durable-workflow compilation |
 | **15 — Enterprise Integration Plane** | **GREEN** | Tenant/environment integration registry, managed credential references, OAuth PKCE, authenticated webhooks, SSRF-safe outbound policy, retry/rate limits, integration persistence and Tool Gateway bridge |
 | **16 — MCP / A2A Interoperability** | **GREEN** | MCP 2026 protocol contracts, tenant/scoped tool discovery, A2A Agent Cards, skill authorization, tenant-scoped task bridge, endpoint allowlisting and protocol conformance boundaries |
+| **17 — Advanced AI / Agent Security Plane** | **IN PROGRESS** | Risk-tiered action gate, agent security context, capability/autonomy controls, prompt-injection screening, output redaction, memory provenance and secure Tool Gateway adapter |
 
 ## Build 13 verification
 
@@ -79,7 +80,23 @@
 - [x] Integration registry naming collision discovered during Build 16 review is resolved.
 - [x] Build 16 ADR and implementation documentation are recorded.
 - [x] Platform Quality run #471 passed all jobs and checks, including tests, security, static analysis, SBOM, staging/load smoke, production Docker runtime smoke and Semgrep.
-- [x] Build 16 PR #26 is ready to merge after the final documentation commit is verified by CI.
+- [x] Final documentation verification passed in Platform Quality run #473.
+- [x] Build 16 PR #26 was merged after the complete CI gate was green.
+
+## Build 17 verification
+
+- [ ] Risk-tiered agent action gate is verified.
+- [ ] Agent security context is tenant/agent/request bound.
+- [ ] Capability allowlisting and autonomy budget controls are verified.
+- [ ] High/critical actions require explicit approval evidence.
+- [ ] Untrusted/external context cannot perform irreversible actions.
+- [ ] Prompt-injection screening is deterministic and defense-in-depth.
+- [ ] Credential-shaped output is redacted before leaving the trust boundary.
+- [ ] Memory records carry provenance/trust and can be tenant/trust filtered.
+- [ ] Secure Tool Gateway adapter blocks unsafe actions before execution.
+- [ ] Build 17 ADR and implementation documentation are recorded.
+- [ ] Platform Quality and Semgrep workflows are green.
+- [ ] Build 17 PR is merged only after the complete CI gate is green.
 
 ## Verification policy
 
