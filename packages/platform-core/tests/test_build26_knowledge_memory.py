@@ -40,10 +40,17 @@ def test_tenant_and_scope_isolation():
     assert store.retrieve("tenant-a", "engagement-b", "r-1", now=NOW).reason == "scope_mismatch"
 
 
-def test_external_and_untrusted_memory_fail_closed_by_default():
+def test_external_memory_requires_explicit_opt_in():
     store = KnowledgeStore()
     store.put(record(trust=MemoryTrust.EXTERNAL))
-    assert store.retrieve("tenant-a", "engagement-a", "r-1", now=NOW).reason == "external_memory_blocked"
+    policy = RetrievalPolicy(minimum_trust=MemoryTrust.EXTERNAL, allow_external=False)
+    assert store.retrieve("tenant-a", "engagement-a", "r-1", policy=policy, now=NOW).reason == "external_memory_blocked"
+
+
+def test_untrusted_memory_fails_closed_at_default_trust_threshold():
+    store = KnowledgeStore()
+    store.put(record(trust=MemoryTrust.UNTRUSTED))
+    assert store.retrieve("tenant-a", "engagement-a", "r-1", now=NOW).reason == "trust_below_policy"
 
 
 def test_poisoned_memory_is_blocked():
