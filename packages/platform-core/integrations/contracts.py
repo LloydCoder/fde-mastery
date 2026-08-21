@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class IntegrationHealth:
     provider: str
     reachable: bool
@@ -27,8 +27,8 @@ class DomainIntegration(Protocol):
     def enrich(self, indicator: str, *, tenant_id: str, request_id: str) -> dict[str, Any]: ...
 
 
-class IntegrationRegistry:
-    """Tenant-aware registry; unknown providers fail closed."""
+class DomainIntegrationRegistry:
+    """Tenant-aware registry for concrete domain connectors; unknown providers fail closed."""
 
     def __init__(self) -> None:
         self._providers: dict[tuple[str, str], DomainIntegration] = {}
@@ -43,3 +43,7 @@ class IntegrationRegistry:
             return self._providers[(tenant_id, provider)]
         except KeyError as exc:
             raise LookupError("integration is not configured for this tenant") from exc
+
+
+# Backward-compatible descriptive alias for callers that imported the old name.
+LegacyIntegrationRegistry = DomainIntegrationRegistry
