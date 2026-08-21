@@ -31,26 +31,31 @@ def make_engagement() -> FDEEngagement:
         acceptance_criteria=(
             AcceptanceCriterion(
                 criterion_id="requirements",
+                stage=EngagementStage.WORKFLOW_MAPPING,
                 description="Customer requirements are documented",
                 evidence_kind=EvidenceKind.REQUIREMENT,
             ),
             AcceptanceCriterion(
                 criterion_id="baseline",
+                stage=EngagementStage.VALUE_CASE,
                 description="Baseline measurement is reproducible",
                 evidence_kind=EvidenceKind.BASELINE,
             ),
             AcceptanceCriterion(
                 criterion_id="evaluation",
+                stage=EngagementStage.PILOT,
                 description="Evaluation results meet the agreed gate",
                 evidence_kind=EvidenceKind.EVALUATION,
             ),
             AcceptanceCriterion(
                 criterion_id="pilot-approval",
+                stage=EngagementStage.PILOT,
                 description="Customer approves controlled pilot",
                 evidence_kind=EvidenceKind.APPROVAL,
             ),
             AcceptanceCriterion(
                 criterion_id="deployment",
+                stage=EngagementStage.PRODUCTION,
                 description="Deployment evidence exists",
                 evidence_kind=EvidenceKind.DEPLOYMENT,
             ),
@@ -93,13 +98,9 @@ def test_invalid_transition_fails_closed() -> None:
 
 def test_production_gate_requires_approval_and_deployment_evidence() -> None:
     engagement = make_engagement()
-    for kind, criterion in (
-        (EvidenceKind.REQUIREMENT, "requirements"),
-        (EvidenceKind.BASELINE, "baseline"),
-        (EvidenceKind.DESIGN, None),
-        (EvidenceKind.EVALUATION, "evaluation"),
-    ):
-        engagement.add_evidence(evidence(kind, "001", criterion))
+    engagement.add_evidence(evidence(EvidenceKind.REQUIREMENT, "001", "requirements"))
+    engagement.add_evidence(evidence(EvidenceKind.BASELINE, "001", "baseline"))
+    engagement.add_evidence(evidence(EvidenceKind.EVALUATION, "001", "evaluation"))
     engagement.stage = EngagementStage.PILOT
     workflow = FDEWorkflow(engagement)
 
