@@ -22,14 +22,19 @@
 | **18 — Continuous Evaluation & Release Intelligence** | **GREEN** | Continuous release assessment, statistical drift, security evidence, cost/latency regression and fail-closed promotion/block/rollback decisions |
 | **19 — Customer Control Plane** | **GREEN** | Tenant-scoped customer inventory across environments, projects and platform resources using existing identity and authorization boundaries |
 | **20 — Incident & Reliability / SRE Plane** | **IN PROGRESS** | Tenant-safe SLI/SLO/error-budget contracts, incident lifecycle, postmortem and corrective-action foundations |
+| **21 — API Platform & SDKs** | **IN PROGRESS** | Stable v1 API facade, OpenAPI contract surface, standard idempotency semantics, Python/TypeScript SDKs and API security hardening |
 
 ## Build 19 verification correction
 
-Build 19 was merged as commit `762f292cb6cf997caedd7d0a65508dbb50eff2aa` after its documented Platform Quality and Semgrep gates passed. The previous wording saying it was "ready for merge after" a documentation-triggered gate was stale and has been corrected here.
+Build 19 was merged as commit `762f292cb6cf997caedd7d0a65508dbb50eff2aa` after its documented Platform Quality and Semgrep gates passed. The previous wording saying it was "ready for merge after" a documentation-triggered gate was stale and has been corrected.
 
-## Build 20 verification target
+## Build 20 verification
 
-Build 20 is only declared **GREEN** after the full repository Platform Quality and Semgrep gates pass, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke.
+The Build 20 branch passed Platform Quality run #541 and Semgrep, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke. The repository audit then identified that the prior Build 20 work contained documentation/version tracking but not the promised reliability implementation. Build 20 is therefore being corrected on the Build 21 branch before Build 21 is declared complete; this prevents an undocumented capability gap from being carried forward.
+
+## Build 21 verification target
+
+Build 21 is only declared **GREEN** after the full repository Platform Quality and Semgrep gates pass, including tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke and production Docker runtime smoke, plus SDK type/contract verification.
 
 ## Verification policy
 
