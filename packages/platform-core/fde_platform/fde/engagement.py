@@ -75,6 +75,7 @@ class AcceptanceCriterion(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     criterion_id: str = Field(min_length=1, max_length=128)
+    stage: EngagementStage
     description: str = Field(min_length=1, max_length=512)
     evidence_kind: EvidenceKind
     required: bool = True
@@ -151,16 +152,17 @@ class FDEEngagement(BaseModel):
         self.evidence = (*self.evidence, evidence)
 
     def _missing_required_criteria(self, target: EngagementStage) -> tuple[str, ...]:
-        required = tuple(c for c in self.acceptance_criteria if c.required)
-        if not required:
-            return ()
-        evidence = self.evidence
+        required = tuple(
+            criterion
+            for criterion in self.acceptance_criteria
+            if criterion.required and criterion.stage is target
+        )
         missing: list[str] = []
         for criterion in required:
             satisfied = any(
                 item.kind is criterion.evidence_kind
                 and (item.criterion_id is None or item.criterion_id == criterion.criterion_id)
-                for item in evidence
+                for item in self.evidence
             )
             if not satisfied:
                 missing.append(criterion.criterion_id)
@@ -185,7 +187,7 @@ class FDEEngagement(BaseModel):
         self.stage = target
         if target == EngagementStage.RETIRED:
             self.status = EngagementStatus.COMPLETED
-        return StageTransition(self.engagement_id, previous, target, ())
+        return StageTransition(self.engagement_id, previous, target, missing)
 
     def block(self) -> None:
         if self.status in {EngagementStatus.COMPLETED, EngagementStatus.CANCELLED}:
