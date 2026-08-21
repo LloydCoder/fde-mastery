@@ -27,6 +27,7 @@
 | **23 — Enterprise Governance & Compliance Plane** | **GREEN** | Control catalog, tenant-bound evidence, data classification, policy attestations, compliance posture, deterministic audit packs and governance boundaries |
 | **24 — Enterprise Customer Experience & Value Plane** | **GREEN** | Evidence-backed customer value plans, tenant-safe outcome observations, deterministic KPI realization, bounded progress/achievement and auditable evidence integrity |
 | **25 — Commercial Entitlements & Usage Plane** | **GREEN** | Versioned product plans, tenant subscriptions, feature entitlements, fail-closed access decisions, idempotent tenant-scoped usage metering and bounded commercial metadata |
+| **26 — Enterprise Knowledge & Memory Plane** | **IN PROGRESS** | Tenant/scope-bound knowledge records, provenance/trust levels, poisoning-aware retrieval, integrity digests, versioning, expiration and bounded metadata |
 
 ## Build 19 verification correction
 
@@ -64,7 +65,11 @@ Build 25 passed Platform Quality #640, SDK Quality #78 and Semgrep. The final Pl
 
 The first Build 25 test run exposed a real `Decimal('NaN')` validation defect: comparing a non-finite Decimal before checking finiteness raised `decimal.InvalidOperation`. The implementation was corrected to validate finiteness before ordering comparisons, and the complete pipeline was rerun successfully.
 
-Build 25 is now **GREEN** and ready for merge.
+Build 25 PR #35 was merged as commit `adf8ed4bcb4109a2add26640ad21d651a2828d1b`.
+
+## Build 26 verification
+
+Build 26 is **IN PROGRESS** on `build-26-knowledge-memory-plane`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
 
 ## Verification policy
 
