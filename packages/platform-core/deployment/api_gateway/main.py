@@ -42,7 +42,7 @@ from security.auth import Identity
 
 app = FastAPI(title="FDE Mastery Platform API", version=settings.version)
 if settings.cors_origins:
-    app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID", "X-Idempotency-Key"])
+    app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID", "X-Idempotency-Key", "Idempotency-Key"])
 
 REPOSITORY: PlatformRepository = build_repository()
 RATE_LIMITER = build_rate_limiter()
@@ -161,9 +161,9 @@ def triage(client_id: str, domain: Domain, request: Request, payload: dict[str, 
         raise HTTPException(status_code=404, detail=f"Client {client_id} not found. Onboard first.")
     RATE_LIMITER(request, client_id)
 
-    idempotency_key = request.headers.get("X-Idempotency-Key", "").strip()
+    idempotency_key = (request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key") or "").strip()
     if settings.environment == "production" and not idempotency_key:
-        raise HTTPException(status_code=400, detail="X-Idempotency-Key is required for mutation requests.")
+        raise HTTPException(status_code=400, detail="Idempotency-Key is required for mutation requests.")
     if idempotency_key:
         fingerprint = hashlib.sha256(json.dumps({"client_id": client_id, "domain": domain.value, "payload": redact(payload)}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         try:
@@ -242,3 +242,8 @@ def register_client(registration: ClientRegistration, _: str = Depends(require_a
 @app.get("/admin/clients/{client_id}/usage")
 def client_usage(client_id: str, _: str = Depends(require_admin_api_key)):
     return {"client_id": client_id, "total_calls": REPOSITORY.get_usage(client_id), "billing_period": "current"}
+
+
+from deployment.api_gateway.v1 import router as v1_router
+
+app.include_router(v1_router)
