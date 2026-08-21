@@ -2,6 +2,7 @@ import base64
 import hashlib
 
 import pytest
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from fde_platform.extensions import (
@@ -13,6 +14,10 @@ from fde_platform.extensions import (
     PromotionGate,
     SignatureEnvelope,
 )
+
+
+def public_bytes(key: Ed25519PrivateKey) -> bytes:
+    return key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
 
 
 def make_manifest(private_key: Ed25519PrivateKey, *, publisher: str = "acme") -> ExtensionManifest:
@@ -53,9 +58,8 @@ def make_manifest(private_key: Ed25519PrivateKey, *, publisher: str = "acme") ->
 def test_signature_and_provenance_are_verified():
     key = Ed25519PrivateKey.generate()
     manifest = make_manifest(key)
-    public = key.public_key().public_bytes_raw()
-    assert manifest.verify_signature({"acme-prod": public})
-    assert not manifest.verify_signature({"other": public})
+    assert manifest.verify_signature({"acme-prod": public_bytes(key)})
+    assert not manifest.verify_signature({"other": public_bytes(key)})
 
 
 def test_promotion_is_fail_closed_for_unapproved_publisher():
@@ -65,7 +69,7 @@ def test_promotion_is_fail_closed_for_unapproved_publisher():
         manifest,
         tenant_id="tenant-a",
         current_api="1.21.0",
-        trusted_keys={"acme-prod": key.public_key().public_bytes_raw()},
+        trusted_keys={"acme-prod": public_bytes(key)},
         approved_publishers=frozenset({"acme"}),
     )
     assert not decision.allowed
@@ -79,7 +83,7 @@ def test_promotion_rejects_api_mismatch():
         manifest,
         tenant_id="tenant-a",
         current_api="2.0.0",
-        trusted_keys={"acme-prod": key.public_key().public_bytes_raw()},
+        trusted_keys={"acme-prod": public_bytes(key)},
         approved_publishers=frozenset({"acme"}),
     )
     assert not decision.allowed
@@ -97,7 +101,7 @@ def test_registry_is_tenant_scoped_and_requires_promotion():
         manifest,
         tenant_id="tenant-a",
         current_api="1.21.0",
-        trusted_keys={"acme-prod": key.public_key().public_bytes_raw()},
+        trusted_keys={"acme-prod": public_bytes(key)},
         approved_publishers=frozenset({"acme"}),
     )
     registry.promote("tenant-a", manifest.extension_id, decision)
@@ -106,7 +110,6 @@ def test_registry_is_tenant_scoped_and_requires_promotion():
 
 
 def test_manifest_rejects_admin_mixed_with_other_capabilities():
-    key = Ed25519PrivateKey.generate()
     artifact = "sha256:" + "a" * 64
     provenance = ArtifactProvenance(
         subject_digest=artifact,
