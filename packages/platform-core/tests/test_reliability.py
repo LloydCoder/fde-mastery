@@ -16,7 +16,7 @@ from fde_platform.reliability import (
 )
 
 
-def observation(good: int, total: int = 100) -> SLIObservation:
+def observation(good: int, total: int = 1000) -> SLIObservation:
     return SLIObservation(good, total, datetime.now(timezone.utc))
 
 
@@ -53,7 +53,7 @@ def test_error_budget_exhaustion_is_fail_closed() -> None:
 
 def test_invalid_sli_counts_are_rejected() -> None:
     with pytest.raises(ValueError):
-        observation(101)
+        observation(1001)
     with pytest.raises(ValueError):
         observation(-1)
     with pytest.raises(ValueError):
