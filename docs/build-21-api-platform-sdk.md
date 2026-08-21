@@ -6,7 +6,7 @@ Turn the existing FastAPI gateway into a stable, versioned, contract-driven publ
 
 ## Research basis
 
-The implementation was reviewed against current OpenAPI, FastAPI, RFC 9457 and OWASP API-security guidance. OpenAPI is the language-neutral API description standard; FastAPI currently emits OpenAPI 3.1; RFC 9457 defines machine-readable HTTP Problem Details; and current IETF HTTPAPI work treats idempotency keys as a mechanism for making non-idempotent requests fault-tolerant. citeturn0search2turn1search2turn0search0turn0search4
+The implementation was reviewed against current OpenAPI, FastAPI, RFC 9457 and OWASP API-security guidance. OpenAPI is the language-neutral API description standard; FastAPI currently emits OpenAPI 3.1; RFC 9457 defines machine-readable HTTP Problem Details; and current IETF HTTPAPI work treats idempotency keys as a mechanism for making non-idempotent requests fault-tolerant.
 
 ## Delivered
 
