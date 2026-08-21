@@ -17,7 +17,7 @@
 | **13 — Domain Intelligence Foundation** | **GREEN** | Canonical domain promotion contract, domain registry, representative evaluation fixtures, first-class Custom domain |
 | **14 — FDE Engagement & Workflow Engine** | **GREEN** | Tenant-scoped engagement lifecycle, value metrics, evidence gates, promotion workflow and durable-workflow compilation |
 | **15 — Enterprise Integration Plane** | **GREEN** | Tenant/environment integration registry, managed credential references, OAuth PKCE, authenticated webhooks, SSRF-safe outbound policy, retry/rate limits, integration persistence and Tool Gateway bridge |
-| **16 — MCP / A2A Interoperability** | **IN PROGRESS** | MCP 2026 protocol contracts, tenant/scoped tool discovery, A2A Agent Cards, skill authorization, tenant-scoped task bridge, endpoint allowlisting and protocol conformance boundaries |
+| **16 — MCP / A2A Interoperability** | **GREEN** | MCP 2026 protocol contracts, tenant/scoped tool discovery, A2A Agent Cards, skill authorization, tenant-scoped task bridge, endpoint allowlisting and protocol conformance boundaries |
 
 ## Build 13 verification
 
@@ -66,20 +66,20 @@
 
 ## Build 16 verification
 
-- [ ] MCP protocol versions are explicit and validated.
-- [ ] MCP request tenant and authorization contexts are bound and fail closed on mismatch.
-- [ ] MCP routing headers are validated against request bodies.
-- [ ] Tenant-scoped MCP tool catalog and scope gates are verified.
-- [ ] MCP tool risk annotations are represented without treating annotations as authorization.
-- [ ] A2A Agent Cards, interfaces, skills and security schemes are represented as typed contracts.
-- [ ] A2A discovery is tenant-scoped and skill-aware.
-- [ ] A2A endpoint host allowlisting is verified.
-- [ ] A2A requests require explicit authorization and skill checks.
-- [ ] A2A tasks map to the existing durable workflow runtime rather than a second executor.
-- [ ] Integration registry naming collision discovered during Build 16 review is resolved.
-- [ ] Build 16 ADR and implementation documentation are recorded.
-- [ ] Platform Quality and Semgrep workflows are green.
-- [ ] Build 16 PR is merged only after the complete CI gate is green.
+- [x] MCP protocol versions are explicit and validated.
+- [x] MCP request tenant and authorization contexts are bound and fail closed on mismatch.
+- [x] MCP routing headers are validated against request bodies.
+- [x] Tenant-scoped MCP tool catalog and scope gates are verified.
+- [x] MCP tool risk annotations are represented without treating annotations as authorization.
+- [x] A2A Agent Cards, interfaces, skills and security schemes are represented as typed contracts.
+- [x] A2A discovery is tenant-scoped and skill-aware.
+- [x] A2A endpoint host allowlisting is verified.
+- [x] A2A requests require explicit authorization and skill checks.
+- [x] A2A tasks map to the existing durable workflow runtime rather than a second executor.
+- [x] Integration registry naming collision discovered during Build 16 review is resolved.
+- [x] Build 16 ADR and implementation documentation are recorded.
+- [x] Platform Quality run #471 passed all jobs and checks, including tests, security, static analysis, SBOM, staging/load smoke, production Docker runtime smoke and Semgrep.
+- [x] Build 16 PR #26 is ready to merge after the final documentation commit is verified by CI.
 
 ## Verification policy
 
