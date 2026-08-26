@@ -10,9 +10,10 @@ from shared_orchestrator.adapters import (
     ProcurementDomainAdapter,
     RevOpsDomainAdapter,
 )
+from domains.custom.agent import CustomDomainAgent
 
 
-def test_all_seven_domains_have_deployment_safe_smoke_paths(monkeypatch):
+def test_all_first_class_domains_have_deployment_safe_smoke_paths(monkeypatch):
     monkeypatch.setenv("MOCK_LLM", "true")
     monkeypatch.setenv("FDE_MONTH1_PROVIDER", "openai")
 
@@ -24,7 +25,10 @@ def test_all_seven_domains_have_deployment_safe_smoke_paths(monkeypatch):
         (LegalDomainAdapter(), Domain.LEGAL, {"contract_id": "CONTRACT-DEPLOY-001", "title": "Synthetic Services Agreement", "counterparty": "Synthetic Counterparty", "governing_jurisdiction": "Delaware, USA", "annual_contract_value_usd": 50000, "clauses": []}),
         (RevOpsDomainAdapter(), Domain.REVOPS, {"opportunity_id": "OPP-DEPLOY-001", "account_name": "Synthetic Account", "annual_recurring_revenue_usd": 100000, "lead_source": "PRODUCT_QUALIFIED_PQL", "deal_stage": "TECHNICAL_EVALUATION", "discount_requested_pct": 5, "has_exec_sponsor": True, "telemetry": {"monthly_active_users": 100, "weekly_usage_growth_pct": 10, "license_utilization_pct": 80}}),
         (ProcurementDomainAdapter(), Domain.PROCUREMENT, {"supplier_id": "SUP-DEPLOY-001", "quote_amount_usd": 75000, "supplier_risk_score": 25, "approval_threshold_usd": 50000, "quote_count": 3}),
+        (CustomDomainAgent(), Domain.CUSTOM, {"risk_level": "medium", "confidence": 0.75, "reasons": ["Synthetic deployment smoke test."]}),
     ]
+
+    assert {domain for _, domain, _ in cases} == set(Domain)
 
     for adapter, expected_domain, payload in cases:
         result = adapter.evaluate(payload)
