@@ -62,7 +62,7 @@ class HealthResponse(BaseModel):
 class ClientRegistration(BaseModel):
     client_id: str = Field(min_length=3, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")
     client_name: str = Field(min_length=1, max_length=200)
-    domains: list[Domain] = Field(min_length=1, max_length=6)
+    domains: list[Domain] = Field(min_length=1, max_length=8)
 
 
 AGENT_ROUTER = AgentRouter()
