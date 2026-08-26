@@ -82,9 +82,9 @@ jobs:
           import json
           path = Path("evaluation/golden/generated-v1.jsonl")
           rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-          assert len(rows) == 700, len(rows)
+          assert len(rows) == 800, len(rows)
           assert {row["domain"] for row in rows} == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}
-          assert len({row["id"] for row in rows}) == 700
+          assert len({row["id"] for row in rows}) == 800
           PY
       - name: Run AI security regression suite
         run: |
