@@ -31,7 +31,7 @@
 | **27 — Privacy & Data Lifecycle Plane** | **GREEN** | Tenant-scoped data classification, purpose limitation, retention policies, legal holds, erasure eligibility and integrity receipts |
 | **28 — Enterprise Identity Governance Plane** | **GREEN** | Tenant/scope-bound roles, fine-grained permissions, delegated bindings, expiry/revocation and provisioning lifecycle contracts |
 | **29 — Secrets & Cryptographic-Key Lifecycle Plane** | **GREEN** | Provider-neutral secret/key references, short-lived access grants, rotation enforcement, expiration, revocation and external vault/KMS boundaries |
-| **30 — Production Operationalization** | **IN PROGRESS** | Deterministic production readiness contract, fail-closed configuration gates, machine-readable readiness, deployment evidence and real provider/runtime verification |
+| **30 — Production Operationalization** | **GREEN** | Fail-closed production readiness, executable production compose, eight-domain API E2E coverage, eight-domain deployment verification, complete eight-domain golden corpus, runtime configuration gates and production Docker/runtime smoke |
 
 ## Build 19 verification correction
 
@@ -95,10 +95,12 @@ Build 28 PR #38 was merged as commit `cb44f23f6ad68fb0af9c4dcfd995b9f85d2d4a36`.
 
 Build 29 PR #39 was merged on 2026-08-21 as commit `be4a40a49880938d7fe6e2a5ba291d7e1f841bd4`. The implementation passed the repository verification gates and delivered the provider-neutral secrets/key lifecycle boundary without storing plaintext secret material in the platform kernel.
 
-## Build 30 status
+## Build 30 verification
 
-Build 30 is **IN PROGRESS**. The first slice establishes a deterministic, fail-closed operational readiness contract and wires it into `/ready`. Remaining work is deployment-level dependency verification, managed-provider binding, evidence collection, recovery testing and the real Tinlance → FDE Mastery staging execution.
+Build 30 was merged on 2026-08-26 as commit `bb5703bc448ab74a0793c60c557dea8a4e9982ff` after the production-operationalization implementation passed the repository's blocking quality/security gates. The final implementation includes fail-closed production configuration, machine-readable readiness, executable production Docker Compose, all eight first-class domains through the deployment API, an 800-case eight-domain synthetic golden corpus, eight-domain deployment smoke coverage and production Docker/runtime smoke.
+
+The repository gate is **GREEN**. Actual customer-production deployment remains environment-specific: the final live-provider/OIDC/managed-secret values and external Tinlance staging URL must be supplied by the deployment environment before a live production execution can be honestly recorded as completed.
 
 ## Verification policy
 
-A build is only declared **GREEN** after the repository CI pipeline passes tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, production Docker runtime smoke, and any build-specific quality gates.
+A build is only declared **GREEN** after the repository CI pipeline passes tests, security scans, migration validation, static analysis, SBOM validation, staging/load smoke, production Docker runtime smoke, and any build-specific quality gates. Live customer deployment is separately evidenced using the deployment environment's real credentials, provider bindings and endpoints.
