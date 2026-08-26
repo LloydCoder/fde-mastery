@@ -192,7 +192,7 @@ class GovernanceRegistry:
             raise KeyError("control not found")
         for evidence_id in attestation.evidence_ids:
             evidence = self._evidence.get((attestation.tenant_id, evidence_id))
-            if evidence is None or evidence.control_id != attestation.control_id or not evidence.is_current():
+            if evidence is None or evidence.control_id != attestation.control_id or not evidence.is_current(now=attestation.assessed_at):
                 raise ValueError("attestation references missing or non-current evidence")
         self._attestations[(attestation.tenant_id, attestation.control_id)] = attestation
 
@@ -223,21 +223,22 @@ class GovernanceRegistry:
             "generated_at": posture.generated_at.isoformat(),
             "score": posture.score,
             "audit_ready": posture.audit_ready,
-            "controls": dict(sorted((k, v.value) for k, v in posture.controls.items())),
+            "controls": {key: value.value for key, value in sorted(posture.controls.items())},
             "evidence": [
                 {
-                    "evidence_id": e.evidence_id,
-                    "control_id": e.control_id,
-                    "type": e.evidence_type,
-                    "source_uri": e.source_uri,
-                    "content_digest": e.content_digest,
-                    "status": e.status.value,
+                    "evidence_id": item.evidence_id,
+                    "control_id": item.control_id,
+                    "evidence_type": item.evidence_type,
+                    "content_digest": item.content_digest,
+                    "status": item.status.value,
+                    "expires_at": item.expires_at.isoformat() if item.expires_at else None,
                 }
-                for e in sorted(evidence, key=lambda item: item.evidence_id)
+                for item in sorted(evidence, key=lambda value: value.evidence_id)
             ],
         }
-        return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return canonical + b"\nsha256=" + hashlib.sha256(canonical).hexdigest().encode("ascii")
 
 
 def _is_sha256(value: str) -> bool:
-    return len(value) == 71 and value.startswith("sha256:") and all(c in "0123456789abcdef" for c in value[7:])
+    return len(value) == 71 and value.startswith("sha256:") and all(char in "0123456789abcdef" for char in value[7:])
