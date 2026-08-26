@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-import os
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from config import settings
 from integrations.tinlance_contract import TinlanceAgentRequest, VALID_DOMAINS
 from observability.fastapi import instrument_app
 from observability.tracing import configure_tracing
+from operational_readiness import assess_readiness
 from security.dependencies import require_bearer_from_env
 from security.rbac import AuthorizationError, Principal, require_access
 from shared_orchestrator.router import AgentRouter
@@ -51,16 +52,11 @@ def health() -> dict:
 
 @app.get("/ready")
 def ready() -> dict:
-    """Report whether the production security boundary is configured."""
-    issuer = os.getenv("FDE_OIDC_ISSUER", "").strip()
-    audience = os.getenv("FDE_OIDC_AUDIENCE", "").strip()
-    if not issuer or not audience:
-        raise HTTPException(status_code=503, detail="OIDC issuer/audience are not configured")
-    configured = set(router.list_domains())
-    expected = set(VALID_DOMAINS)
-    if configured != expected:
-        raise HTTPException(status_code=503, detail="Domain router is not fully configured")
-    return {"status": "ready", "domains": sorted(configured)}
+    """Return a machine-readable configuration readiness result."""
+    assessment = assess_readiness(settings, set(router.list_domains()), set(VALID_DOMAINS))
+    if not assessment.ready:
+        raise HTTPException(status_code=503, detail=assessment.as_dict())
+    return assessment.as_dict()
 
 
 @app.post("/v1/{domain}/execute")
