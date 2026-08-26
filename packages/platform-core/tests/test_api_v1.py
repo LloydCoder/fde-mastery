@@ -9,6 +9,20 @@ def test_v1_health_is_versioned() -> None:
     assert response.json() == {"status": "healthy", "api_version": "v1"}
 
 
+def test_v1_preserves_valid_request_id_for_cross_service_correlation() -> None:
+    request_id = "12345678-1234-4234-8234-123456789012"
+    response = TestClient(app).get("/v1/health", headers={"X-Request-ID": request_id})
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == request_id
+
+
+def test_v1_replaces_invalid_request_id() -> None:
+    response = TestClient(app).get("/v1/health", headers={"X-Request-ID": "not-a-uuid"})
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] != "not-a-uuid"
+    assert len(response.headers["X-Request-ID"]) == 36
+
+
 def test_openapi_contains_v1_contract() -> None:
     schema = app.openapi()
     assert schema["openapi"].startswith("3.1")
