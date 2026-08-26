@@ -56,7 +56,7 @@ jobs:
         run: |
           mkdir -p artifacts
           python -m pytest -q --junitxml=artifacts/pytest.xml
-      - name: Verify all seven domain adapters
+      - name: Verify all first-class domain adapters
         run: |
           python - <<'PY'
           from shared_orchestrator.router import AgentRouter
@@ -82,9 +82,9 @@ jobs:
           import json
           path = Path("evaluation/golden/generated-v1.jsonl")
           rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-          assert len(rows) == 700, len(rows)
-          assert {row["domain"] for row in rows} == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement"}
-          assert len({row["id"] for row in rows}) == 700
+          assert len(rows) == 800, len(rows)
+          assert {row["domain"] for row in rows} == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}
+          assert len({row["id"] for row in rows}) == 800
           PY
       - name: Run AI security regression suite
         run: |
