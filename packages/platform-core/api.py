@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from config import settings
+from config import Settings
 from integrations.tinlance_contract import TinlanceAgentRequest, VALID_DOMAINS
 from observability.fastapi import instrument_app
 from observability.tracing import configure_tracing
@@ -53,7 +53,11 @@ def health() -> dict:
 @app.get("/ready")
 def ready() -> dict:
     """Return a machine-readable configuration readiness result."""
-    assessment = assess_readiness(settings, set(router.list_domains()), set(VALID_DOMAINS))
+    # Re-read environment configuration for each readiness request so tests,
+    # rotations and deployment configuration changes cannot be masked by a
+    # process-start snapshot.
+    runtime_settings = Settings()
+    assessment = assess_readiness(runtime_settings, set(router.list_domains()), set(VALID_DOMAINS))
     if not assessment.ready:
         raise HTTPException(status_code=503, detail=assessment.as_dict())
     return assessment.as_dict()
