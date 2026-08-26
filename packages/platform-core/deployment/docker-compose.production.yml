@@ -1,16 +1,28 @@
 services:
   api:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     environment:
       FDE_ENVIRONMENT: production
       FDE_STORAGE_BACKEND: postgres
       FDE_RATE_LIMIT_BACKEND: redis
+      FDE_SECRETS_BACKEND: managed
       FDE_DATABASE_URL: postgresql+psycopg://fde:${POSTGRES_PASSWORD}@postgres:5432/fde
       FDE_REDIS_URL: redis://redis:6379/0
+      FDE_OIDC_ISSUER: ${FDE_OIDC_ISSUER}
+      FDE_OIDC_AUDIENCE: ${FDE_OIDC_AUDIENCE}
+      FDE_OIDC_JWKS_URL: ${FDE_OIDC_JWKS_URL:-}
+      FDE_OIDC_ALGORITHMS: ${FDE_OIDC_ALGORITHMS:-RS256}
       FDE_API_KEYS: ${FDE_API_KEYS}
       FDE_ADMIN_API_KEYS: ${FDE_ADMIN_API_KEYS}
+      MOCK_LLM: "false"
+      OTEL_ENABLED: ${OTEL_ENABLED:-true}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-fde-mastery-platform}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
+    ports:
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
