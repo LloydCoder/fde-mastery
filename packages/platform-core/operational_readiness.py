@@ -66,11 +66,13 @@ def assess_readiness(settings: Settings, configured_domains: set[str], expected_
             "managed secrets required in production" if settings.environment == "production" else settings.secrets_backend,
         )
     )
+    # OIDC is an authentication boundary, so /ready never reports success
+    # when the issuer/audience are absent, including non-production staging.
     checks.append(
         ReadinessCheck(
             "oidc",
-            settings.environment != "production" or bool(settings.oidc_issuer and settings.oidc_audience),
-            "issuer and audience required in production" if settings.environment == "production" else "not required outside production",
+            bool(settings.oidc_issuer and settings.oidc_audience),
+            "issuer and audience configured" if settings.oidc_issuer and settings.oidc_audience else "issuer and audience are required",
         )
     )
     checks.append(
