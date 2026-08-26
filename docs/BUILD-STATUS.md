@@ -30,7 +30,7 @@
 | **26 — Enterprise Knowledge & Memory Plane** | **GREEN** | Tenant/scope-bound knowledge records, provenance/trust levels, poisoning-aware retrieval, integrity digests, versioning, expiration and bounded metadata |
 | **27 — Privacy & Data Lifecycle Plane** | **GREEN** | Tenant-scoped data classification, purpose limitation, retention policies, legal holds, erasure eligibility and integrity receipts |
 | **28 — Enterprise Identity Governance Plane** | **GREEN** | Tenant/scope-bound roles, fine-grained permissions, delegated bindings, expiry/revocation and provisioning lifecycle contracts |
-| **29 — Secrets & Cryptographic-Key Lifecycle Plane** | **IN PROGRESS** | Provider-neutral secret/key references, short-lived access grants, rotation enforcement, expiration, revocation and external vault/KMS boundaries |
+| **29 — Secrets & Cryptographic-Key Lifecycle Plane** | **GREEN** | Provider-neutral secret/key references, short-lived access grants, rotation enforcement, expiration, revocation and external vault/KMS boundaries |
 
 ## Build 19 verification correction
 
@@ -92,7 +92,7 @@ Build 28 PR #38 was merged as commit `cb44f23f6ad68fb0af9c4dcfd995b9f85d2d4a36`.
 
 ## Build 29 verification
 
-Build 29 is **IN PROGRESS** on `build-29-secrets-key-lifecycle`. The implementation and build-specific tests are being validated through the full repository CI gate before merge.
+Build 29 PR #39 was merged on 2026-08-21 as commit `be4a40a49880938d7fe6e2a5ba291d7e1f841bd4`. The implementation passed the repository verification gates and delivered the provider-neutral secrets/key lifecycle boundary without storing plaintext secret material in the platform kernel.
 
 ## Verification policy
 
