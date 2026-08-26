@@ -11,6 +11,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import PlainTextResponse
@@ -82,7 +83,11 @@ def _audit_failure(request_id: str, client_id: str, domain: Domain, code: str, s
 
 @app.middleware("http")
 async def security_and_observability(request: Request, call_next):
-    request_id = new_request_id()
+    raw_request_id = request.headers.get("X-Request-ID")
+    try:
+        request_id = str(UUID(raw_request_id)) if raw_request_id else new_request_id()
+    except (ValueError, AttributeError):
+        request_id = new_request_id()
     request.state.request_id = request_id
     started = monotonic_ms()
     try:
