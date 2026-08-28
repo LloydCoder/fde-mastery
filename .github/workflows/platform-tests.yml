@@ -110,6 +110,7 @@ jobs:
           assert len(rows) == 800, len(rows)
           assert {row["domain"] for row in rows} == expected
           assert len({row["id"] for row in rows}) == 800
+          PY
       - name: Run AI security regression suite
         run: |
           python - <<'PY'
