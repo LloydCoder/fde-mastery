@@ -33,6 +33,10 @@
 | **29 — Secrets & Cryptographic-Key Lifecycle Plane** | **GREEN** | Provider-neutral secret/key references, short-lived access grants, rotation enforcement, expiration, revocation and external vault/KMS boundaries |
 | **30 — Production Operationalization** | **GREEN** | Fail-closed production readiness, executable production compose, eight-domain API E2E coverage, eight-domain deployment verification, complete eight-domain golden corpus, runtime configuration gates and production Docker/runtime smoke |
 
+## Historical verification wording
+
+Builds 24–28 were verified against the repository's then-current seven-domain smoke gate. That wording is historical evidence and is not the current platform contract. Build 30 established the canonical eight-domain contract and verification path; current CI now fails if the eight-domain set drifts.
+
 ## Build 19 verification correction
 
 Build 19 was merged as commit `762f292cb6cf997caedd7d0a65508dbb50eff2aa` after its documented Platform Quality and Semgrep gates passed. The previous wording saying it was "ready for merge after" a documentation-triggered gate was stale and has been corrected.
