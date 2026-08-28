@@ -2,7 +2,7 @@
 
 **Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
 
-FDE Mastery is a reusable enterprise AI platform with seven domain services—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, and Procurement—plus a tenant-scoped Custom Agent framework. The platform provides identity, authorization, policy, resilience, durable workflows, control-plane registries, model/tool boundaries, persistence, auditability, evaluation, observability, interoperability contracts, FinOps, incident management, deployment isolation, and signed/provenance-backed releases.
+FDE Mastery is a reusable enterprise AI platform with eight first-class domains—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, Procurement, and Custom. The platform provides identity, authorization, policy, resilience, durable workflows, control-plane registries, model/tool boundaries, persistence, auditability, evaluation, observability, interoperability contracts, FinOps, incident management, deployment isolation, and signed/provenance-backed releases.
 
 > **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
 
@@ -188,7 +188,7 @@ The platform uses OpenTelemetry with a Collector-oriented deployment model. Oper
 Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
 
 - pytest and P0/P1/P2 platform-control tests
-- seven-domain deployment smoke tests
+- eight-domain deployment smoke tests
 - Custom Agent and secure tool-gateway tests
 - enterprise security controls
 - migration validation
