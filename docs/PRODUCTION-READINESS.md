@@ -13,7 +13,7 @@ This repository uses eight explicit gates before a domain is promoted from engin
 7. **Human-in-the-loop production** — high-impact actions require an identified human approver and an auditable approval event. The action guard is fail-closed and tenant-scoped.
 8. **Controlled actions** — only explicitly approved, reversible, low-risk actions may be automated initially. Destructive or high-impact operations require policy approval and remain disabled until customer-specific evidence supports promotion.
 
-## Seven-domain deployment matrix
+## Eight-domain deployment matrix
 
 | Domain | Typical first integration | Initial safe mode | High-impact boundary |
 |---|---|---|---|
@@ -24,6 +24,7 @@ This repository uses eight explicit gates before a domain is promoted from engin
 | Legal | DMS / matter-management system | recommendation | filing / legal advice / contract execution |
 | RevOps | CRM / support / billing | recommendation | customer communication / pricing / account changes |
 | Procurement | ERP / sourcing / supplier-risk systems | recommendation | supplier award / PO / spend approval |
+| Custom | tenant-defined systems through configuration-driven connectors | recommendation / shadow | customer-defined consequential actions |
 
 ## Promotion rule
 
@@ -31,7 +32,7 @@ A domain is **not production-ready** merely because the repository CI is green. 
 
 ## Security and governance baseline
 
-The platform follows least privilege, tenant isolation, structured auditability, signed release artifacts and fail-closed high-impact actions. AI-specific controls should be reviewed against current OWASP GenAI risks, including prompt injection, sensitive information disclosure, improper output handling and excessive agency.
+The platform follows least privilege, tenant isolation, structured auditability, signed release artifacts and fail-closed high-impact actions. AI-specific controls should be reviewed against current OWASP GenAI and agentic-AI guidance, including prompt injection, sensitive information disclosure, improper output handling, excessive agency, tool misuse and agent identity/capability risks.
 
 ## Customer deployment evidence
 

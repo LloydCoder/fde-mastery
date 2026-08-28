@@ -47,6 +47,23 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.8"
+      - name: Validate enterprise repository layout
+        working-directory: .
+        run: |
+          set -euo pipefail
+          test -f packages/platform-core/pyproject.toml
+          test -f packages/platform-core/Dockerfile
+          test -d legacy/curriculum
+          test -d docs
+          test -d infrastructure
+          test -d tests
+          test ! -d month-1-cybersecurity
+          test ! -d month-2-finance
+          test ! -d month-3-healthtech
+          test ! -d month-4-logistics
+          test ! -d month-5-legal
+          test ! -d month-6-revops
+          test ! -d month-7-platform
       - name: Install platform and CI tools
         run: |
           python -m pip install --upgrade pip setuptools wheel
@@ -56,18 +73,25 @@ jobs:
         run: |
           mkdir -p artifacts
           python -m pytest -q --junitxml=artifacts/pytest.xml
-      - name: Verify all first-class domain adapters
+      - name: Verify all eight first-class domain adapters
         run: |
           python - <<'PY'
           from shared_orchestrator.router import AgentRouter
           from schemas import Domain
           router = AgentRouter()
+          expected = {
+              "cybersecurity", "finance", "healthtech", "logistics",
+              "legal", "revops", "procurement", "custom",
+          }
           try:
               router.register_defaults()
-              expected = {d.value for d in Domain}
               actual = set(router.list_domains())
+              enum_domains = {d.value for d in Domain}
+              assert enum_domains == expected, (enum_domains, expected)
               assert actual == expected, (actual, expected)
-              assert all(v["agent"]["status"] == "ready" for v in router.health().values())
+              health = router.health()
+              assert set(health) == expected, (set(health), expected)
+              assert all(v["agent"]["status"] == "ready" for v in health.values())
           finally:
               router.close()
       - name: Verify enterprise deployment gates
@@ -82,8 +106,9 @@ jobs:
           import json
           path = Path("evaluation/golden/generated-v1.jsonl")
           rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+          expected = {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}
           assert len(rows) == 800, len(rows)
-          assert {row["domain"] for row in rows} == {"cybersecurity", "finance", "healthtech", "logistics", "legal", "revops", "procurement", "custom"}
+          assert {row["domain"] for row in rows} == expected
           assert len({row["id"] for row in rows}) == 800
           PY
       - name: Run AI security regression suite
