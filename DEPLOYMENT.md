@@ -1,10 +1,10 @@
-# FDE Mastery — Six-Domain Deployment Guide
+# FDE Mastery — Eight-Domain Deployment Guide
 
-This guide defines the supported deployment boundary for the six Month 1–6 domain agents behind the Month 7 platform router.
+This guide defines the supported deployment boundary for the eight first-class domain agents behind the Month 7 platform router.
 
 ## Deployment posture
 
-All six domains are exposed through the same platform contract and run in **human-in-the-loop mode**. The platform may produce recommendations and workflow steps, but high-impact actions must be reviewed by an authorized human before execution.
+All eight domains are exposed through the same platform contract and run in **human-in-the-loop mode**. The platform may produce recommendations and workflow steps, but high-impact actions must be reviewed by an authorized human before execution.
 
 Domains:
 
@@ -14,6 +14,24 @@ Domains:
 4. Logistics — shipment, trade-compliance and cold-chain risk
 5. Legal — contract clause risk and redline recommendations
 6. RevOps — opportunity health and deal-governance evaluation
+7. Procurement — procurement workflow, supplier and purchasing evaluation
+8. Custom — tenant-defined governed domain execution
+
+## Production API contract
+
+The deployed platform gateway is `deployment.api_gateway.main:app` and exposes the stable v1 facade under `/v1`.
+
+The primary execution boundary is:
+
+```text
+POST /v1/triage/{client_id}/{domain}
+Authorization: Bearer <OIDC access token or configured application credential>
+Idempotency-Key: <unique mutation key>
+X-Request-ID: <UUID, optional>
+Content-Type: application/json
+```
+
+For OIDC-authenticated requests, the access token tenant claim must match `{client_id}` and the caller must have the `triage:execute` scope. This is the production contract consumed by the Tinlance FDE gateway.
 
 ## Required production configuration
 
@@ -30,8 +48,7 @@ Domains:
 
 ### Cybersecurity
 
-Input: structured SIEM JSON represented by `RawSecurityLog`.
-Required fields include log ID, timestamp, source IP, event type and payload summary. Optional destination IP and user identity improve enrichment. Start with mock mode for CI and staging; production requires an approved LLM provider configuration and real SIEM/tool integrations.
+Input: structured SIEM JSON represented by `RawSecurityLog`. Required fields include log ID, timestamp, source IP, event type and payload summary. Optional destination IP and user identity improve enrichment. Start with mock mode for CI and staging; production requires an approved LLM provider configuration and real SIEM/tool integrations.
 
 ### Finance
 
@@ -53,13 +70,21 @@ Input: `ContractPayload` with extracted clauses and governing jurisdiction. The 
 
 Input: `OpportunityPayload` with ARR, stage, discount, sponsorship and product telemetry. CRM, marketing, scheduling and communications integrations must be explicitly authorized per tenant. Deal Desk escalation, churn intervention and automated assignment remain subject to customer governance.
 
+### Procurement
+
+Input: the domain-specific procurement payload accepted by the procurement adapter. Supplier, purchasing, approval and policy-sensitive actions remain governed by the platform policy and human-approval boundaries.
+
+### Custom
+
+Input: the governed custom-domain payload accepted by `CustomDomainAgent`. Tenant-specific capabilities must remain explicitly registered and policy-controlled; arbitrary tool execution is not permitted merely because the domain is `custom`.
+
 ## Staging procedure
 
 1. Deploy the signed image into an isolated staging environment.
 2. Run database migrations before enabling traffic.
-3. Verify `/healthz` and `/readyz`.
+3. Verify `/health` and `/health/ready`.
 4. Verify OIDC authentication and tenant isolation.
-5. Run the six-domain deployment smoke test with synthetic data.
+5. Run the eight-domain deployment smoke test with synthetic data.
 6. Confirm traces, metrics and audit events are visible.
 7. Exercise retry, timeout and circuit-breaker paths.
 8. Run the red-team and evaluation suites.
@@ -74,7 +99,7 @@ A customer deployment is accepted only when all of the following are true:
 - Container signature and SBOM verification succeed.
 - Managed PostgreSQL/Redis connectivity and backup policy are validated.
 - OIDC/JWT and tenant-scoped authorization are tested with customer identities.
-- Domain-specific input validation succeeds.
+- All eight domain routes and domain-specific input validation succeed.
 - High-impact recommendations are demonstrably human-gated.
 - Audit events include actor, tenant, action, outcome and request correlation.
 - Observability dashboards and alerts are configured.
