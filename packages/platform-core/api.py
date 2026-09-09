@@ -53,14 +53,45 @@ def health() -> dict:
 @app.get("/ready")
 def ready() -> dict:
     """Return a machine-readable configuration readiness result."""
-    # Re-read environment configuration for each readiness request so tests,
-    # rotations and deployment configuration changes cannot be masked by a
-    # process-start snapshot.
     runtime_settings = Settings()
     assessment = assess_readiness(runtime_settings, set(router.list_domains()), set(VALID_DOMAINS))
     if not assessment.ready:
         raise HTTPException(status_code=503, detail=assessment.as_dict())
     return assessment.as_dict()
+
+
+def _execute_domain(
+    domain: str,
+    request: AgentRequest,
+    identity,
+    x_request_id: str | None,
+    request_id: str,
+):
+    principal = Principal.from_claims(identity.claims)
+    try:
+        require_access(principal, tenant_id=request.tenant_id, scope="agents:execute")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail="Access denied") from exc
+    try:
+        result = router.route(domain, request.payload)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Agent execution failed", headers={"x-request-id": request_id}) from exc
+    return JSONResponse(content=result, headers={"x-request-id": x_request_id or request_id})
+
+
+@app.post("/v1/triage/{client_id}/{domain}")
+def triage(
+    client_id: str,
+    domain: str,
+    request: AgentRequest,
+    validated_domain: str = Depends(validate_domain),
+    identity=Depends(require_bearer_from_env()),
+    x_request_id: str | None = Header(default=None, alias="x-request-id"),
+):
+    """Canonical Tinlance FDE contract: client-scoped triage by domain."""
+    if client_id != request.tenant_id:
+        raise HTTPException(status_code=403, detail="Client and tenant do not match")
+    return _execute_domain(validated_domain, request, identity, x_request_id, x_request_id or request.request_id)
 
 
 @app.post("/v1/{domain}/execute")
@@ -71,16 +102,5 @@ def execute(
     identity=Depends(require_bearer_from_env()),
     x_request_id: str | None = Header(default=None, alias="x-request-id"),
 ):
-    principal = Principal.from_claims(identity.claims)
-    try:
-        require_access(principal, tenant_id=request.tenant_id, scope="agents:execute")
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail="Access denied") from exc
-
-    try:
-        result = router.route(validated_domain, request.payload)
-    except Exception as exc:  # Keep internal agent failures out of the wire contract.
-        request_id = x_request_id or getattr(request, "request_id", "")
-        raise HTTPException(status_code=502, detail="Agent execution failed", headers={"x-request-id": request_id}) from exc
-
-    return JSONResponse(content=result, headers={"x-request-id": x_request_id or request.state.request_id})
+    """Legacy internal route retained for compatibility; new callers must use /v1/triage/{client_id}/{domain}."""
+    return _execute_domain(validated_domain, request, identity, x_request_id, x_request_id or request.request_id)
