@@ -46,5 +46,27 @@ def test_execution_contract_rejects_unknown_domain(monkeypatch):
 def test_canonical_triage_rejects_client_tenant_mismatch(monkeypatch):
     monkeypatch.setenv("FDE_OIDC_ISSUER", "https://issuer.example.com")
     monkeypatch.setenv("FDE_OIDC_AUDIENCE", "fde-mastery")
-    response = TestClient(app).post("/v1/triage/tenant-b/finance", json={"tenant_id": "tenant-a", "payload": {}})
+    monkeypatch.setenv("FDE_OIDC_JWKS_URL", "https://issuer.example.com/jwks")
+
+    class FakeAuthenticator:
+        def authenticate(self, _token):
+            from security.auth import Identity
+
+            return Identity(
+                subject="user-123",
+                issuer="https://issuer.example.com",
+                audience="fde-mastery",
+                claims={
+                    "sub": "user-123",
+                    "tenant_id": "tenant-a",
+                    "scope": "agents:execute",
+                },
+            )
+
+    monkeypatch.setattr("security.dependencies.bearer_authenticator", lambda: FakeAuthenticator())
+    response = TestClient(app).post(
+        "/v1/triage/tenant-b/finance",
+        headers={"Authorization": "Bearer valid-for-test"},
+        json={"tenant_id": "tenant-a", "payload": {}},
+    )
     assert response.status_code == 403
