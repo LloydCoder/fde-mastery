@@ -101,7 +101,10 @@ class ErrorBudget:
     def action(self) -> ReliabilityAction:
         if self.exhausted:
             return ReliabilityAction.FREEZE_CHANGES
-        if self.consumed_fraction >= self.slo.error_budget_fraction * 0.8:
+        freeze_threshold = self.slo.error_budget_fraction * 0.8
+        # Treat the documented threshold as inclusive despite binary floating-point
+        # representation at exact decimal boundaries.
+        if self.consumed_fraction >= freeze_threshold or abs(self.consumed_fraction - freeze_threshold) <= 1e-15:
             return ReliabilityAction.FREEZE_NON_CRITICAL
         return ReliabilityAction.NORMAL
 
