@@ -1,259 +1,175 @@
 # FDE Mastery
 
-**Production-oriented Forward Deployed Engineering platform for AI systems, AI security, and enterprise automation.**
+**FDE Mastery is a governed execution platform for teams building, integrating, and operating enterprise AI agents and workflows.**
 
-FDE Mastery is a reusable enterprise AI platform with eight first-class domains—Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, Procurement, and Custom. The platform provides identity, authorization, policy, resilience, durable workflows, control-plane registries, model/tool boundaries, persistence, auditability, evaluation, observability, interoperability contracts, FinOps, incident management, deployment isolation, and signed/provenance-backed releases.
+It provides reusable identity and tenancy boundaries, agent execution, durable workflows, policy enforcement, human approvals, model and tool gateways, evaluations, observability, and operational controls across eight enterprise domains.
 
-> **Portfolio objective:** demonstrate the engineering judgment required to move AI from a model/API experiment into a governed enterprise workflow.
+<p align="center">
+  <a href="https://github.com/LloydCoder/fde-mastery/actions/workflows/platform-tests.yml"><img src="https://github.com/LloydCoder/fde-mastery/actions/workflows/platform-tests.yml/badge.svg?branch=main" alt="Platform Quality"></a>
+  <a href="https://github.com/LloydCoder/fde-mastery/actions/workflows/sdk-quality.yml"><img src="https://github.com/LloydCoder/fde-mastery/actions/workflows/sdk-quality.yml/badge.svg?branch=main" alt="SDK Quality"></a>
+  <a href="https://github.com/LloydCoder/fde-mastery/actions/workflows/evaluation.yml"><img src="https://github.com/LloydCoder/fde-mastery/actions/workflows/evaluation.yml/badge.svg?branch=main" alt="Continuous Evaluation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="Apache 2.0 License"></a>
+</p>
 
-## Enterprise architecture
+## Architecture at a glance
 
 ![FDE Mastery enterprise architecture](./docs/architecture-enterprise.svg)
 
-The repository uses an enterprise monorepo structure. Production code is owned by `packages/platform-core`; historical Months 1–6 curriculum is isolated under `legacy/curriculum`. The platform remains a modular monolith by design: control-plane, data-plane and trust-plane boundaries are explicit so only components that require independent scaling or isolation need to become separate services.
+The diagram describes platform boundaries; it is not a screenshot or live deployment demonstration. See the [architecture guide](./docs/architecture/README.md).
 
-```text
-                    CONTROL PLANE
- identity · tenancy · agent/tool/model/policy registries
- evaluations · deployments · configuration · approvals
-                              │
-                              ▼
-API / Gateway → AuthN/AuthZ → Policy → Durable Workflow
-                                      │
-                                      ▼
-                                Agent Runtime
-                                  /       \
-                                 /         \
-                         Model Gateway   Tool Gateway
-                              │               │
-                         Providers       Enterprise Systems
-                                 \           /
-                                  ▼         ▼
-                              Event / Audit
-                                   │
-                    Evaluation · FinOps · Incidents
-                                   │
-                              Observability
+## Why FDE Mastery
 
-                    TRUST PLANE
- identity · least privilege · risk · HITL · sandbox · audit
-```
+| Concern | Platform approach |
+|---|---|
+| Identity and tenancy | Tenant-aware identity context, scoped authorization and PostgreSQL RLS foundations |
+| Agent execution | Versioned agent lifecycle, budgets, checkpoints and durable workflow boundaries |
+| Consequential actions | Independent trust/policy controls, risk tiers and expiring human approvals |
+| Tool and model access | Registries, capability boundaries, policy checks and provider adapters |
+| Reliability | Leased work, retries, recovery, idempotency and incident lifecycle contracts |
+| Evaluation | Golden and adversarial datasets, quality/safety gates and drift signals |
+| Operations | OpenTelemetry-compatible observability, tenant-aware FinOps and deployment controls |
+| Supply chain | CI security checks, SBOM generation, image signing and build provenance |
 
-## Repository structure
-
-```text
-fde-mastery/
-├── apps/                         # deployable application boundaries, including worker
-├── packages/
-│   └── platform-core/            # canonical production platform distribution
-├── domains/                      # first-class domain ownership surface
-├── infrastructure/               # repository-level infrastructure ownership
-├── platformctl/                  # dependency-free platform inspection CLI
-├── tests/                        # repository-level architecture/contract tests
-├── legacy/
-│   └── curriculum/               # historical Months 1–6, isolated from production
-├── docs/                         # architecture, ADRs, operations and evidence
-└── .github/workflows/             # CI/CD and release attestations
-```
-
-## Platform capabilities
-
-### P0 — production control and isolation
-
-- Versioned Agent, Tool, Model and Policy registries with explicit promotion states
-- Durable workflow and leased worker boundary so API processes can enqueue work without owning execution
-- Independent trust-plane security gateway; model output is never an authorization decision
-- Risk tiers and explicit approval requirements for high-impact actions
-- Quorum/expiry human approvals
-- Tenant-aware identity context and PostgreSQL RLS foundations
-- Sandbox policy contract for custom/untrusted workloads
-
-### P1 — interoperability and operational evidence
-
-- Authorization-aware MCP and A2A protocol contracts
-- Transactional outbox/inbox event architecture
-- AI decision lineage containing evidence references rather than hidden chain-of-thought
-- Tenant-aware AI FinOps for token, tool and compute economics
-- AI incident lifecycle with containment, investigation, remediation and closure
-- Architecture/contract tests for the new trust and control boundaries
-
-### P2 — platform productization
-
-- Shared, isolated and dedicated deployment profiles
-- Dependency-free `platformctl manifest` and `platformctl doctor` commands
-- Machine-readable platform capability manifest
-- Explicit service extraction boundaries without premature microservice proliferation
-
-These capabilities are implemented as platform contracts and reference adapters. They do not by themselves constitute a security certification, regulatory approval, or proof of a live customer deployment.
-
-## Domain portfolio
-
-| Domain | Primary service | Example workflow |
-|---|---|---|
-| Cybersecurity | SOC Triage | SIEM alert enrichment and prioritization |
-| Finance | Transaction Risk | Transaction risk and governance |
-| HealthTech | Compliance & Triage | PHI-safe workflow support |
-| Logistics | Supply Chain Risk | Shipment and telemetry analysis |
-| Legal | Contract Risk | Clause and contract risk analysis |
-| RevOps | Revenue Operations | Pipeline and account operations |
-| Procurement | Procurement Intelligence | Supplier risk, quote comparison, spend approval routing |
-| Custom | Customer-specific agents | Tenant-defined workflows and policies |
-
-High-impact actions remain human-controlled. Examples include account disablement, endpoint isolation, clinical intervention, payment/purchase approval, supplier award, contract rejection, and customer notification.
-
-## Procurement domain
-
-Procurement is a first-class deployment domain rather than a demo-only module.
-
-Current v1 capabilities:
-
-- Supplier risk scoring
-- Quote comparison signals
-- Spend/approval thresholds
-- Procurement prioritization
-- Human approval routing
-- Deterministic fallback behavior
-
-The first workflow is intentionally recommendation-only:
-
-```text
-Supplier / RFQ
-      ↓
-Normalize + validate
-      ↓
-Supplier risk + quote signals
-      ↓
-Spend threshold / policy
-      ↓
-Recommendation
-      ↓
-Human procurement approval
-```
-
-The platform does **not** autonomously award suppliers, create purchase orders, modify vendor master data, or approve spend.
-
-## Custom Agent framework
-
-Customers should not need a new hard-coded platform domain for every bespoke workflow. The Custom Agent framework provides tenant-scoped agent registration, versioned specifications, explicit tool allowlists, secure tool execution, fail-closed high-impact policy boundaries, and tenant-isolated registries.
-
-Target workflow model:
-
-```text
-Trigger → Context → Agent → Approved tools → Policy → HITL → Action → Audit
-```
-
-## Enterprise deployment gate
-
-A domain is promoted to customer production only after evidence for all eight gates:
-
-1. Golden dataset expansion
-2. Approved external-tool integration
-3. Enterprise ingestion
-4. Evaluation thresholds
-5. Staging deployment
-6. Shadow mode
-7. Human-in-the-loop production
-8. Controlled, reversible actions
-
-See [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md).
-
-## Security, AI governance and supply chain
-
-The security baseline is mapped to OWASP ASVS 5.x and OWASP's 2026 Agentic Applications guidance. AI governance and evaluation are informed by NIST AI RMF and its Generative AI Profile. Observability follows OpenTelemetry guidance. Release artifacts use signed images, SBOM attestations, and SLSA-oriented build provenance.
-
-```text
-Source
-  ↓
-Quality + security gates
-  ↓
-Docker image
-  ↓
-CycloneDX SBOM
-  ↓
-Keyless Cosign signature
-  ↓
-SBOM + provenance attestation
-  ↓
-Registry
-  ↓
-Deployment verification
-```
-
-## Observability and decision evidence
-
-The platform uses OpenTelemetry with a Collector-oriented deployment model. Operational telemetry is designed around request, workflow, agent, model, tool, policy and evaluation boundaries. Sensitive prompts and raw customer content should not be emitted into ordinary telemetry. Decision lineage stores references to inputs, retrieval, policies, tools, model/version, approval and outputs without exposing hidden chain-of-thought.
-
-## CI / release gates
-
-Every architectural change is expected to pass the repository quality pipeline before it is considered complete:
-
-- pytest and P0/P1/P2 platform-control tests
-- eight-domain deployment smoke tests
-- Custom Agent and secure tool-gateway tests
-- enterprise security controls
-- migration validation
-- red-team regression
-- Ruff
-- MyPy
-- Bandit
-- pip-audit
-- compileall, including platform CLI and worker boundary
-- platform CLI doctor/manifest checks
-- Terraform format/validation
-- SBOM generation/validation
-- staging API startup/readiness
-- load smoke
-- production Docker build/runtime smoke
-- Semgrep static security scan
-- release image signing, SBOM attestation, and build provenance
-
-A green workflow is a merge gate, not a substitute for customer-specific production validation.
+FDE Mastery is a modular monolith with explicit control-plane, data-plane and trust-plane boundaries. It does not split components into microservices before independent scaling or isolation is justified.
 
 ## Quick start
 
+Run the repository tests with local in-memory and mock-provider settings. No production credentials are required.
+
 ```bash
-cd packages/platform-core
-python -m pip install -e ".[test,quality,security,observability,sbom]"
-export FDE_STORAGE_BACKEND=memory
-export FDE_RATE_LIMIT_BACKEND=memory
-export FDE_MONTH1_PROVIDER=mock
-export MOCK_LLM=true
-export FDE_ENVIRONMENT=test
-python -m pytest -q
+git clone https://github.com/LloydCoder/fde-mastery.git
+cd fde-mastery/packages/platform-core
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[test]"
+FDE_STORAGE_BACKEND=memory FDE_RATE_LIMIT_BACKEND=memory FDE_MONTH1_PROVIDER=mock MOCK_LLM=true FDE_ENVIRONMENT=test python -m pytest -q
 ```
 
-Platform inspection:
+Windows PowerShell activation uses `.venv\Scripts\Activate.ps1`. Python 3.11 matches the primary CI runtime; package metadata supports Python 3.10 and newer.
+
+## Installation
+
+| Tool | Requirement |
+|---|---|
+| Python | 3.10+; Python 3.11 is the CI baseline |
+| Git | Required to clone |
+| Docker Compose | Optional, for container deployment |
+| Node.js | 20+ for the TypeScript SDK |
+
+From `packages/platform-core`, install the platform and quality tools:
+
+```bash
+python -m pip install -e ".[test,quality,security,observability,sbom]"
+```
+
+Optional dependency groups are defined in [pyproject.toml](./packages/platform-core/pyproject.toml). The production-oriented Compose definition is [deployment/docker-compose.production.yml](./packages/platform-core/deployment/docker-compose.production.yml). It requires deployment-specific PostgreSQL, OIDC, application/admin key and managed-secret configuration. Follow the [deployment guide](./DEPLOYMENT.md); never use example credentials in production.
+
+## Usage
+
+### Inspect platform capabilities
+
+From the repository root:
 
 ```bash
 PYTHONPATH=packages/platform-core python -m platformctl manifest
 PYTHONPATH=packages/platform-core python -m platformctl doctor
 ```
 
-For PostgreSQL:
+### Run the API locally
+
+After installing the package, from `packages/platform-core`:
 
 ```bash
-cd packages/platform-core
-export FDE_STORAGE_BACKEND=postgres
-export FDE_DATABASE_URL="postgresql+psycopg://user:password@localhost:5432/fde_mastery"
-python -m persistence.migrate
+FDE_STORAGE_BACKEND=memory FDE_RATE_LIMIT_BACKEND=memory FDE_MONTH1_PROVIDER=mock MOCK_LLM=true FDE_ENVIRONMENT=test python -m uvicorn deployment.api_gateway.main:app --host 127.0.0.1 --port 8000
 ```
 
-## Evidence
+In another terminal:
 
-- [`docs/PRODUCTION-READINESS.md`](./docs/PRODUCTION-READINESS.md) — promotion model
-- [`docs/BUILD-STATUS.md`](./docs/BUILD-STATUS.md) — enterprise build ledger
-- [`docs/adr/0013-enterprise-repository-structure.md`](./docs/adr/0013-enterprise-repository-structure.md) — repository structure decision
-- [`legacy/curriculum/`](./legacy/curriculum/) — historical learning material
-- [`packages/platform-core/security/ai-threat-model.md`](./packages/platform-core/security/ai-threat-model.md) — AI threat model
+```bash
+curl --fail http://127.0.0.1:8000/v1/health
+```
 
-Customer outcome numbers should only be added after a real deployment and measurement.
+See [API reference](./docs/api/README.md) for authentication, tenant binding, idempotency and request metadata. Do not send customer data to a local test configuration.
+
+### SDKs
+
+| SDK | Runtime | Source |
+|---|---|---|
+| Python | Python 3.10+; standard-library HTTP client | [sdks/python](./sdks/python/) |
+| TypeScript | Node.js 20+ | [sdks/typescript](./sdks/typescript/) |
+
+## Configuration
+
+The tracked API gateway example is [`.env.example`](./packages/platform-core/deployment/api_gateway/.env.example). It contains placeholders only. Copy values into an untracked environment file and replace every placeholder before use.
+
+| Variable | Template example | Purpose |
+|---|---|---|
+| `FDE_API_KEYS` | Placeholder | Application API keys |
+| `FDE_ADMIN_API_KEYS` | Placeholder | Separate administrator API keys |
+| `FDE_STORAGE_BACKEND` | `memory` | Storage adapter |
+| `FDE_DATABASE_URL` | Local PostgreSQL URL | Durable database connection |
+| `FDE_DB_CREATE_TABLES` | `false` | Automatic table creation |
+| `FDE_RATE_LIMIT_BACKEND` | `memory` | Rate-limit backend |
+| `FDE_REDIS_URL` | Local Redis URL | Redis connection |
+| `FDE_RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate-limit window |
+| `FDE_RATE_LIMIT_REQUESTS` | `60` | Request allowance |
+| `FDE_MAX_BODY_BYTES` | `262144` | Maximum request body size |
+
+See [Configuration reference](./docs/CONFIGURATION.md). Template values are not production recommendations.
+
+## Platform domains and capabilities
+
+| Domain | Example workflow |
+|---|---|
+| Cybersecurity | SIEM alert enrichment and SOC triage |
+| Finance | Transaction risk and governance |
+| HealthTech | Compliance and triage support |
+| Logistics | Supply-chain risk analysis |
+| Legal | Contract risk workflows |
+| RevOps | Pipeline and account operations |
+| Procurement | Supplier risk and quote comparison |
+| Custom | Tenant-defined workflows and policies |
+
+The platform provides versioned agent/tool/model/policy registries, durable workflows, tenant-scoped events, evaluation, incident management, AI FinOps, integration and interoperability boundaries, and deployment profiles.
+
+High-impact actions remain subject to policy and human approval. Procurement is recommendation-oriented: the platform does not autonomously award suppliers, create purchase orders, modify vendor master data or approve spend.
+
+These are reusable platform capabilities and reference integrations. They are not a security certification, regulatory approval or evidence of a live customer deployment.
+
+## Documentation
+
+| Guide | Description |
+|---|---|
+| [Documentation index](./docs/README.md) | Documentation map and reading paths |
+| [Getting started](./docs/GETTING-STARTED.md) | Local setup and first checks |
+| [Architecture](./docs/architecture/README.md) | Platform boundaries and dependency rules |
+| [Architecture decisions](./docs/adr/) | Accepted architecture decision records |
+| [API and SDKs](./docs/api/README.md) | Versioned API and client contracts |
+| [Configuration](./docs/CONFIGURATION.md) | Runtime environment settings |
+| [Deployment](./DEPLOYMENT.md) | Deployment model and operations |
+| [Production readiness](./docs/PRODUCTION-READINESS.md) | Eight-gate promotion model |
+| [Build status](./docs/BUILD-STATUS.md) | Historical implementation and verification ledger |
+| [Security standards](./docs/SECURITY-STANDARDS-MAP.md) | Engineering control references |
+| [AI threat model](./packages/platform-core/security/ai-threat-model.md) | AI-specific threat considerations |
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](./CONTRIBUTING.md), follow the [Code of Conduct](./CODE_OF_CONDUCT.md), and use the provided templates.
+
+## License and acknowledgements
+
+FDE Mastery is distributed under the [Apache License 2.0](./LICENSE). The project uses and is informed by OWASP, NIST AI RMF, OpenTelemetry, CycloneDX, Sigstore Cosign and SLSA provenance.
 
 ## Responsible use
 
-The domain projects use synthetic/example data and demonstrate engineering patterns. They are not financial advice, medical diagnosis/treatment, legal advice, regulatory certification, or proof of production performance.
+Domain examples use synthetic or illustrative data. They are not financial, medical or legal advice. Customer deployments require their own threat model, data-protection decisions, integration validation, evaluation evidence, security review, operational runbooks and approval policy.
 
-High-impact workflows should retain authorized human review and appropriate domain-specific controls.
+<details>
+<summary>Support and troubleshooting</summary>
 
-## About
+- Defects: [GitHub Issues](https://github.com/LloydCoder/fde-mastery/issues/new/choose).
+- Vulnerabilities: follow [SECURITY.md](./SECURITY.md); do not publish exploit details.
+- Setup: see [Getting started](./docs/GETTING-STARTED.md) and [Configuration](./docs/CONFIGURATION.md).
+- Deployment: see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-**FDE Mastery** is built by **LloydCoder** as a hands-on portfolio for Forward Deployed Engineering, AI security, enterprise automation, and production AI systems engineering.
+</details>
