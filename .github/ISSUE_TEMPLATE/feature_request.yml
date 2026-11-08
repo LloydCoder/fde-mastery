@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a bounded improvement to FDE Mastery.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user or operational problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the observable result.
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: Include alternatives and relevant platform boundaries.
+    validations:
+      required: false
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security, tenancy and operational considerations
+      description: Consider authorization, tenant isolation, data handling, approvals and failure modes.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List testable completion conditions.
+    validations:
+      required: true
