@@ -37,10 +37,8 @@ FDE Mastery is a modular monolith with explicit control-plane, data-plane and tr
 Run the repository tests with local in-memory and mock-provider settings. No production credentials are required.
 
 ```bash
-git clone https://github.com/LloydCoder/fde-mastery.git
-cd fde-mastery/packages/platform-core
-python -m venv .venv
-source .venv/bin/activate
+git clone https://github.com/LloydCoder/fde-mastery.git && cd fde-mastery/packages/platform-core
+python -m venv .venv && source .venv/bin/activate
 python -m pip install -e ".[test]"
 FDE_STORAGE_BACKEND=memory FDE_RATE_LIMIT_BACKEND=memory FDE_MONTH1_PROVIDER=mock MOCK_LLM=true FDE_ENVIRONMENT=test python -m pytest -q
 ```
