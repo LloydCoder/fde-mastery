@@ -1,76 +1,47 @@
-# Month 7: Platform Layer — Enterprise FDE Platform
+# FDE Mastery platform core
 
-The capstone layer turns the domain agents into a governed enterprise AI platform. Each build establishes a stable boundary, proves it with CI, and becomes the foundation for the next build.
+This directory contains the canonical production platform package. The root [README](../../README.md) is the visitor entry point; this file describes the package boundary.
 
-## Enterprise Architecture Migration
+## Current implementation
 
-| Build | Capability | Status |
-|---:|---|---|
-| 1 | Architecture Foundation | GREEN |
-| 2 | Identity & Multi-Tenancy | GREEN |
-| 3 | Agent Runtime | GREEN |
-| 4 | Durable Workflow Engine | GREEN |
-| 5 | Trust & Policy Plane | GREEN |
-| 6 | Tool Gateway | GREEN |
-| 7 | Model Gateway | GREEN |
-| 8 | Event-Driven Platform | GREEN |
-| 9 | AI Evaluation Plane | GREEN |
-| 10 | Observability & AI FinOps | GREEN |
-| 11 | Enterprise Deployment & DR | GREEN |
-| 12 | Platform Productization | GREEN |
-| 13 | Domain Intelligence Foundation | GREEN |
-| 14 | FDE Engagement & Workflow Engine | IN PROGRESS |
+The repository build ledger records Builds 1–30 as completed. Build status is historical implementation and CI evidence, not proof that a customer deployment is live or certified.
 
-## Build 14 — FDE Engagement & Workflow Engine
+See [Build Status](../../docs/BUILD-STATUS.md) and [Production Readiness](../../docs/PRODUCTION-READINESS.md).
 
-Build 14 adds the customer-facing delivery lifecycle contract above the existing durable workflow engine.
+## Install
 
-- Tenant-scoped FDE engagements
-- Explicit customer objectives and workflow identity
-- Baseline and target value metrics
-- Acceptance criteria and evidence references
-- Fail-closed lifecycle transitions
-- Discovery → mapping → value case → architecture → build → evaluation → pilot → shadow → production → operate → transfer → retired
-- Human approval gates for high-impact promotion stages
-- Production deployment evidence requirement
-- Deterministic promotion readiness reports
-- Compilation into the existing `WorkflowDefinition` contract
+From this directory:
 
-The lifecycle layer does **not** execute tools, models or external side effects. Existing identity, policy, approval, tool, model, evaluation, audit and durable workflow boundaries remain authoritative.
-
-## Architecture
-
-```text
-Application / API / Workers
-            ↓
-Identity + RequestContext
-            ↓
-FDE Engagement Lifecycle
-  objective · metrics · evidence
-            ↓
-     Promotion Gates
-            ↓
-   Durable Workflow Definition
-            ↓
-Trust & Policy Plane
-       ↙            ↘
-Model Gateway     Tool Gateway
-      ↓                ↓
-Model Providers     SaaS / DB / RPC / MCP
-      ↓
-Durable Workflow / Agent Runtime
-            ↓
-Domain Agents / Infrastructure
-       ↙             ↘
-Evaluation Plane   Observability
-       ↓              ↓
-Promotion Gate   Traces / Metrics / Events
+```bash
+python -m pip install -e ".[test,quality,security,observability,sbom]"
 ```
 
-The repository remains a modular monolith while these boundaries stabilize. Extraction into separate services is deferred until contracts, operational requirements and failure domains justify it.
+Python 3.10+ is declared in package metadata. Python 3.11 is used by the primary CI workflow.
 
-## Quality Gate
+## Test
 
-A build is not complete until the repository quality workflow is green. The gate includes pytest, domain deployment smoke tests, enterprise security controls, migration validation, red-team regression, Ruff, MyPy, Bandit, dependency audit, compileall, Terraform validation, SBOM generation/validation, staging API/load smoke, production Docker runtime smoke, and Semgrep.
+```bash
+FDE_STORAGE_BACKEND=memory FDE_RATE_LIMIT_BACKEND=memory FDE_MONTH1_PROVIDER=mock MOCK_LLM=true FDE_ENVIRONMENT=test python -m pytest -q
+```
 
-See [`docs/build-14-fde-engagement-workflow.md`](../../docs/build-14-fde-engagement-workflow.md) and [`docs/adr/0015-fde-engagement-workflow-engine.md`](../../docs/adr/0015-fde-engagement-workflow-engine.md).
+The complete Platform Quality workflow runs additional static analysis, security, migration, infrastructure, SBOM, staging and container checks.
+
+## Main boundaries
+
+- `fde_platform`: stable platform contracts.
+- `deployment`: API gateway and deployment configuration.
+- `shared_orchestrator`: agent routing and orchestration.
+- `security`: trust, policy and security controls.
+- `persistence`: storage adapters and migrations.
+- `domains`: eight first-class domain implementations.
+- `evaluation`: golden datasets, benchmarks and promotion signals.
+- `integrations`: external-system contracts and adapters.
+- `custom_agents`: tenant-scoped custom-agent framework.
+
+## Related documentation
+
+- [Architecture](../../docs/architecture/README.md)
+- [API](../../docs/api/README.md)
+- [Configuration](../../docs/CONFIGURATION.md)
+- [Deployment](../../DEPLOYMENT.md)
+- [Production readiness](../../docs/PRODUCTION-READINESS.md)
