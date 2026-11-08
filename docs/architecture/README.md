@@ -1,73 +1,69 @@
-# Enterprise Architecture
+# Enterprise architecture
 
-FDE Mastery is migrating from a production-oriented modular platform into a governed enterprise AI platform. The migration is incremental: existing APIs and domain adapters remain operational while new platform boundaries are introduced behind stable contracts.
+FDE Mastery is a governed AI execution platform implemented as a modular monolith. The canonical production package is `packages/platform-core`. Historical Months 1–6 curriculum is isolated under `legacy/curriculum` and is not part of the production dependency graph.
 
-## Build 1 — Architecture Foundation
+## Logical planes
 
-Build 1 establishes the dependency direction used by all subsequent builds. The active kernel lives at `month-7-platform/fde_platform/`:
+- **Control plane:** tenants, agent/tool/model/policy registries, evaluations, deployments, configuration and approvals.
+- **Data plane:** API gateway, durable workflows, agent runtime, workers, integrations and domain adapters.
+- **Trust plane:** identity, authorization, policy decisions, risk, approvals, audit and security controls.
+- **Evaluation plane:** golden datasets, adversarial tests, regression, quality, safety, cost and promotion gates.
+- **Observability plane:** traces, metrics, logs, execution correlation, SLOs and FinOps.
+- **Domain adapters:** cybersecurity, finance, healthtech, logistics, legal, revops, procurement and custom workflows.
 
-```text
-apps / API / workers
-        |
-        v
-application services
-        |
-        v
-fde_platform contracts + ports
-        ^
-        |
-adapters / infrastructure / integrations
-        |
-        v
-domain plugins
-```
+These are logical boundaries. They do not imply that every plane must be deployed as a separate service.
 
-The platform kernel is deliberately framework- and vendor-neutral. It owns stable contracts and ports; FastAPI, PostgreSQL, model providers, tool providers, observability exporters, and other infrastructure remain outside the kernel.
+## Repository ownership map
 
-## Target bounded contexts
-
-The migration will converge on these logical planes:
-
-- **Control plane** — tenants, agents, versions, policies, tools, models, evaluations, deployments.
-- **Data plane** — gateways, workflows, agent runtime, workers, integrations, sandboxed execution.
-- **Trust plane** — identity, authorization, policy decisions, risk, approvals, audit and security controls.
-- **Evaluation plane** — golden datasets, adversarial tests, regression, quality, safety, cost and promotion gates.
-- **Observability plane** — traces, metrics, logs, AI telemetry, SLOs and FinOps.
-- **Domain plugins** — cybersecurity, finance, healthtech, logistics, legal, revops, procurement and future custom domains.
-
-These are logical boundaries first. They are not a mandate to create a microservice for every package.
+| Path | Responsibility |
+|---|---|
+| `packages/platform-core/fde_platform` | Stable platform contracts and kernel boundaries |
+| `packages/platform-core/deployment` | API gateway and deployment integration |
+| `packages/platform-core/shared_orchestrator` | Agent routing and orchestration |
+| `packages/platform-core/security` | Trust, policy and security controls |
+| `packages/platform-core/persistence` | Persistence adapters and migrations |
+| `packages/platform-core/domains` | First-class domain implementations |
+| `packages/platform-core/evaluation` | Evaluation datasets, benchmarks and promotion signals |
+| `apps/worker` | Worker application boundary |
+| `sdks` | Python and TypeScript clients |
+| `platformctl` | Platform inspection CLI |
+| `legacy/curriculum` | Historical learning curriculum only |
 
 ## Dependency rules
 
-### Allowed direction
+Preferred direction:
 
 ```text
-API/application -> contracts/ports -> adapters
-Domain plugin  -> contracts/ports
-Infrastructure -> contracts/ports
+API / application / worker
+          |
+          v
+platform contracts and ports
+          ^
+          |
+adapters / persistence / integrations
+          |
+          v
+domain implementations
 ```
 
-### Forbidden direction
+The platform kernel should not depend on FastAPI, database vendors, model providers, infrastructure implementations or historical curriculum packages. Domain and infrastructure adapters should depend on stable contracts rather than reverse-importing application internals.
 
-```text
-fde_platform -> FastAPI/PostgreSQL/provider/infrastructure
-fde_platform -> domains
-fde_platform -> legacy month-* curriculum
-production -> month-* curriculum directly
-```
+## Trust boundaries
 
-### Why
+- Authentication establishes identity; authorization evaluates permissions for a tenant and resource.
+- Tenant identity must be propagated and checked server-side.
+- Model output is untrusted data and must never grant permissions.
+- Tool execution is constrained by explicit capabilities, policy and tenant context.
+- High-impact actions require an explicit, auditable, scoped and time-bounded approval path.
+- External inputs, including prompts, tool results, webhooks and provider responses, are untrusted.
+- Decision lineage records evidence references and execution metadata, not hidden chain-of-thought.
 
-This follows hexagonal architecture / ports-and-adapters principles and preserves the ability to introduce independent runtimes, workflow workers, model gateways and tool gateways later without forcing the domain layer to know their implementations.
+## Runtime and deployment
 
-## Compatibility policy
+The repository provides API, worker and deployment boundaries with PostgreSQL/Redis production Compose references. Production promotion remains conditional on customer-specific integration, evaluation, staging, shadow-mode, human-approval, recovery and rollback evidence.
 
-Existing `month-1-cybersecurity` through `month-6-revops` code remains available for historical and compatibility purposes. It is isolated as legacy material and is prohibited as a direct dependency of production architecture. See [`legacy/README.md`](../../legacy/README.md).
+See [Production Readiness](../PRODUCTION-READINESS.md), [Deployment](../../DEPLOYMENT.md), and [CI Verification Contract](../CI-VERIFICATION-CONTRACT.md).
 
-## Architecture enforcement
+## Architecture decision records
 
-`month-7-platform/tests/test_architecture_boundaries.py` makes these rules executable. A future refactor that introduces a forbidden kernel dependency or direct production import of a curriculum module should fail CI rather than silently erode the architecture.
-
-## Standards basis
-
-The architecture is informed by current platform-engineering guidance (platform as a product, golden paths and guardrails), OWASP ASVS 5.0, NIST AI RMF operationalization, and OpenTelemetry semantic-convention practices. These standards are treated as design inputs, not as substitutes for application-specific threat modeling and testing.
+Accepted decisions are recorded under [docs/adr](../adr/). Update or add an ADR when a change materially alters a platform boundary, trust assumption, data lifecycle, deployment topology or public contract.
