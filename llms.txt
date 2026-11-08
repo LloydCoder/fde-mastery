@@ -1,0 +1,51 @@
+# FDE Mastery
+
+> FDE Mastery is a governed execution platform for teams building, integrating, and operating enterprise AI agents and workflows.
+
+FDE Mastery is a Python-centered modular monolith with explicit control-plane, data-plane and trust-plane boundaries. The canonical production package is `packages/platform-core`. Historical Months 1–6 curriculum is isolated under `legacy/curriculum`.
+
+## Start here
+
+- [Project README](README.md): purpose, capabilities, quick start, installation and usage.
+- [Getting started](docs/GETTING-STARTED.md): local development setup.
+- [Documentation index](docs/README.md): documentation map and recommended reading paths.
+- [Architecture](docs/architecture/README.md): platform boundaries and dependency rules.
+- [API reference](docs/api/README.md): versioned HTTP API and SDK contracts.
+- [Configuration](docs/CONFIGURATION.md): runtime environment settings.
+- [Deployment](DEPLOYMENT.md): deployment model and operational configuration.
+- [Production readiness](docs/PRODUCTION-READINESS.md): domain promotion gates.
+- [Build status](docs/BUILD-STATUS.md): historical build ledger and verification notes.
+- [Security standards map](docs/SECURITY-STANDARDS-MAP.md): engineering control references.
+- [Architecture decisions](docs/adr/): accepted architecture decision records.
+
+## Repository map
+
+- `packages/platform-core`: canonical platform runtime, gateways, policies, workflows, persistence, domains, evaluations and security controls.
+- `apps`: application and worker boundaries.
+- `sdks/python`: Python API client.
+- `sdks/typescript`: TypeScript API client.
+- `platformctl`: platform manifest and diagnostic CLI.
+- `infrastructure`: infrastructure ownership surface.
+- `legacy/curriculum`: historical learning curriculum, not the production dependency graph.
+- `.github/workflows`: quality, SDK and evaluation workflows.
+
+## Platform domains
+
+Cybersecurity, Finance, HealthTech, Logistics, Legal, RevOps, Procurement and Custom.
+
+## Important constraints
+
+- Model output is not an authorization decision.
+- Authorization and tenant boundaries must be enforced server-side.
+- High-impact actions require policy enforcement and appropriate human approval.
+- Example datasets are synthetic or illustrative.
+- Repository CI does not prove customer-production deployment, certification or regulatory compliance.
+- Do not expose secrets, customer records or sensitive prompts in logs or public issues.
+
+## Project policies
+
+- [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md)
+- [Support](SUPPORT.md)
+- [License](LICENSE)
